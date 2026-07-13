@@ -9,25 +9,25 @@
 ## 1. Sơ đồ luồng dữ liệu (toàn hệ thống ở Cấp 5)
 
 ```
-┌─────────────┐   POST /check (text)        ┌──────────────────────┐
-│  Trình duyệt │ ─────────────────────────▶ │  Flask route          │
-│ (iPhone 45+) │                             │  /check → Service     │
+┌──────────────┐   POST /check (text)        ┌──────────────────────┐
+│  Trình duyệt │ ─────────────────────────▶ │  Flask route         │
+│              │                             │  /check → Service    │
 │              │                             └──────────┬───────────┘
 │  localStorage│                                        │
 │   (history)  │ ◀──── render Jinja2 (JSON) ────────────┘
 └──────┬───────┘                                                    │
        │ POST /rescue (situation)                                    │
        ▼                                                            ▼
-┌─────────────┐   sequential AI calls          ┌──────────────────────┐
+┌─────────────┐   sequential AI calls          ┌────────────────────────┐
 │ /rescue svc │ ───── 1. Thám tử ─────────────▶│ Gemini API (HTTP)     │
 │             │        (chờ kết quả)            │ generativelanguage    │
 │             │ ───── 2. Cô tâm lý ───────────▶│   .googleapis.com     │
-│  if nghi/nguy│        (chỉ khi nghi/nguy)      │  /models/.../generate │
-│             │ ───── 3. Người ứng cứu ───────▶│  Content (JSON mode)  │
-│             │        (chỉ khi user đã sa bẫy) │                        │
-│ post-filter │                                 │                        │
-│  hotlines   │ ◀── structured JSON ────────────┘
-│  strip số lạ │
+│  if nghi/nguy│        (chỉ khi nghi/nguy)     │  /models/.../generate │
+│             │ ───── 3. Người ứng cứu ───────▶ │  Content (JSON mode)  │
+│             │        (chỉ khi user đã sa bẫy) │                       │
+│ post-filter │                                 │                       │
+│  hotlines   │ ◀── structured JSON ────────────┘──────────────────────┘
+│ strip số lạ │
 └─────────────┘
 ```
 
@@ -291,7 +291,7 @@ class RescueResult:
 
 - **Dev**: `python run.py` → `http://localhost:5000`.
 - **Prod (VM exe.dev):**
-  - `scamcheck.service` (systemd) chạy gunicorn trên port 9595.
+  - `scamcheck.service` (systemd) chạy gunicorn.
   - Reverse proxy exe.dev → địa chỉ công khai (đáp ứng L1-05).
   - Env `GEMINI_API_KEY` qua systemd `EnvironmentFile=/etc/scamcheck.env`.
 - Tương đương Render/Railway trong đề bài; đảm bảo "không cài app phía người dùng".
