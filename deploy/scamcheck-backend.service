@@ -15,11 +15,12 @@ After=network.target
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/scamcheck/backend
+# WorkingDirectory phải là nơi www-data CÓ QUYỀN GHI, vì gunicorn tạo
+# control socket ở cwd. /run/scamcheck (RuntimeDirectory) thỏa mãn.
+# PYTHONPATH để tìm thấy package `app` ở /opt/scamcheck/backend.
+WorkingDirectory=/run/scamcheck
 EnvironmentFile=/etc/scamcheck.env
-# RuntimeDirectory: systemd tạo /run/scamcheck owned by www-data (writable).
-# TMPDIR trỏ tới đó để tempfile.gettempdir() của Python (dùng cho control socket
-# của gunicorn) không gặp "Control server error: Permission denied".
+Environment=PYTHONPATH=/opt/scamcheck/backend
 RuntimeDirectory=scamcheck
 RuntimeDirectoryMode=750
 Environment=TMPDIR=/run/scamcheck
