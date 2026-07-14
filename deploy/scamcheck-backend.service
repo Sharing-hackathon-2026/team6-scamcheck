@@ -17,6 +17,9 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/scamcheck/backend
 EnvironmentFile=/etc/scamcheck.env
+# Thư mục tạm riêng cho gunicorn (www-data ghi được), tránh "Control server error".
+Environment=WORKER_TEMP_DIR=/opt/scamcheck/backend/.tmp
+ExecStartPre=/usr/bin/install -d -o www-data -g www-data -m 750 /opt/scamcheck/backend/.tmp
 ExecStart=/opt/scamcheck/backend/.venv/bin/gunicorn \
     --workers 2 --bind 127.0.0.1:5000 \
     --timeout 45 \
