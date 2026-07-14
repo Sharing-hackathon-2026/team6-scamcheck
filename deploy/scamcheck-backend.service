@@ -18,9 +18,11 @@ Group=www-data
 WorkingDirectory=/opt/scamcheck/backend
 EnvironmentFile=/etc/scamcheck.env
 # RuntimeDirectory: systemd tạo /run/scamcheck owned by www-data (writable).
-# WORKER_TEMP_DIR trỏ tới đó để gunicorn không gặp "Control server error".
+# TMPDIR trỏ tới đó để tempfile.gettempdir() của Python (dùng cho control socket
+# của gunicorn) không gặp "Control server error: Permission denied".
 RuntimeDirectory=scamcheck
 RuntimeDirectoryMode=750
+Environment=TMPDIR=/run/scamcheck
 Environment=WORKER_TEMP_DIR=/run/scamcheck
 ExecStart=/opt/scamcheck/backend/.venv/bin/gunicorn \
     --workers 2 --bind 127.0.0.1:5000 \
