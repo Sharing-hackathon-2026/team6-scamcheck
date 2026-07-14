@@ -116,7 +116,7 @@ Chi tiết:
 
 **Test Stage 2:** `77` pytest backend + `21` Node tests frontend; compileall, node syntax, `git diff --check` đều đạt. Smoke test Gemini thật xác nhận model `gemini-3.1-flash-lite` chấp nhận schema tương thích và trả đúng contract.
 
-**🚦 Gate utility-ui-eval (cuối Stage 2):** đã chụp empty/loading/error/success ở desktop và success ở iPhone. Vision evaluator runtime trả response rỗng qua nhiều lần gọi nên gate hiện **BLOCKED: evaluator_no_output**; không tự gán điểm. Chưa mở Stage 3 cho tới khi evaluator hoạt động.
+**🚦 Gate utility-ui-eval (cuối Stage 2):** ✅ PASS — evaluator độc lập `step-3.7-flash` (ZenMux) chấm `8.0/10`, `true_operational_tool`, `usable=true`, không có critical/major finding, khuyến nghị `ship`. Minor: shortcut chưa có gợi ý trực quan, nút xoá lịch sử dùng icon-only (đã có accessible name), và điều hướng lịch sử còn tối giản.
 
 ---
 
