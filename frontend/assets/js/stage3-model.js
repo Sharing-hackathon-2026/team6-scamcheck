@@ -4,7 +4,7 @@ export function normalizePsychologist(value, status = 'not_needed', error = '') 
   const message = value && typeof value.message === 'string'
     ? normalizeNfc(value.message).trim()
     : '';
-  const safeStatus = ['complete', 'not_needed', 'unavailable', 'quota_reached'].includes(status)
+  const safeStatus = ['complete', 'not_needed', 'unavailable'].includes(status)
     ? status
     : 'unavailable';
   return {

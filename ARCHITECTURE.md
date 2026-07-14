@@ -372,7 +372,7 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
                          parse + role guardrail
                                       │
                          ├─ thành công: message 2–3 câu
-                         └─ lỗi/quota: trạng thái độc lập, giữ nguyên Thám tử
+                         └─ lỗi: trạng thái độc lập, giữ nguyên Thám tử
 ```
 
 - Thám tử phải gọi một trong hai function declaration: `complete_detective` hoặc
@@ -385,7 +385,7 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
 - Hai model call không chạy song song vì Cô tâm lý phụ thuộc verdict; tin an toàn
   tốn 1 lượt, tin nghi ngờ/nguy hiểm tối đa 2 lượt.
 - Budget thời gian: Thám tử 6s, một retry; Cô tâm lý 5s, không retry.
-- Quota và audit đếm theo từng persona invocation, không theo số HTTP request.
+- Không có quota theo phiên; audit vẫn giữ tối đa 10 metadata persona invocation gần nhất.
 
 ### 9.2 Contract bổ sung
 
@@ -393,9 +393,8 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
 {
   "detective": { "risk_level": "nguy_hiem", "reason": "...", "red_flags": [], "actions": [] },
   "psychologist": { "message": "Cô hiểu vì sao tin này dễ làm bác lo..." },
-  "psychologist_status": "complete | not_needed | unavailable | quota_reached",
-  "psychologist_error": null,
-  "usage": { "calls_used": 2, "call_limit": 10 }
+  "psychologist_status": "complete | not_needed | unavailable",
+  "psychologist_error": null
 }
 ```
 

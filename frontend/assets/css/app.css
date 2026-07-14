@@ -485,8 +485,7 @@ textarea:focus-visible {
 }
 
 .speech-note,
-.status,
-.usage {
+.status {
   color: var(--color-text-muted);
 }
 
@@ -506,11 +505,6 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
-.usage {
-  min-height: 1.7em;
-  margin: var(--space-1) 0 0;
-  font-size: 1rem;
-}
 
 .error-panel {
   margin-top: var(--space-4);

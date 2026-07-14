@@ -44,9 +44,7 @@ class Config:
     GEMINI_ENDPOINT: str = "https://generativelanguage.googleapis.com/v1beta/models"
     MAX_INPUT_LENGTH: int = 5000
 
-    # L1-07: giới hạn cứng tài nguyên theo phiên trình duyệt.
-    AI_CALL_LIMIT: int = _positive_int(os.environ.get("AI_CALL_LIMIT"), 10)
-    # Ba lần thử tối đa 8s + backoff 0.5 + 1s vẫn dưới ~26s.
+    # `AI_CALL_LIMIT` cũ nếu còn trong env được bỏ qua để không chặn phiên.
     GEMINI_TIMEOUT: float = _bounded_timeout(os.environ.get("GEMINI_TIMEOUT"))
     GEMINI_MAX_RETRIES: int = 2
 

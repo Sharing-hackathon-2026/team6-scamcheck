@@ -18,10 +18,6 @@ from ..services.validation import normalize_nfc, validate_input
 bp = Blueprint("check", __name__)
 
 
-def _usage(call_limit: int) -> dict[str, int]:
-    return {"calls_used": len(get_ai_log(session)), "call_limit": call_limit}
-
-
 def _record_call(actor: str, text: str, result: dict, status: str = "complete") -> None:
     append_ai_log(session, len(text), result, actor=actor, status=status)
 
@@ -34,18 +30,6 @@ def check():
     errors = validate_input(text, max_len=current_app.config["MAX_INPUT_LENGTH"])
     if errors:
         return jsonify({"errors": errors}), 400
-
-    call_limit = current_app.config["AI_CALL_LIMIT"]
-    calls_used = len(get_ai_log(session))
-    if calls_used >= call_limit:
-        return jsonify(
-            {
-                "error": "Bác đã dùng hết lượt kiểm tra của phiên này. Vui lòng thử lại sau hoặc mở phiên mới.",
-                "code": "ai_call_limit_reached",
-                "calls_used": calls_used,
-                "call_limit": call_limit,
-            }
-        ), 429
 
     try:
         tool_name, tool_args = generate_function_call(
@@ -79,41 +63,34 @@ def check():
 
     if should_activate_psychologist(detective.risk_level):
         # Tool name là advisory. Verdict đã parse/guardrail mới quyết định activation.
-        if len(get_ai_log(session)) >= call_limit:
-            response["psychologist_status"] = "quota_reached"
-            response["psychologist_error"] = (
-                "Đã có kết quả Thám tử, nhưng phiên này không còn lượt để gọi Cô tâm lý."
+        try:
+            raw_psychologist = generate_json(
+                api_key=current_app.config["GEMINI_API_KEY"],
+                model=current_app.config["GEMINI_MODEL"],
+                user_prompt=build_psychologist_user_prompt(text, detective_payload),
+                system_prompt=PSYCHOLOGIST_SYSTEM_PROMPT,
+                response_schema=GEMINI_PSYCHOLOGIST_RESPONSE_SCHEMA,
+                timeout=5.0,
+                max_retries=0,
             )
-        else:
-            try:
-                raw_psychologist = generate_json(
-                    api_key=current_app.config["GEMINI_API_KEY"],
-                    model=current_app.config["GEMINI_MODEL"],
-                    user_prompt=build_psychologist_user_prompt(text, detective_payload),
-                    system_prompt=PSYCHOLOGIST_SYSTEM_PROMPT,
-                    response_schema=GEMINI_PSYCHOLOGIST_RESPONSE_SCHEMA,
-                    timeout=5.0,
-                    max_retries=0,
-                )
-                psychologist = parse_psychologist(raw_psychologist)
-                if psychologist is None:
-                    response["psychologist_status"] = "unavailable"
-                    response["psychologist_error"] = (
-                        "Cô tâm lý chưa thể giải thích thêm lúc này; kết quả Thám tử vẫn đầy đủ."
-                    )
-                    _record_call("psychologist", text, detective_payload, status="invalid_response")
-                else:
-                    response["psychologist"] = psychologist.to_dict()
-                    response["psychologist_status"] = "complete"
-                    _record_call("psychologist", text, detective_payload)
-            except GeminiError:
+            psychologist = parse_psychologist(raw_psychologist)
+            if psychologist is None:
                 response["psychologist_status"] = "unavailable"
                 response["psychologist_error"] = (
-                    "Cô tâm lý đang tạm bận; bác vẫn có thể dùng kết quả Thám tử ở trên."
+                    "Cô tâm lý chưa thể giải thích thêm lúc này; kết quả Thám tử vẫn đầy đủ."
                 )
-                _record_call("psychologist", text, detective_payload, status="error")
+                _record_call("psychologist", text, detective_payload, status="invalid_response")
+            else:
+                response["psychologist"] = psychologist.to_dict()
+                response["psychologist_status"] = "complete"
+                _record_call("psychologist", text, detective_payload)
+        except GeminiError:
+            response["psychologist_status"] = "unavailable"
+            response["psychologist_error"] = (
+                "Cô tâm lý đang tạm bận; bác vẫn có thể dùng kết quả Thám tử ở trên."
+            )
+            _record_call("psychologist", text, detective_payload, status="error")
 
-    response["usage"] = _usage(call_limit)
     return jsonify(response)
 
 
@@ -121,10 +98,4 @@ def check():
 def check_log():
     """Trả nhật ký metadata của từng persona invocation trong phiên."""
     logs = get_ai_log(session)
-    return jsonify(
-        {
-            "logs": logs,
-            "calls_used": len(logs),
-            "call_limit": current_app.config["AI_CALL_LIMIT"],
-        }
-    )
+    return jsonify({"logs": logs})

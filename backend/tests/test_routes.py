@@ -17,7 +17,7 @@ def test_health_ok(client):
     assert response.get_json()["ok"] is True
 
 
-def test_check_returns_structured_detective_and_usage(client, mock_gemini_text):
+def test_check_returns_structured_detective_without_session_limit(client, mock_gemini_text):
     import json
 
     mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": json.dumps(_structured())}]}}]}
@@ -26,7 +26,7 @@ def test_check_returns_structured_detective_and_usage(client, mock_gemini_text):
     assert response.status_code == 200
     assert data["detective"]["risk_level"] == "nguy_hiem"
     assert data["detective"]["red_flags"][0]["excerpt"] == "mã OTP"
-    assert data["usage"] == {"calls_used": 2, "call_limit": 10}
+    assert "usage" not in data
     assert data["psychologist_status"] == "unavailable"
     assert mock_gemini_text["last_body"]["generationConfig"]["response_mime_type"] == "application/json"
     response_schema = mock_gemini_text["last_body"]["generationConfig"]["response_schema"]
@@ -72,7 +72,7 @@ def test_check_returns_502_on_gemini_error(client, monkeypatch):
     monkeypatch.setattr(gemini_mod.requests, "post", lambda *a, **k: Response())
     response = client.post("/api/check", json={"text": "hãy gửi otp"})
     assert response.status_code == 502
-    assert client.get("/api/check/log").get_json()["calls_used"] == 1
+    assert len(client.get("/api/check/log").get_json()["logs"]) == 1
 
 
 def test_log_contains_only_metadata(client, mock_gemini_text):
@@ -81,18 +81,23 @@ def test_log_contains_only_metadata(client, mock_gemini_text):
     mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": json.dumps(_structured("an_toan"))}]}}]}
     client.post("/api/check", json={"text": "Nội dung nhạy cảm bí mật"})
     data = client.get("/api/check/log").get_json()
-    assert data["calls_used"] == 1
+    assert len(data["logs"]) == 1
     assert data["logs"][0]["input_length"] == len("Nội dung nhạy cảm bí mật")
     assert "Nội dung nhạy cảm" not in str(data["logs"])
 
 
-def test_call_limit_blocks_ai(client, mock_gemini_text):
+def test_existing_ten_log_entries_do_not_block_new_analysis(client, mock_gemini_text):
+    import json
+
     with client.session_transaction() as session:
         session["ai_call_log"] = [{"at": "x", "input_length": 1, "summary": "x"}] * 10
-    response = client.post("/api/check", json={"text": "Gửi OTP"})
-    assert response.status_code == 429
-    assert response.get_json()["code"] == "ai_call_limit_reached"
-    assert mock_gemini_text["calls"] == 0
+    mock_gemini_text["payload"] = {
+        "candidates": [{"content": {"parts": [{"text": json.dumps(_structured("an_toan"))}]}}]
+    }
+    response = client.post("/api/check", json={"text": "Thông báo không yêu cầu thao tác."})
+    assert response.status_code == 200
+    assert mock_gemini_text["calls"] == 1
+    assert len(client.get("/api/check/log").get_json()["logs"]) == 10
 
 
 def test_health_reports_not_ready_without_key(monkeypatch):

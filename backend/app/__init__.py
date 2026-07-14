@@ -24,7 +24,6 @@ def create_app(cfg: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = config.FLASK_SECRET_KEY
     app.config["MAX_INPUT_LENGTH"] = config.MAX_INPUT_LENGTH
     app.config["BASE_URL"] = config.BASE_URL
-    app.config["AI_CALL_LIMIT"] = config.AI_CALL_LIMIT
 
     # CORS: bật khi dev tách port. Prod (Nginx cùng origin) không cần.
     if config.CORS_ORIGINS:

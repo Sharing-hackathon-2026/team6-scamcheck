@@ -84,16 +84,16 @@ Chi tiết:
 |---|---|---|---|---|
 | L1-01 | Khởi tạo kho mã và bảo mật khoá | Bắt buộc | ✅ Xong | `.gitignore` + `.env.example`; scan git history = 0 key |
 | L1-02 | Giao diện nhập liệu và dòng pháp lý | Bắt buộc | ✅ Xong | `frontend/index.html`: textarea lớn + nút Kiểm tra + footer pháp lý cố định |
-| L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ✅ Xong | `/api/check` dùng JSON mode, trả `{detective, usage}` với risk level, dấu hiệu/đoạn trích, đúng 3 hành động |
+| L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ✅ Xong | `/api/check` trả `detective` có risk level, dấu hiệu/đoạn trích và đúng 3 hành động |
 | L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ✅ Xong | `parse_detective()` validate/coerce; JSON sai → fallback `nghi_ngo`; xoá excerpt AI bịa; 6 test |
 | L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ✅ Xong | Validate rỗng/>5000; retry 429/503 tối đa 2 lần (0.5s, 1s); exhausted/mạng → lỗi thân thiện 502 |
 | L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz:8000/ (nginx + gunicorn, verified end-to-end) |
-| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | 10 call/phiên Flask; timeout/call clamp ≤8s; API/UI hiện quota; chạm trần trả 429 lịch sự |
+| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | Theo yêu cầu sản phẩm mới: bỏ quota phiên; vẫn giữ timeout ≤8s, retry hữu hạn và log metadata 10 mục |
 | L1-08 | Nhật ký gọi AI | Nên có | ✅ Xong | `GET /api/check/log`; tối đa 10 metadata/lượt trong session (thời điểm, độ dài, tóm tắt), không lưu nội dung tin |
 
-**Test (pytest):** 41 test xanh: JSON mode, parser fallback/excerpt, retry 429/503, quota/session log, validation, prompt và routes.
+**Test (pytest):** 41 test xanh: JSON mode, parser fallback/excerpt, retry 429/503, session log, validation, prompt và routes.
 
-**Tiêu chí hoàn thành Cấp 1 (mới):** 9/10 lần AI trả đúng cấu trúc; ≤30s; 5 ca biên không gãy; retry 429 đúng cơ chế; có trần + nhật ký.
+**Tiêu chí hoàn thành Cấp 1 (mới):** 9/10 lần AI trả đúng cấu trúc; ≤30s; 5 ca biên không gãy; retry 429 đúng cơ chế; timeout hữu hạn + nhật ký.
 
 ---
 
@@ -133,11 +133,11 @@ Chi tiết:
   dùng tối đa 2 lượt AI.
 - Cô tâm lý phụ thuộc verdict đã parse nên critical path vẫn tuần tự. Function calling
   làm orchestration rõ hơn nhưng không giả định hai model call chạy song song.
-- Payload giữ `detective`/`usage` tương thích Stage 2 và thêm `psychologist`,
-  `psychologist_status`, `psychologist_error`.
-- `psychologist_status` thuộc `complete | not_needed | unavailable | quota_reached`;
-  lỗi bước hai không đổi HTTP 200 hay che kết quả Thám tử.
-- Quota phiên đếm từng persona invocation thực tế. Audit chỉ lưu actor, trạng thái,
+- Payload giữ `detective` tương thích Stage 2 và thêm `psychologist`,
+  `psychologist_status`, `psychologist_error`; không trả usage/quota phiên.
+- `psychologist_status` thuộc `complete | not_needed | unavailable`; lỗi bước hai
+  không đổi HTTP 200 hay che kết quả Thám tử.
+- Không giới hạn lượt theo phiên. Audit chỉ lưu actor, trạng thái,
   độ dài input và tóm tắt; không lưu nội dung tin.
 - Route dùng budget hữu hạn: Thám tử timeout 6s + tối đa một retry rate-limit;
   Cô tâm lý timeout 5s, không retry, giữ worst-case AI wait dưới 20s.
@@ -153,7 +153,7 @@ Chi tiết:
 |---|---|---|---|---|
 | L3-01 | Hồ sơ & câu lệnh Cô tâm lý | Bắt buộc | ✅ Xong | Giọng cô–bác, 2–3 câu, JSON schema riêng; parser chặn đổi vai/hạ verdict |
 | L3-02 | Chuỗi tuần tự + hiển thị 2 phần | Bắt buộc | ✅ Xong | Terminal function-call handoff; không lượt tổng hợp cuối; UI tách thẻ Thám tử/Cô tâm lý |
-| L3-03 | Điều kiện kích hoạt + lỗi độc lập | Bắt buộc | ✅ Xong | Verdict sau guardrail quyết định; lỗi/quota Cô tâm lý vẫn trả HTTP 200 và giữ Thám tử |
+| L3-03 | Điều kiện kích hoạt + lỗi độc lập | Bắt buộc | ✅ Xong | Verdict sau guardrail quyết định; lỗi Cô tâm lý vẫn trả HTTP 200 và giữ Thám tử |
 | L3-04 | **Chống chèn lời nhắc (prompt injection)** | Bắt buộc | ✅ Xong | Hai prompt coi input là dữ liệu không tin cậy; tool name advisory; parser hậu kiểm cả hai persona |
 | L3-05 | Bộ kiểm thử hồi quy 20 tin | Bắt buộc | ✅ Xong | 20 tin/4 nhãn, loader/evaluator/report test không gọi AI; script CLI chạy Gemini thật |
 | L3-06 | Thư viện kiểu lừa đảo | Bắt buộc | ✅ Xong | 12 kiểu, 4 nhóm, API tĩnh; filter/hash navigation client-side không reload |

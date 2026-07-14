@@ -81,7 +81,7 @@ Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
 
 - **🟢 LIVE:** https://team6-scamcheck.exe.xyz:8000/
 - `GET /api/health` → `{"ok":true,"ready":true}`
-- `POST /api/check` → phân tích AI có cấu trúc (gemini-3.1-flash-lite), retry rate-limit và quota 10 lượt/phiên.
+- `POST /api/check` → function-call Thám tử, chain Cô tâm lý khi cần, retry rate-limit; không giới hạn lượt theo phiên.
 
 Deploy idempotent qua `deploy/deploy.sh` (chạy **trên VM target**, cần sudo):
 ```bash

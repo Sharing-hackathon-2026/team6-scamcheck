@@ -1,4 +1,4 @@
-"""Test route chain Stage 3: terminal handoff, quota và lỗi độc lập."""
+"""Test route chain Stage 3: terminal handoff và lỗi độc lập."""
 from __future__ import annotations
 
 from app.services.gemini import GeminiError
@@ -23,7 +23,7 @@ def test_safe_verdict_does_not_call_psychologist(client, monkeypatch):
     assert calls == ["detective"]
     assert data["psychologist"] is None
     assert data["psychologist_status"] == "not_needed"
-    assert data["usage"]["calls_used"] == 1
+    assert "usage" not in data
 
 
 def test_handoff_calls_psychologist_and_returns_two_parts(client, monkeypatch):
@@ -38,7 +38,7 @@ def test_handoff_calls_psychologist_and_returns_two_parts(client, monkeypatch):
     assert calls == ["detective", "psychologist"]
     assert data["psychologist_status"] == "complete"
     assert data["psychologist"]["message"].startswith("Cô hiểu")
-    assert data["usage"]["calls_used"] == 2
+    assert "usage" not in data
 
 
 def test_tool_name_cannot_bypass_server_activation_guardrail(client, monkeypatch):
@@ -65,15 +65,20 @@ def test_psychologist_failure_keeps_detective_http_200(client, monkeypatch):
     assert data["detective"]["risk_level"] == "nguy_hiem"
     assert data["psychologist"] is None
     assert data["psychologist_status"] == "unavailable"
-    assert data["usage"]["calls_used"] == 2
+    assert "usage" not in data
 
 
-def test_one_remaining_call_returns_detective_and_quota_status(client, monkeypatch):
+def test_existing_logs_do_not_disable_psychologist(client, monkeypatch):
     import app.routes.check as route
 
     with client.session_transaction() as state:
-        state["ai_call_log"] = [{"at": "x", "input_length": 1, "summary": "x"}] * 9
+        state["ai_call_log"] = [{"at": "x", "input_length": 1, "summary": "x"}] * 10
+    calls = []
     monkeypatch.setattr(route, "generate_function_call", lambda **kwargs: ("handoff_to_psychologist", _detective("nghi_ngo")))
+    monkeypatch.setattr(route, "generate_json", lambda **kwargs: calls.append("psychologist") or {
+        "message": "Cô hiểu lời thúc giục này dễ khiến bác vội. Bác hãy bình tĩnh kiểm tra lại."
+    })
     data = client.post("/api/check", json={"text": "Tin đáng ngờ"}).get_json()
-    assert data["psychologist_status"] == "quota_reached"
-    assert data["usage"] == {"calls_used": 10, "call_limit": 10}
+    assert calls == ["psychologist"]
+    assert data["psychologist_status"] == "complete"
+    assert "usage" not in data

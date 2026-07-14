@@ -97,7 +97,6 @@ const elements = {
   speechBtnLabel: document.getElementById('speechBtnLabel'),
   speechStatus: document.getElementById('speechStatus'),
   status: document.getElementById('status'),
-  usage: document.getElementById('usage'),
   error: document.getElementById('error'),
   loadingPanel: document.getElementById('loadingPanel'),
   result: document.getElementById('result'),
@@ -181,14 +180,6 @@ function showError(message) {
   elements.error.hidden = false;
   elements.result.hidden = true;
   elements.error.focus({ preventScroll: true });
-}
-
-function showUsage(usage) {
-  if (!usage || !Number.isFinite(usage.calls_used) || !Number.isFinite(usage.call_limit)) {
-    elements.usage.textContent = '';
-    return;
-  }
-  elements.usage.textContent = `Đã dùng ${usage.calls_used}/${usage.call_limit} lượt kiểm tra trong phiên này.`;
 }
 
 function appendRiskCard(container, detective) {
@@ -346,7 +337,6 @@ function clearCurrent() {
   elements.error.hidden = true;
   elements.loadingPanel.hidden = true;
   elements.status.textContent = '';
-  elements.usage.textContent = '';
   elements.textInput.focus();
 }
 
@@ -377,7 +367,6 @@ async function onCheck() {
       ),
     });
     persistHistory();
-    showUsage(data.usage);
   } catch (error) {
     showError(error instanceof ApiError ? error.message : 'Có lỗi không xác định. Vui lòng thử lại.');
   } finally {
@@ -396,7 +385,6 @@ function openHistoryEntry(id) {
     error: entry.psychologist?.error || '',
   });
   elements.status.textContent = 'Đang xem lại kết quả đã lưu trên thiết bị. Không gọi AI.';
-  elements.usage.textContent = '';
 }
 
 function setupSpeech() {
