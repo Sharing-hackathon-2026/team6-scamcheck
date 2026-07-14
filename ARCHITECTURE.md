@@ -1,124 +1,145 @@
-:# ScamCheck — Kiến trúc hệ thống (ARCHITECTURE)
+# ScamCheck — Kiến trúc hệ thống (ARCHITECTURE)
 
 > Bổ sung cho `PLAN.md`. Mô tả cấu trúc thư mục, danh sách file cơ bản, bố cục
-> hàm và luồng dữ liệu. Stack: **Python Flask + Jinja2 + Tailwind (CDN)**, AI là
-> **Google Gemini** qua HTTP (`requests`).
+> hàm và luồng dữ liệu.
+>
+> **Kiến trúc tách 2 phần** (monorepo, dễ bảo trì):
+> - **Frontend** (`frontend/`): HTML + Tailwind CSS + JavaScript thuần → phục vụ bởi **Nginx**.
+> - **Backend** (`backend/`): **Python Flask REST API** trả JSON thuần (không Jinja2).
+> - AI là **Google Gemini** qua HTTP (`requests`).
+>
+> Trình duyệt và Flask **cùng origin**: Nginx phục vụ static ở `/` và reverse-proxy
+> `/api/*` → Flask. Frontend gọi `fetch('/api/...')` → không lo CORS.
 
 ---
 
 ## 1. Sơ đồ luồng dữ liệu (toàn hệ thống ở Cấp 5)
 
 ```
-┌──────────────┐   POST /check (text)        ┌──────────────────────┐
-│  Trình duyệt │ ─────────────────────────▶ │  Flask route         │
-│              │                             │  /check → Service    │
-│              │                             └──────────┬───────────┘
-│  localStorage│                                        │
-│   (history)  │ ◀──── render Jinja2 (JSON) ────────────┘
-└──────┬───────┘                                                    │
-       │ POST /rescue (situation)                                    │
-       ▼                                                            ▼
-┌─────────────┐   sequential AI calls          ┌────────────────────────┐
-│ /rescue svc │ ───── 1. Thám tử ─────────────▶│ Gemini API (HTTP)     │
-│             │        (chờ kết quả)            │ generativelanguage    │
-│             │ ───── 2. Cô tâm lý ───────────▶│   .googleapis.com     │
-│  if nghi/nguy│        (chỉ khi nghi/nguy)     │  /models/.../generate │
-│             │ ───── 3. Người ứng cứu ───────▶ │  Content (JSON mode)  │
-│             │        (chỉ khi user đã sa bẫy) │                       │
-│ post-filter │                                 │                       │
-│  hotlines   │ ◀── structured JSON ────────────┘──────────────────────┘
-│ strip số lạ │
-└─────────────┘
+┌───────────────┐  1. fetch('/api/check', {text})      ┌───────────────────────┐
+│   Trình duyệt │ ──────────────────────────────────▶ │   Nginx (port 8000)   │
+│  (iPhone 45+) │                                       │  • static frontend/   │
+│               │  6. render DOM (JS)                   │  • /api/* → proxy     │
+│  localStorage │ ◀────────────── JSON ────────────────┤    tới Flask          │
+│   (history)   │                                       └──────────┬────────────┘
+└───────┬───────┘                                                  │ 2. proxy_pass
+        │ 2b. fetch('/api/rescue', {situation})                     ▼
+        ▼                                              ┌────────────────────────┐
+┌────────────────┐   3. sequential AI calls (requests) │  Flask REST API        │
+│  Flask /api/   │ ──── 3a. Thám tử ──────────────────▶│  (gunicorn, :5000)     │
+│   check,rescue │      (chờ kết quả)                  │   app/routes/blueprints│
+│                │ ──── 3b. Cô tâm lý ───────────────▶│   app/services/        │
+│  post-filter   │      (chỉ khi nghi/nguy)            │   app/prompts/         │
+│  hotlines      │ ──── 3c. Người ứng cứu ───────────▶│                        │
+│  strip số lạ   │      (chỉ khi user đã sa bẫy)       └───────────┬────────────┘
+└────────────────┘                                                │ 4. generateContent
+         ▲ 5. JSON đã parse + đã filter                           │   (JSON mode)
+         └────────────────────────────────────────────────────────┘
+                                              ┌────────────────────────┐
+                                              │  Gemini API (HTTP)     │
+                                              │ generativelanguage     │
+                                              │   .googleapis.com      │
+                                              └────────────────────────┘
 ```
 
-**Các tầng tách biệt rõ — mỗi nhân vật AI là 1 lời gọi độc lập, bọc try/except riêng.**
-Một nhân vật gãy không kéo gãy cả kết quả.
+**Các tầng tách biệt rõ:**
+- **Frontend** chỉ lo UI + gọi API + render DOM + localStorage. Không biết gì về Gemini.
+- **Backend routes** mỏng: nhận JSON → gọi services → trả JSON.
+- **Services** (pure Python) chứa logic + gọi Gemini. Mỗi nhân vật AI là 1 lời gọi độc lập,
+  bọc try/except riêng → một nhân vật gãy không kéo gãy cả kết quả.
+- Nginx là điểm vào duy nhất của người dùng → "không cài app phía người dùng" (L1-05).
 
 ---
 
-## 2. Cấu trúc thư mục
+## 2. Cấu trúc thư mục (monorepo)
 
 ```
 scamcheck/
-├── app/                          # Ứng dụng Flask (package)
-│   ├── __init__.py               # create_app() factory
-│   ├── config.py                 # đọc env: GEMINI_API_KEY, MODEL, BASE_URL...
-│   ├── routes/                   # route handlers (blueprints)
-│   │   ├── __init__.py
-│   │   ├── main.py               # GET /  (home: textarea + 3 tin mẫu + footer)
-│   │   ├── check.py              # POST /check → gọi Thám tử (+Cô tâm lý ở Cấp 3)
-│   │   ├── rescue.py             # POST /rescue → Người ứng cứu (Cấp 5)
-│   │   ├── practice.py           # GET /practice → chế độ luyện tập (Cấp 4-C)
-│   │   └── links_api.py          # GET /api/links-analyze (Cấp 4-B, tuỳ chọn fetch)
-│   ├── services/                 # business logic (KHÔNG import Flask, dễ test)
-│   │   ├── gemini.py             # client HTTP gọi Gemini (generate_json)
-│   │   ├── parser.py             # parse_detective() / parse_psychologist() / parse_rescuer() — có fallback
-│   │   ├── detective.py          # system prompt + gọi Thám tử
-│   │   ├── psychologist.py       # system prompt + gọi Cô tâm lý (tuần tự sau Thám tử)
-│   │   ├── rescuer.py            # system prompt + gọi Người ứng cứu + post-filter hotlines
-│   │   ├── links.py              # extract_urls() + detect_spoofed_domains()
-│   │   ├── quiz.py               # nạp/correct quiz (Cấp 4-C)
-│   │   └── validation.py         # validate_input(): rỗng, >5000 ký tự...
-│   ├── prompts/                  # system prompts tách riêng (chuỗi text)
-│   │   ├── detective.txt
-│   │   ├── psychologist.txt
-│   │   └── rescuer.txt
-│   ├── templates/                # Jinja2
-│   │   ├── base.html             # <html> + <head> + footer pháp lý cố định
-│   │   ├── home.html             # textarea + 3 nút tin mẫu
-│   │   ├── result.html           # thẻ rủi ro + dấu hiệu tô vàng + hành động (+ Cô tâm lý +rescue)
-│   │   ├── practice.html         # luyện tập 10 câu
-│   │   └── partials/
-│   │       ├── _legal.html       # dòng pháp lý (dùng ở mọi màn hình)
-│   │       ├── _risk_card.html   # thẻ màu An toàn/Nghi ngờ/Nguy hiểm
-│   │       ├── _detective.html
-│   │       ├── _psychologist.html
-│   │       ├── _rescue.html
-│   │       └── _links_warning.html
-│   └── static/
-│       ├── css/
-│       │   ├── tokens.css        # ⭐ foundation tokens (anti-ai-design đóng băng)
-│       │   └── app.css           # Tailwind CDN + override >=18px, AA contrast
-│       └── js/
-│           ├── app.js            # nút Kiểm tra, fetch /check, render
-│           ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt
-│           ├── history.js        # localStorage 10 tin gần nhất (L2-09)
-│           ├── samples.js        # 3 nút tin mẫu (L2-06)
-│           └── practice.js       # state máy luyện tập (Cấp 4-C)
-├── data/                         # dữ liệu tĩnh (không qua AI)
-│   ├── legit_domains.json        # Cấp 4-B: whitelist tên miền chính thống
-│   ├── quiz.json                 # Cấp 4-C: 10 tin đã gán nhãn
-│   └── hotlines.json             # Cấp 5: ≥10 ngân hàng + công an + Cục ATTT
-├── tests/                        # pytest — MỌI hàm trong services/ đều có test
-│   ├── conftest.py               # fixture: mock Gemini HTTP, app client
-│   ├── test_gemini_client.py
-│   ├── test_parser_detective.py
-│   ├── test_parser_psychologist.py
-│   ├── test_parser_rescuer.py
-│   ├── test_activation_condition.py
-│   ├── test_psychologist_chain.py
-│   ├── test_validation.py
-│   ├── test_links.py
-│   ├── test_quiz.py
-│   ├── test_hotlines_filter.py
-│   └── test_routes.py
-├── .env.example                  # mẫu env (KHÔNG có key thật)
-├── .env                          # git-ignored, key thật (mentor cấp)
+├── frontend/                      # ⬛ HTML + Tailwind + JS thuần → Nginx
+│   ├── index.html                 # trang chính: textarea + 3 tin mẫu + footer
+│   ├── practice.html              # luyện tập 10 câu (Cấp 4-C)
+│   ├── assets/
+│   │   ├── css/
+│   │   │   ├── tokens.css         # ⭐ foundation tokens (anti-ai-design đóng băng)
+│   │   │   └── app.css            # Tailwind (CDN) + override ≥18px, AA contrast
+│   │   └── js/
+│   │       ├── config.js          # API_BASE (rỗng = cùng origin). git-ignored?
+│   │       ├── api.js             # wrapper fetch('/api/...') + xử lý lỗi mạng
+│   │       ├── app.js             # nút Kiểm tra → gọi api.check → render
+│   │       ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt (L2-04)
+│   │       ├── history.js         # localStorage 10 tin gần nhất (L2-09)
+│   │       ├── samples.js         # 3 nút tin mẫu (L2-06)
+│   │       ├── rescue.js          # câu hỏi "đã làm gì" + gọi api.rescue (Cấp 5)
+│   │       └── practice.js        # state máy luyện tập (Cấp 4-C)
+│   └── components/                # (tuỳ chọn) HTML tái dùng qua <template>/JS
+│       ├── footer-legal.html      # dòng pháp lý (dùng ở mọi trang)
+│       └── risk-card.html         # thẻ màu An toàn/Nghi ngờ/Nguy hiểm
+│
+├── backend/                       # ⬛ Python Flask REST API (JSON)
+│   ├── app/
+│   │   ├── __init__.py            # create_app() factory + CORS tuỳ chọn
+│   │   ├── config.py              # đọc env: GEMINI_API_KEY, GEMINI_MODEL...
+│   │   ├── routes/                # blueprints, tiền tố /api
+│   │   │   ├── __init__.py
+│   │   │   ├── health.py          # GET /api/health (cho Nginx check)
+│   │   │   ├── check.py           # POST /api/check → Thám tử (+Cô tâm lý Cấp 3)
+│   │   │   ├── rescue.py          # POST /api/rescue → Người ứng cứu (Cấp 5)
+│   │   │   ├── links_api.py       # GET /api/links-analyze (Cấp 4-B)
+│   │   │   └── quiz_api.py        # GET /api/quiz (Cấp 4-C, trả 10 tin)
+│   │   ├── services/              # business logic (KHÔNG import Flask, dễ test)
+│   │   │   ├── gemini.py          # client HTTP Gemini (generate_json / generate_text)
+│   │   │   ├── parser.py          # parse_detective/psychologist/rescuer — có fallback
+│   │   │   ├── detective.py       # system prompt + gọi Thám tử
+│   │   │   ├── psychologist.py    # system prompt + gọi Cô tâm lý (tuần tự)
+│   │   │   ├── rescuer.py         # system prompt + gọi Người ứng cứu + post-filter
+│   │   │   ├── links.py           # extract_urls() + detect_spoofed_domains()
+│   │   │   ├── quiz.py            # nạp quiz.json
+│   │   │   └── validation.py      # validate_input(): rỗng, >5000 ký tự
+│   │   └── prompts/               # system prompts tách riêng (text)
+│   │       ├── detective.txt
+│   │       ├── psychologist.txt
+│   │       └── rescuer.txt
+│   ├── data/                      # dữ liệu tĩnh (KHÔNG qua AI)
+│   │   ├── legit_domains.json     # Cấp 4-B: whitelist tên miền chính thống
+│   │   ├── quiz.json              # Cấp 4-C: 10 tin đã gán nhãn
+│   │   └── hotlines.json          # Cấp 5: ≥10 ngân hàng + công an + Cục ATTT
+│   ├── tests/                     # pytest — MỌI hàm trong services/ đều có test
+│   │   ├── conftest.py            # fixture: mock Gemini HTTP, Flask client
+│   │   ├── test_gemini_client.py
+│   │   ├── test_parser_detective.py
+│   │   ├── test_parser_psychologist.py
+│   │   ├── test_parser_rescuer.py
+│   │   ├── test_activation_condition.py
+│   │   ├── test_psychologist_chain.py
+│   │   ├── test_validation.py
+│   │   ├── test_links.py
+│   │   ├── test_quiz.py
+│   │   ├── test_hotlines_filter.py
+│   │   └── test_routes.py
+│   ├── requirements.txt           # flask, requests, gunicorn, flask-cors, pytest
+│   ├── pytest.ini
+│   ├── run.py                     # entrypoint dev: python run.py → :5000
+│   └── scamcheck-backend.service  # systemd unit (gunicorn)
+│
+├── deploy/                        # cấu hình hạ tầng triển khai
+│   └── nginx.conf                 # phục vụ frontend/ + proxy /api/* → 127.0.0.1:5000
+├── .env.example                   # mẫu env backend (KHÔNG có key thật)
 ├── .gitignore
-├── requirements.txt              # flask, requests, gunicorn, pytest...
-├── pytest.ini
-├── run.py                        # entrypoint dev: python run.py
-├── scamcheck.service             # systemd unit (deploy)
-├── README.md                     # N7-01
-├── PLAN.md                       # ← file này bổ sung
-└── ARCHITECTURE.md               # file này
+├── README.md
+├── PLAN.md
+└── ARCHITECTURE.md                # file này
 ```
+
+> Lịch sử (history) nằm ở **localStorage trình duyệt**, không ở backend — đúng backlog L2-09.
+>
+> **Quiz.json** được backend phục vụ qua `/api/quiz` (hoặc frontend fetch trực tiếp
+> nếu muốn tĩnh hoàn toàn — quyết định khi làm Cấp 4-C).
 
 ---
 
 ## 3. Bố cục hàm (core functions)
 
-### 3.1 `app/services/gemini.py` — client HTTP Gemini
+### 3.1 `backend/app/services/gemini.py` — client HTTP Gemini
 ```python
 def generate_json(system_prompt: str, user_prompt: str,
                   schema: dict | None = None) -> dict:
@@ -132,7 +153,7 @@ def generate_text(system_prompt: str, user_prompt: str) -> str:
     """ Cấp 1: trả văn bản thô. """
 ```
 
-### 3.2 `app/services/parser.py` — parse có dự phòng (L2-02)
+### 3.2 `backend/app/services/parser.py` — parse có dự phòng (L2-02)
 ```python
 RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem"}
 
@@ -149,7 +170,7 @@ def parse_rescuer(raw: dict) -> RescueResult:
     """ Danh sách bước + câu nói mẫu. """
 ```
 
-### 3.3 `app/services/validation.py`
+### 3.3 `backend/app/services/validation.py`
 ```python
 MAX_LEN = 5000
 
@@ -157,7 +178,7 @@ def validate_input(text: str) -> list[str]:
     """ Trả danh sách lỗi thân thiện: rỗng, quá dài. """
 ```
 
-### 3.4 `app/services/links.py` (Cấp 4-B)
+### 3.4 `backend/app/services/links.py` (Cấp 4-B)
 ```python
 URL_RE = re.compile(...)  # bắt http(s), bit.ly, t.co ...
 
@@ -167,7 +188,7 @@ def detect_spoofed_domains(urls: list[str],
                             whitelist: list[str]) -> list[Warning]: ...
 ```
 
-### 3.5 `app/services/rescuer.py` (Cấp 5)
+### 3.5 `backend/app/services/rescuer.py` (Cấp 5)
 ```python
 def build_rescue_pipeline(situation: str, hotlines: list[Hotline]) -> RescueResult:
     """ 1) load hotlines.json → 2) gọi AI (chỉ số trong whitelist) → 3) post-filter """
@@ -176,27 +197,43 @@ def strip_unknown_phones(text: str, whitelist: set[str]) -> str:
     """ RÀNG BUỘC NGHIÊM: xoá mọi số không có trong whitelist. """
 ```
 
-### 3.6 Routes
+### 3.6 Backend routes (REST, trả JSON)
 ```python
-# main.py
-@bp.get("/")            → render home.html
+# health.py
+@bp.get("/api/health") -> {"ok": True}            # Nginx healthcheck
 
 # check.py
-@bp.post("/check")
+@bp.post("/api/check")
 def check():
-    errors = validate_input(text)
-    if errors: return render(error)            # L2-08
-    det = call_detective(text)                 # bọc try → fallback parser
-    psy = call_psychologist(text) if det.risk in {nghi,nguy} else None  # L3-03
-    return render(result.html, detective=det, psychologist=psy)
+    body = request.get_json()
+    errors = validate_input(body["text"])
+    if errors: return jsonify({"errors": errors}), 400      # L2-08
+    det = call_detective(text)                              # bọc try → fallback parser
+    psy = call_psychologist(text) if det.risk_level in {"nghi_ngo","nguy_hiem"} else None  # L3-03
+    return jsonify({"detective": det.to_dict(), "psychologist": psy and psy.to_dict()})
 
 # rescue.py
-@bp.post("/rescue")
+@bp.post("/api/rescue")
 def rescue():
-    situation = request.json["situation"]      # 1 trong 4 lựa chọn
-    if situation == "chua_lam_gi": return praise_msg()   # L5-05, không gọi AI
+    situation = request.get_json()["situation"]           # 1 trong 4 lựa chọn
+    if situation == "chua_lam_gi":
+        return jsonify({"praise": "..."})                  # L5-05, không gọi AI
     result = build_rescue_pipeline(situation, load_hotlines())
-    return render(result)
+    return jsonify({"rescue": result.to_dict()})
+```
+
+### 3.7 Frontend `assets/js/api.js` — wrapper fetch
+```javascript
+const API_BASE = ''; // cùng origin qua Nginx proxy
+export async function check(text) {
+  const r = await fetch(API_BASE + '/api/check', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text})
+  });
+  if (!r.ok) throw new Error('network');
+  return r.json(); // {detective, psychologist}
+}
+export async function rescue(situation) { /* tương tự /api/rescue */ }
 ```
 
 ---
@@ -209,7 +246,8 @@ def rescue():
 class RedFlag:
     label: str          # "Yêu cầu mã OTP"
     excerpt: str        # "gửi mã xác thực" (đoạn trong tin gốc để tô vàng)
-    explanation: str   
+    explanation: str
+@dataclass
 class DetectiveResult:
     risk_level: Literal["an_toan","nghi_ngo","nguy_hiem"]
     reason: str
@@ -237,28 +275,33 @@ class RescueResult:
     steps: list[RescueStep]
 ```
 
-### 4.4 Dữ liệu tĩnh
-- `data/hotlines.json`: `[{ "name": "Vietcombank", "phone": "1900545...", "type": "bank" }, ...]`
-- `data/quiz.json`: `[{ "text": "...", "is_scam": true, "reason": "..." }, ...]` (10 mục)
-- `data/legit_domains.json`: `{ "banks": ["vietcombank.com.vn", ...], "gov": [...] }`
+### 4.4 Dữ liệu tĩnh (`backend/data/`)
+- `hotlines.json`: `[{ "name": "Vietcombank", "phone": "1900545...", "type": "bank" }, ...]`
+- `quiz.json`: `[{ "text": "...", "is_scam": true, "reason": "..." }, ...]` (10 mục)
+- `legit_domains.json`: `{ "banks": ["vietcombank.com.vn", ...], "gov": [...] }`
 
 ---
 
 ## 5. Bảo mật & tuân thủ đề bài
 
-1. **Khóa bí mật**: `GEMINI_API_KEY` chỉ đọc từ env/`.env` (`.env` trong `.gitignore`).
-   Có pre-commit / CI check `git log -p | grep GEMINI_API_KEY` = rỗng. (L1-01, tiêu chí Cấp 1)
-2. **Pháp lý**: `partials/_legal.html` nhúng trong `base.html` → **mọi màn hình** đều có. (L1-04)
-3. **Cấp 5 — không AI tự sinh số**: `strip_unknown_phones()` post-filter mọi số điện thoại;
-   chỉ số trong `data/hotlines.json` được giữ. (L5-03/L5-04)
-4. **Không đăng nhập / không DB riêng**: lịch sử ở `localStorage`, đúng *Ngoài phạm vi* của đề.
-5. **Đầu vào**: giới hạn ≤5000 ký tự + không rỗng, tránh lạm dụng token.
+1. **Khóa bí mật**: `GEMINI_API_KEY` chỉ ở env/`.env` (`.env` trong `.gitignore`).
+   Pre-commit / CI check `git log -p | grep GEMINI_API_KEY` = rỗng. (L1-01, tiêu chí Cấp 1)
+   → Key **chỉ tồn tại ở backend**, frontend không bao giờ thấy.
+2. **Pháp lý**: footer pháp lý nhúng trong mọi trang frontend (`components/footer-legal.html`). (L1-04)
+3. **Cấp 5 — không AI tự sinh số**: `strip_unknown_phones()` post-filter mọi số;
+   chỉ số trong `backend/data/hotlines.json` được giữ. (L5-03/L5-04)
+4. **Không đăng nhập / không DB**: lịch sử ở `localStorage`, đúng *Ngoài phạm vi* của đề.
+5. **Đầu vào**: giới hạn ≤5000 ký tự + không rỗng (backend validate).
+6. **CORS**: vì cùng origin qua Nginx, **không cần CORS** trong cấu hình chuẩn. Chỉ bật
+   `flask-cors` khi dev tách port (frontend `:5500`, backend `:5000`).
 
 ---
 
 ## 6. Tách tầng & kiểm thử
 
-- **Routes** (Flask) chỉ lo HTTP + gọi service + render. Mỏng.
+- **Nginx**: chỉ lo phục vụ static + reverse-proxy. Không logic.
+- **Frontend**: HTML/CSS/JS thuần. Test thủ công + gate `utility-ui-eval` (screenshot).
+- **Backend routes** (Flask) chỉ lo HTTP + gọi service + trả JSON. Mỏng.
 - **Services** (pure Python) chứa logic + gọi Gemini. **KHÔNG import Flask** → test bằng pytest
   với HTTP mock (monkeypatch `requests`), không cần chạy server.
 - **Parser** thuần function `(dict)->(dataclass)`, test 5 case lệch cấu trúc + case đúng (L2-02).
@@ -273,7 +316,7 @@ class RescueResult:
 - Chốt: **platform** = mobile (iPhone Safari chuẩn) + desktop responsive;
   **color** = palette tin cậy + 3 màu ngữ nghĩa risk (AA contrast);
   **style** = thân thiện người 45+ (chữ to, nút to, khoảng trắng, không rối).
-- Output: đóng băng **foundation tokens** → `app/static/css/tokens.css`
+- Output: đóng băng **foundation tokens** → `frontend/assets/css/tokens.css`
   (font-size ≥18px, spacing, màu risk, bo góc, shadow...).
 - Bất kỳ CSS nào đều tham chiếu tokens, không hardcode → giữ nhất quán xuyên suốt.
 
@@ -289,14 +332,33 @@ class RescueResult:
 
 ## 8. Triển khai (deploy)
 
-- **Dev**: `python run.py` → `http://localhost:5000`.
-- **Prod (VM deploy target):**
-  - **VM:** `team6-scamcheck.exe.xyz`.
-  - **Public proxy:** `https://team6-scamcheck.exe.xyz:8000/` (proxy xác thực user, forward vào service nội bộ).
-  - Service chạy gunicorn trong VM ở port nội bộ (vd `:8000`/`:9595`), systemd unit `scamcheck.service`.
-  - Reverse proxy công khai (đáp ứng L1-05).
-  - Env `GEMINI_API_KEY` qua systemd `EnvironmentFile=/etc/scamcheck.env`.
-- Tương đương Render/Railway trong đề bài; đảm bảo "không cài app phía người dùng".
+### Dev
+- **Frontend:** mở `frontend/index.html` qua static server (vd `python -m http.server` ở `:5500`,
+  hoặc Live Server). `config.js` trỏ `API_BASE = 'http://localhost:5000'` (dev tách port).
+- **Backend:** `python backend/run.py` → `http://localhost:5000`. CORS bật cho `:5500`.
+
+### Prod (VM deploy target)
+- **VM:** `team6-scamcheck.exe.xyz`.
+- **Public proxy:** `https://team6-scamcheck.exe.xyz:8000/` (proxy xác thực user).
+- **Nginx** (trong VM, hoặc do proxy exe.dev đảm nhiệm) phục vụ `frontend/` tại `/`
+  VÀ reverse-proxy `/api/*` → `127.0.0.1:5000` (Flask/gunicorn).
+- **Flask** chạy gunicorn port nội bộ `:5000`, systemd unit `backend/scamcheck-backend.service`.
+- Env `GEMINI_API_KEY` qua systemd `EnvironmentFile=/etc/scamcheck.env`.
+- **Hai service độc lập**: sửa frontend = reload Nginx (hoặc thậm chí chỉ cần git pull, vì static);
+  sửa backend = restart gunicorn. Không ảnh hưởng lẫn nhau.
 
 > ⚠️ **Lưu ý:** VM deploy `team6-scamcheck.exe.xyz` **khác** VM dev hiện tại.
 > Dev/scaffold/test chạy trên VM hiện tại; chỉ ship bản chạy được lên VM target.
+>
+> Cấu hình Nginx mẫu (`deploy/nginx.conf`):
+> ```nginx
+> server {
+>     listen 8000;
+>     root /opt/scamcheck/frontend;        # web root = thư mục frontend
+>     index index.html;
+>     location /api/ { proxy_pass http://127.0.0.1:5000; }   # → Flask
+>     location / { try_files $uri /index.html; }              # SPA-friendly fallback
+> }
+> ```
+
+Tương đương Render/Railway trong đề bài; đảm bảo "không cài app phía người dùng".
