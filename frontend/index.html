@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7f4">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f1ea">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171a16">
   <title>ScamCheck — Kiểm tra tin nhắn lừa đảo</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage4-v1">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage4-v1">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage4-human-dark-v3">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage4-human-dark-v3">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Đi đến nội dung chính</a>
@@ -37,6 +38,7 @@
       <div class="input-card">
         <label class="field-label" for="textInput">Nội dung tin nhắn cần kiểm tra</label>
         <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác. Nội dung sẽ được gửi tới dịch vụ AI để phân tích.</p>
+        <p class="keyboard-hint">Mẹo trên máy tính: nhấn Ctrl hoặc ⌘ cùng Enter để kiểm tra nhanh.</p>
         <textarea id="textInput" aria-describedby="inputHelp speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
 
         <div class="sample-area" aria-labelledby="sampleTitle">
@@ -95,12 +97,17 @@
             <p class="section-eyebrow">Thư viện nhận diện</p>
             <h2 id="libraryTitle">12 kiểu lừa đảo thường gặp</h2>
           </div>
-          <p id="libraryStatus" class="library-status" role="status" aria-live="polite">Đang tải thư viện…</p>
+          <div class="library-heading-actions">
+            <p id="libraryStatus" class="library-status" role="status" aria-live="polite">Đang tải thư viện…</p>
+            <button id="libraryToggleBtn" class="button-secondary library-toggle-button" type="button" aria-expanded="true" aria-controls="libraryContent">Thu gọn thư viện</button>
+          </div>
         </div>
-        <p class="library-intro">Xem dấu hiệu và cách xử lý bình tĩnh theo từng nhóm. Đây là các mẫu thường gặp, không phải danh sách đầy đủ tuyệt đối.</p>
-        <div id="libraryFilters" class="library-filters" aria-label="Lọc thư viện theo nhóm"></div>
-        <div id="libraryError" class="error-panel" role="alert" hidden></div>
-        <div id="libraryList" class="library-list"></div>
+        <div id="libraryContent">
+          <p class="library-intro">Xem dấu hiệu và cách xử lý bình tĩnh theo từng nhóm. Đây là các mẫu thường gặp, không phải danh sách đầy đủ tuyệt đối.</p>
+          <div id="libraryFilters" class="library-filters" aria-label="Lọc thư viện theo nhóm"></div>
+          <div id="libraryError" class="error-panel" role="alert" hidden></div>
+          <div id="libraryList" class="library-list"></div>
+        </div>
       </section>
     </section>
 
@@ -125,7 +132,7 @@
     </div>
   </footer>
 
-  <script type="module" src="/assets/js/app.js?v=stage4-v1"></script>
+  <script type="module" src="/assets/js/app.js?v=stage4-human-dark-v3"></script>
   <noscript><p class="noscript-warning">ScamCheck cần JavaScript để kiểm tra tin nhắn. Bác vui lòng bật JavaScript hoặc nhờ người thân hỗ trợ.</p></noscript>
 </body>
 </html>

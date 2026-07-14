@@ -198,6 +198,12 @@ fallback và accessible names tiếp tục được phủ bởi test Stage 2.
 Minor duy nhất nhắc kiểm tra touch target nút mẫu; CSS toàn cục đang cưỡng chế `min-height:44px`.
 Evidence machine-readable: `backend/reports/stage4-ux-gate.json`.
 
+**🎨 Post-Stage-4 visual refinement:** Pi builder `glm-5.2` áp dụng anti-ai-design,
+community-notice palette và auto light/dark theo system. Fresh evaluator `gpt-5.6-terra`
+chạy rubric 28 chiều + Browse CLI; sau khi sửa mobile density và quiz retry:
+main `8,6/10`, practice `8,0/10`, cả hai `true_operational_tool`, không critical/major,
+`recommend=ship`. Evidence: `backend/reports/human-dark-ux-gate.json`.
+
 ---
 
 ### Stage 5 — Cấp 5: N6 Người ứng cứu + chia sẻ — 10 hạng mục

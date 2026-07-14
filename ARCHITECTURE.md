@@ -323,6 +323,13 @@ class RescueResult:
 - Output: đóng băng **foundation tokens** → `frontend/assets/css/tokens.css`
   (font-size ≥18px, spacing, màu risk, bo góc, shadow...).
 - Bất kỳ CSS nào đều tham chiếu tokens, không hardcode → giữ nhất quán xuyên suốt.
+- Visual refinement sau Stage 4 dùng direction **community notice**: nền giấy ấm, xanh tin cậy,
+  hierarchy bình tĩnh và copy gần gũi; không thêm font/asset/dependency mạng.
+- `:root { color-scheme: light dark; }` cùng `@media (prefers-color-scheme: dark)` tự theo
+  hệ điều hành, không lưu preference/toggle. Dark dùng nền than ấm + chữ trắng ấm để giảm chói,
+  vẫn giữ token semantic safe/warning/danger và contrast AA.
+- Result ưu tiên verdict → ba hành động ngay → bằng chứng; technical analysis và thư viện là
+  disclosure thật để giảm mobile density. Quiz có semantic progress, retry counted và completion.
 
 ### 7.2 utility-ui-eval (gate UX)
 - Gate **chặn** ở **cuối mỗi Stage 2–5**.

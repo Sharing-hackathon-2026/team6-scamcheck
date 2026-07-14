@@ -11,6 +11,8 @@ const elements = {
 let questions = [];
 let currentIndex = 0;
 let answers = {};
+let isLoadingQuiz = false;
+let loadAttempts = 0;
 
 function createElement(tag, { className = '', text = '', attributes = {} } = {}) {
   const element = document.createElement(tag);
@@ -69,7 +71,7 @@ function answerQuestion(choice) {
   const next = createElement('button', {
     className: 'button-primary',
     text: currentIndex === questions.length - 1 ? 'Xem tổng kết' : 'Câu tiếp theo',
-    attributes: { type: 'button' },
+    attributes: { type: 'button', 'data-quiz-next': 'true' },
   });
   next.addEventListener('click', () => {
     currentIndex += 1;
@@ -85,8 +87,20 @@ function answerQuestion(choice) {
 
 function renderQuestion() {
   const question = questions[currentIndex];
-  elements.card.replaceChildren(
+  const progressRow = createElement('div', { className: 'quiz-progress-row' });
+  progressRow.append(
     createElement('p', { className: 'quiz-progress', text: `Câu ${currentIndex + 1} / ${questions.length}` }),
+    createElement('progress', {
+      className: 'quiz-progress-bar',
+      attributes: {
+        value: String(currentIndex + 1),
+        max: String(questions.length),
+        'aria-label': `Tiến độ: câu ${currentIndex + 1} trên ${questions.length}`,
+      },
+    }),
+  );
+  elements.card.replaceChildren(
+    progressRow,
     createElement('p', { className: 'section-eyebrow', text: question.category }),
     createElement('h2', { text: 'Tin nhắn này có dấu hiệu lừa đảo không?' }),
     createElement('blockquote', { className: 'quiz-message', text: question.text }),
@@ -110,19 +124,73 @@ function renderQuestion() {
   elements.card.focus({ preventScroll: true });
 }
 
+function showLoadError(error) {
+  const detail = error instanceof ApiError
+    ? 'Máy chủ chưa gửi được bộ câu hỏi.'
+    : 'Dữ liệu câu hỏi chưa sẵn sàng.';
+  const attemptText = loadAttempts > 1
+    ? `Lần thử ${loadAttempts} vẫn chưa thành công.`
+    : 'Lượt tải đầu tiên chưa thành công.';
+  const retry = createElement('button', {
+    className: 'button-primary practice-retry',
+    text: 'Thử tải lại 10 câu',
+    attributes: { type: 'button' },
+  });
+  retry.addEventListener('click', () => {
+    // Error panel can render before the prior promise reaches `finally`.
+    // Reset the guard so an immediate retry is never swallowed.
+    isLoadingQuiz = false;
+    setup();
+  });
+  const recovery = createElement('ol', { className: 'practice-recovery' });
+  ['Kiểm tra kết nối mạng.', 'Bấm “Thử tải lại 10 câu”.', 'Nếu vẫn lỗi, dùng nút “Về trang kiểm tra”.']
+    .forEach((step) => recovery.append(createElement('li', { text: step })));
+  elements.error.replaceChildren(
+    createElement('p', { text: `${attemptText} ${detail}` }),
+    recovery,
+    retry,
+  );
+  elements.error.hidden = false;
+  elements.error.focus({ preventScroll: true });
+}
+
 async function setup() {
+  if (isLoadingQuiz) return;
+  isLoadingQuiz = true;
+  loadAttempts += 1;
+  elements.error.hidden = true;
+  elements.status.textContent = loadAttempts > 1
+    ? `Đang thử tải lại 10 câu — lần ${loadAttempts}…`
+    : 'Đang tải 10 câu luyện tập…';
   try {
     questions = normalizeQuiz(await getQuiz());
     if (questions.length !== 10) throw new Error('invalid quiz');
     renderQuestion();
   } catch (error) {
-    elements.status.textContent = '';
-    elements.error.textContent = error instanceof ApiError
-      ? error.message
-      : 'Chưa tải được bộ luyện tập. Bác vui lòng quay lại sau.';
-    elements.error.hidden = false;
-    elements.error.focus({ preventScroll: true });
+    elements.status.textContent = loadAttempts > 1
+      ? `Lần thử ${loadAttempts} chưa thành công. Nút thử lại vẫn ở bên dưới.`
+      : 'Chưa tải được câu hỏi. Bác có thể thử lại ngay.';
+    showLoadError(error);
+  } finally {
+    isLoadingQuiz = false;
   }
 }
+
+document.addEventListener('keydown', (event) => {
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+  const question = questions[currentIndex];
+  if (question && !Object.hasOwn(answers, question.id) && ['1', '2'].includes(event.key)) {
+    event.preventDefault();
+    answerQuestion(event.key === '1');
+    return;
+  }
+  if (event.key === 'Enter' && !elements.card.hidden) {
+    const next = elements.card.querySelector('[data-quiz-next]');
+    if (next) {
+      event.preventDefault();
+      next.click();
+    }
+  }
+});
 
 setup();

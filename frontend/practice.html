@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f5f7f4">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f1ea">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171a16">
   <title>Luyện tập nhận diện lừa đảo — ScamCheck</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage4-v1">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage4-v1">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage4-human-dark-v3">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage4-human-dark-v3">
 </head>
 <body>
   <a class="skip-link" href="#practiceMain">Đi đến câu luyện tập</a>
@@ -26,6 +27,10 @@
       <p class="section-eyebrow">Luyện tập không dùng AI</p>
       <h1 id="practiceTitle">Bác đoán đúng được bao nhiêu tin?</h1>
       <p>Có 10 câu cố định. Chọn “Có dấu hiệu lừa đảo” hoặc “Có vẻ an toàn”; đáp án và lý do sẽ hiện ngay.</p>
+      <div class="practice-facts" aria-label="Thông tin về lượt luyện tập">
+        <span>10 câu ngắn</span><span>Giải thích ngay</span><span>Không dùng AI</span>
+      </div>
+      <p class="keyboard-hint">Mẹo trên máy tính: nhấn phím 1 hoặc 2 để chọn, Enter để sang câu tiếp.</p>
     </section>
     <p id="practiceStatus" class="status" role="status" aria-live="polite">Đang tải 10 câu…</p>
     <div id="practiceError" class="error-panel" role="alert" tabindex="-1" hidden></div>
@@ -39,6 +44,6 @@
       <p>Khi nghi ngờ, hãy gọi <strong>tổng đài chính thức</strong> in trên thẻ ngân hàng.</p>
     </div>
   </footer>
-  <script type="module" src="/assets/js/practice.js?v=stage4-v1"></script>
+  <script type="module" src="/assets/js/practice.js?v=stage4-human-dark-v3"></script>
 </body>
 </html>

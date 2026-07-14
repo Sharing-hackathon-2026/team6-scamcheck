@@ -1,0 +1,75 @@
+{
+  "evaluated_at": "2026-07-14T18:30:00Z",
+  "change": "Human-like warm visual refinement with automatic system light/dark mode",
+  "builder": {
+    "harness": "Pi fresh implementation session",
+    "model": "zai/glm-5.2",
+    "method": "anti-ai-design non-interactive, Browse CLI interaction checks"
+  },
+  "evaluator": {
+    "harness": "fresh ephemeral Pi sessions with no project context",
+    "model": "openai-codex/gpt-5.6-terra",
+    "method": "utility-ui-eval 28-dimension rubric + attached screenshots + Browse CLI probes",
+    "browse_version": "0.9.5"
+  },
+  "main": {
+    "initial_gate": {
+      "aggregate_score": 8.5,
+      "recommend": "fix_major_then_ship",
+      "findings_fixed": [
+        "Mobile success page was too long and placed urgent actions after technical material.",
+        "The existing Ctrl/Command+Enter fast path was not discoverable."
+      ]
+    },
+    "final_gate": {
+      "aggregate_score": 8.6,
+      "tool_authenticity_class": "true_operational_tool",
+      "usable": true,
+      "critical_count": 0,
+      "major_count": 0,
+      "recommend": "ship",
+      "evidence": [
+        "/tmp/ux-eval-redesign-v2/main-desktop-light-empty-fresh.png",
+        "/tmp/ux-eval-redesign-v2/main-desktop-light-error.png",
+        "/tmp/ux-eval-redesign-v2/main-desktop-light-loading.png",
+        "/tmp/ux-eval-redesign-v2/main-desktop-light-success-collapsed.png",
+        "/tmp/ux-eval-redesign-v2/main-desktop-light-success-expanded.png",
+        "/tmp/ux-eval-redesign-v2/main-mobile-dark-success-collapsed.png"
+      ]
+    }
+  },
+  "practice": {
+    "initial_gate": {
+      "aggregate_score": 7.1,
+      "recommend": "fix_critical_then_ship",
+      "findings_fixed": [
+        "Quiz API-load error had no in-place retry control.",
+        "Retry outcome and final completion needed explicit evidence."
+      ]
+    },
+    "final_gate": {
+      "aggregate_score": 8.0,
+      "tool_authenticity_class": "true_operational_tool",
+      "usable": true,
+      "critical_count": 0,
+      "major_count": 0,
+      "recommend": "ship",
+      "evidence": [
+        "/tmp/ux-eval-redesign-v6/practice-desktop-light-initial-top.png",
+        "/tmp/ux-eval-redesign-v6/practice-mobile-dark-initial-top.png",
+        "/tmp/ux-eval-redesign-v6/practice-mobile-dark-incorrect-centered.png",
+        "/tmp/ux-eval-redesign-v6/practice-mobile-dark-summary-viewport.png",
+        "/tmp/ux-eval-redesign-v6/practice-mobile-dark-restart-viewport.png",
+        "/tmp/ux-eval-redesign-v6/practice-mobile-light-error2-viewport.png"
+      ]
+    }
+  },
+  "computed_evidence": {
+    "dark_media_query": true,
+    "dark_body_background": "rgb(23, 26, 22)",
+    "dark_body_text": "rgb(236, 234, 221)",
+    "mobile_horizontal_overflow_px": 0,
+    "minimum_measured_mobile_button_height_px": 47.16,
+    "note": "Full-page Chromium capture can stitch fixed off-screen skip links into the image; final practice evidence uses normal viewport captures and live computed skip-link y=-60.25px."
+  }
+}

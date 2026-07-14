@@ -105,6 +105,9 @@ const elements = {
   historyList: document.getElementById('historyList'),
   historyEmpty: document.getElementById('historyEmpty'),
   clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+  libraryPanel: document.getElementById('library'),
+  libraryContent: document.getElementById('libraryContent'),
+  libraryToggleBtn: document.getElementById('libraryToggleBtn'),
   libraryFilters: document.getElementById('libraryFilters'),
   libraryList: document.getElementById('libraryList'),
   libraryStatus: document.getElementById('libraryStatus'),
@@ -217,6 +220,10 @@ function appendRiskCard(container, detective) {
     createElement('p', { className: 'risk-eyebrow', text: 'Mức rủi ro' }),
     createElement('h2', { className: 'risk-label', text: meta.label }),
     createElement('p', { className: 'reason', text: detective.reason }),
+    createElement('p', {
+      className: 'risk-qualifier',
+      text: 'Đây là kết quả hỗ trợ, không phải xác nhận chính thức.',
+    }),
   );
   card.append(riskIcon(), copy);
   container.append(card);
@@ -235,16 +242,18 @@ function appendSourceMessage(container, text, detective) {
 function appendTechnicalAnalysis(container, rawTechnical) {
   const technical = normalizeTechnicalAnalysis(rawTechnical);
   if (!technical.links.length && !technical.ruleSignals.length) return;
-  const section = createElement('section', { className: 'result-section technical-analysis' });
-  section.append(
-    createElement('h3', { text: 'Kiểm tra kỹ thuật' }),
-    createElement('p', {
-      className: 'technical-note',
-      text: 'Các tín hiệu dưới đây hỗ trợ Thám tử; một dấu hiệu đơn lẻ không tự khẳng định người gửi là lừa đảo.',
-    }),
-  );
+  const section = createElement('details', { className: 'result-section technical-analysis' });
+  const summary = createElement('summary', {
+    className: 'technical-summary',
+    text: 'Xem kiểm tra kỹ thuật',
+  });
+  const content = createElement('div', { className: 'technical-content' });
+  content.append(createElement('p', {
+    className: 'technical-note',
+    text: 'Các tín hiệu dưới đây hỗ trợ Thám tử; một dấu hiệu đơn lẻ không tự khẳng định người gửi là lừa đảo.',
+  }));
   if (technical.links.length) {
-    section.append(createElement('h4', { text: 'Đường dẫn được tìm thấy' }));
+    content.append(createElement('h4', { text: 'Đường dẫn được tìm thấy' }));
     const links = createElement('ul', { className: 'technical-list' });
     technical.links.forEach((link) => {
       const domainText = link.resolved && link.final_domain !== link.original_domain
@@ -257,10 +266,10 @@ function appendTechnicalAnalysis(container, rawTechnical) {
       ));
       links.append(item);
     });
-    section.append(links);
+    content.append(links);
   }
   if (technical.ruleSignals.length) {
-    section.append(createElement('h4', { text: 'Luật an toàn phát hiện' }));
+    content.append(createElement('h4', { text: 'Luật an toàn phát hiện' }));
     const signals = createElement('ul', { className: 'technical-list' });
     technical.ruleSignals.forEach((signal) => {
       const item = createElement('li', { attributes: { 'data-severity': signal.severity } });
@@ -270,8 +279,9 @@ function appendTechnicalAnalysis(container, rawTechnical) {
       );
       signals.append(item);
     });
-    section.append(signals);
+    content.append(signals);
   }
+  section.append(summary, content);
   container.append(section);
 }
 
@@ -300,7 +310,7 @@ function appendSignals(container, detective) {
 
 function appendActions(container, detective) {
   if (!detective.actions.length) return;
-  const section = createElement('section', { className: 'result-section' });
+  const section = createElement('section', { className: 'result-section immediate-actions' });
   section.append(createElement('h3', { text: 'Ba việc bác nên làm ngay' }));
   const list = createElement('ol', { className: 'action-list' });
   detective.actions.forEach((action) => list.append(createElement('li', { text: action })));
@@ -335,16 +345,17 @@ function showResult(text, rawDetective, psychologistOptions = {}, { focus = true
   elements.result.replaceChildren();
   elements.result.dataset.risk = detective.risk_level;
   appendRiskCard(elements.result, detective);
-  appendSourceMessage(elements.result, text, detective);
-  appendTechnicalAnalysis(elements.result, psychologistOptions.technicalAnalysis);
-  appendSignals(elements.result, detective);
   appendActions(elements.result, detective);
+  appendSourceMessage(elements.result, text, detective);
+  appendSignals(elements.result, detective);
   appendPsychologist(
     elements.result,
     psychologistOptions.psychologist,
     psychologistOptions.status,
     psychologistOptions.error,
   );
+  appendTechnicalAnalysis(elements.result, psychologistOptions.technicalAnalysis);
+  setLibraryCollapsed(true);
   elements.result.hidden = false;
   elements.error.hidden = true;
   if (focus) elements.result.focus({ preventScroll: true });
@@ -398,6 +409,13 @@ function stopSpeech() {
   if (recognition && isListening) recognition.stop();
 }
 
+function setLibraryCollapsed(collapsed) {
+  elements.libraryPanel.dataset.collapsed = String(collapsed);
+  elements.libraryContent.hidden = collapsed;
+  elements.libraryToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+  elements.libraryToggleBtn.textContent = collapsed ? 'Mở thư viện' : 'Thu gọn thư viện';
+}
+
 function clearCurrent() {
   stopSpeech();
   if (activeController) activeController.abort();
@@ -406,6 +424,7 @@ function clearCurrent() {
   elements.error.hidden = true;
   elements.loadingPanel.hidden = true;
   elements.status.textContent = '';
+  setLibraryCollapsed(false);
   elements.textInput.focus();
 }
 
@@ -565,6 +584,10 @@ elements.clearHistoryBtn.addEventListener('click', () => {
   historyEntries = clearHistory();
   persistHistory();
   elements.status.textContent = 'Đã xoá toàn bộ lịch sử.';
+});
+
+elements.libraryToggleBtn.addEventListener('click', () => {
+  setLibraryCollapsed(elements.libraryPanel.dataset.collapsed !== 'true');
 });
 
 elements.libraryFilters.addEventListener('click', (event) => {

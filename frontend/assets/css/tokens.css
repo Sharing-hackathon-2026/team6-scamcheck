@@ -1,43 +1,60 @@
-/* FROZEN FOUNDATION TOKENS — DO NOT MODIFY */
+/* FROZEN FOUNDATION TOKENS — DO NOT MODIFY
+ *
+ * Refined after Stage 4: warm "community notice" palette giữ hướng xanh tin cậy,
+ * nhưng ấm và gần gũi hơn (giấy ấm thay vì xám SaaS).
+ * Hỗ trợ auto light/dark qua prefers-color-scheme (không có toggle thủ công).
+ * Dark mode giảm chói thật: chữ trắng ấm (không phải trắng thuần), nền than ấm,
+ * thẻ rủi ro giữ sắc thái nhận diện nhưng giảm bão hòa và độ sáng. color-scheme
+ * để native controls (scrollbar, autofill, caret) theo hệ điều hành.
+ */
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
 
-  --color-primary: #174a3a;
-  --color-primary-strong: #10382c;
-  --color-primary-soft: #e8f2ee;
-  --color-secondary: #315c72;
+  /* Brand — xanh tin cậy */
+  --color-primary: #1d5a44;          /* xanh thông đậm: viền, marker, caret, icon */
+  --color-primary-strong: #13412f;   /* đậm hơn: eyebrow, hover */
+  --color-primary-soft: #e3ede6;     /* nền xanh nhạt ấm */
+
+  /* Bề mặt nút/hành động (tách khỏi accent để dark mode giữ tương phản) */
+  --color-action: #1d5a44;
+  --color-action-strong: #13412f;
+  --color-on-action: #ffffff;
+  --color-action-edge: #0a2c20;
+
+  --color-secondary: #315c72;        /* accent phụ: quiz message */
   --color-accent: #a16207;
 
-  --color-bg: #f5f7f4;
-  --color-surface: #ffffff;
-  --color-surface-subtle: #edf1ed;
-  --color-text: #17231e;
-  --color-text-muted: #46554e;
-  --color-border: #aebbb4;
+  /* Nền giấy ấm */
+  --color-bg: #f4f1ea;
+  --color-surface: #fffdf9;
+  --color-surface-subtle: #ece6d6;
+  --color-text: #1c211c;
+  --color-text-muted: #57544a;
+  --color-border: #cabfb0;
   --color-focus: #0b63ce;
 
   --color-safe: #166534;
-  --color-safe-border: #237a45;
-  --color-safe-bg: #e9f6ee;
+  --color-safe-border: #2f7a4f;
+  --color-safe-bg: #e7f3ec;
   --color-safe-text: #124c29;
 
-  --color-warning: #a16207;
-  --color-warning-border: #a16207;
-  --color-warning-bg: #fff4cc;
-  --color-warning-text: #713f12;
+  --color-warning: #9a5a06;
+  --color-warning-border: #b9791d;
+  --color-warning-bg: #fbeec6;
+  --color-warning-text: #6f3d12;
 
   --color-danger: #b42318;
-  --color-danger-border: #b42318;
-  --color-danger-bg: #fdecec;
+  --color-danger-border: #c0392c;
+  --color-danger-bg: #fbe3e3;
   --color-danger-text: #7f1d1d;
 
   --color-neutral: #52616b;
-  --color-neutral-border: #667985;
-  --color-neutral-bg: #eef2f4;
-  --color-neutral-text: #344650;
+  --color-neutral-border: #6b7a86;
+  --color-neutral-bg: #e9edf0;
+  --color-neutral-text: #334651;
 
   --font-heading: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", "DejaVu Sans", sans-serif;
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Noto Sans", sans-serif;
   --font-size-base: 18px;
   --line-height-body: 1.62;
 
@@ -56,15 +73,114 @@
   --radius-3: 14px;
   --radius-4: 18px;
   --radius-5: 24px;
-  --radius-shell: 24px;
-  --radius-surface: 18px;
+  --radius-shell: 22px;
+  --radius-surface: 16px;
   --radius-inset: 10px;
   --radius-control: 12px;
   --radius-tight: 6px;
   --radius-pill: 9999px;
 
-  --shadow-surface: 0 1px 2px rgb(23 35 30 / 8%), 0 8px 18px rgb(23 35 30 / 6%);
-  --shadow-control: 0 1px 2px rgb(23 35 30 / 12%);
+  --shadow-surface: 0 1px 2px rgb(23 35 30 / 8%), 0 8px 18px rgb(23 35 30 / 7%);
+  --shadow-control: 0 1px 2px rgb(23 35 30 / 14%);
   --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
   --content-width: 1120px;
+
+  /* Biến có cấu trúc */
+  --color-divider: #e3ddce;
+  --color-card-tint: #fbf7ee;
+  --color-input-bg: #ffffff;
+  --color-input-border: #b9b29f;
+  --color-placeholder: #59625a;
+  --color-source-bg: #f7f3ea;
+  --color-source-border: #cfc6b2;
+  --color-skeleton-track: #e7e0d0;
+  --color-skeleton-shine: rgb(255 255 255 / 75%);
+  --color-highlight: #ffe27a;
+  --color-highlight-text: #3a2a00;
+  --color-button-disabled: #8a8474;
+  --color-tech-bg: #f6f2e7;
+  --color-tech-border: #c8bda3;
+
+  /* Footer — "con dấu pháp lý" */
+  --color-footer-bg: #1c211c;
+  --color-footer-text: #eceadd;
+  --color-footer-strong: #ffffff;
+  --color-footer-muted: #bcb9ab;
+  --color-footer-border: #2c3329;
+
+  --color-wash: rgb(225 208 168 / 0.55);   /* ánh nắng nhẹ ở góc trên phải */
+  --color-glow: rgb(23 35 30 / 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-primary: #6fbf9c;          /* xanh sáng hơn làm accent trên nền tối */
+    --color-primary-strong: #93e0bd;
+    --color-primary-soft: #1d2a23;
+
+    --color-action: #46b488;
+    --color-action-strong: #58c79a;
+    --color-on-action: #06241a;
+    --color-action-edge: #052017;
+
+    --color-secondary: #7fb0d0;
+    --color-accent: #d8a44a;
+
+    --color-bg: #171a16;               /* than ấm, không phải đen thuần */
+    --color-surface: #21241e;
+    --color-surface-subtle: #2a2e26;
+    --color-text: #eceadd;             /* trắng ấm giảm chói */
+    --color-text-muted: #b3b0a2;
+    --color-border: #3b3f35;
+    --color-focus: #6cc2ff;
+
+    --color-safe: #6fd6a3;
+    --color-safe-border: #4ea97e;
+    --color-safe-bg: #15291f;
+    --color-safe-text: #a6e3c4;
+
+    --color-warning: #e3b35a;
+    --color-warning-border: #b98a33;
+    --color-warning-bg: #2f2814;
+    --color-warning-text: #f1d287;
+
+    --color-danger: #ef8a80;
+    --color-danger-border: #c25a50;
+    --color-danger-bg: #341a1a;
+    --color-danger-text: #f3a69e;
+
+    --color-neutral: #9aa6b0;
+    --color-neutral-border: #4a5560;
+    --color-neutral-bg: #21252b;
+    --color-neutral-text: #b9c4cc;
+
+    --shadow-surface: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 20px rgb(0 0 0 / 38%);
+    --shadow-control: 0 1px 2px rgb(0 0 0 / 40%);
+
+    --color-divider: #34382e;
+    --color-card-tint: #23261f;
+    --color-input-bg: #1b1e18;
+    --color-input-border: #41463b;
+    --color-placeholder: #9aa08f;
+    --color-source-bg: #1a1d17;
+    --color-source-border: #34382e;
+    --color-skeleton-track: #2b2f26;
+    --color-skeleton-shine: rgb(255 255 255 / 0.06);
+    --color-highlight: #e9d27a;
+    --color-highlight-text: #171a16;
+    --color-button-disabled: #4a4f44;
+    --color-tech-bg: #1d2019;
+    --color-tech-border: #343a2e;
+
+    --color-footer-bg: #11130e;
+    --color-footer-text: #d8d4c6;
+    --color-footer-strong: #eceadd;
+    --color-footer-muted: #9c9988;
+    --color-footer-border: #2a2f24;
+
+    --color-wash: rgb(64 74 58 / 0.45);
+    --color-glow: rgb(0 0 0 / 0.18);
+  }
 }

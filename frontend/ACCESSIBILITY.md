@@ -1,6 +1,6 @@
-# Tự kiểm khả năng tiếp cận — Frontend Stage 2
+# Tự kiểm khả năng tiếp cận — Frontend
 
-Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và desktop responsive. Đây là bảng tự kiểm kỹ thuật; vẫn cần kiểm thử thủ công với người dùng và VoiceOver trước khi phát hành rộng rãi.
+Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và desktop responsive, cho cả **light và dark tự động theo hệ điều hành**. Đây là bảng tự kiểm kỹ thuật; vẫn cần kiểm thử thủ công với người dùng và VoiceOver trước khi phát hành rộng rãi.
 
 | Hạng mục AA | Cách triển khai | Tự kiểm |
 |---|---|---|
@@ -13,7 +13,10 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 | Bàn phím | Dùng phần tử `button` thật; thứ tự DOM hợp lý; hỗ trợ Ctrl/Cmd+Enter | Đạt |
 | Focus nhìn thấy | `:focus-visible` outline xanh 3px, offset 3px; không chỉ dựa vào màu nền | Đạt |
 | Không phụ thuộc hover | Mọi chức năng chính dùng được bằng chạm/click/focus; hover chỉ tăng phản hồi | Đạt |
-| Tương phản chữ | Chữ chính `#17231e` trên `#ffffff/#f5f7f4`; chữ phụ `#46554e`; semantic text dùng sắc độ đậm | Đạt: cặp thấp nhất đã tính là `#46554e`/`#f5f7f4` = 7.30:1, vượt AA 4.5:1 |
+| Tương phản chữ (light) | Chữ chính `#1c211c` trên nền giấy ấm `#f4f1ea`; chữ phụ `#57544a`; semantic text dùng sắc độ đậm | Đạt: `#57544a`/`#f4f1ea` = 6.72:1, vượt AA 4.5:1 |
+| Tự động light/dark | `color-scheme: light dark` trên `:root`; dark override nguyên qua `@media (prefers-color-scheme: dark)`; **không có toggle thủ công** | Đạt bằng kiểm tra CSS |
+| Tương phản chữ (dark) | Chữ trắng ấm `#eceadd` trên nền than ấm `#171a16`/`#21241e`; chữ phụ `#b3b0a2` | Đạt: `#b3b0a2`/`#171a16` = 8.07:1, `#b3b0a2`/`#21241e` = 7.22:1 |
+| Giảm chói dark | Dark không phải đảo màu: nền than ấm (không đen thuần), chữ trắng ấm (không trắng thuần), thẻ rủi ro giữ sắc thái nhận diện nhưng giảm bão hòa/độ sáng; bóng tối hơn và viền nhẹ tạo chiều sâu thay vì đổ bóng nặng | Đạt bằng kiểm tra trực quan + đo màu |
 | Không chỉ dùng màu | Thẻ rủi ro luôn có nhãn chữ “An toàn/Nghi ngờ/Nguy hiểm/Không liên quan”, biểu tượng và viền | Đạt |
 | Trạng thái động | `role=status`, `role=alert`, `aria-live`, `aria-busy`; kết quả có thể nhận focus | Đạt |
 | Loading | Có câu trạng thái, spinner và skeleton rõ; spinner bị ẩn với AT để tránh nhiễu | Đạt |
@@ -54,5 +57,61 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 - Hai lựa chọn luyện tập luôn có nhãn chữ “Có dấu hiệu lừa đảo”/“Có vẻ an toàn”; màu đỏ/xanh
   chỉ là tín hiệu bổ sung. Touch target tối thiểu 60px.
 - Cả trang chính và luyện tập giữ font thân bài 18px, reflow một cột và reduced-motion.
-- Cần gate trực quan cuối Stage 4 trên iPhone-like + desktop cho empty/loading/result/link,
-  quiz question/correct/incorrect/summary và error state trước demo chính thức.
+
+## Visual refinement sau Stage 4 — gần gũi + auto light/dark
+
+Mục tiêu thiết kế: cảm giác **human-made, ấm, bình tĩnh, như một công cụ cộng đồng đáng tin**
+thay vì dashboard/SaaS template hay AI concept art. Giữ hướng xanh tin cậy, làm ấm
+màu trung tính và nền (giấy ấm thay vì xám), thêm một đường accent ngắn dưới tiêu đề chính kiểu
+"đầu mục bản tin cộng đồng". Không thêm font/asset mạng ngoài; giữ stack font Việt an toàn
+đã chốt từ Stage 2.
+
+Quyết định anti-AI đã tuân thủ:
+
+- Không gradient blob/glass rẻ; nền chỉ có một vệt ánh nắng rất nhẹ neo góc trên phải +
+  các bề mặt phẳng có viền thật và bóng nhiều lớp tinh tế (không đổ bóng mờ lớn).
+- Không emoji; logo vẫn là shield+check vector vẽ tay, cùng họ icon stroke-width 2 nhất quán.
+- Mọi màu dùng token (foundation `tokens.css`) để dark mode tự thích ứng; không còn hex cứng
+  rải rác trong `app.css` (trừ token nội bộ).
+- Giữ DOM ngữ nghĩa và contract JS/API; bổ sung disclosure thật cho technical/library,
+  progress luyện tập và retry có trạng thái, không làm mất interaction Stage 1–4.
+
+Auto light/dark:
+
+- Hoàn toàn dựa trên `prefers-color-scheme`; không có toggle thủ công.
+- `color-scheme: light dark` để native controls (scrollbar, autofill, caret, popup) theo hệ điều hành.
+- `<meta name="theme-color">` khai báo hai nhánh theo `media=(prefers-color-scheme: ...)`
+  để màu thanh trình duyệt theo giao diện.
+- Dark giảm chói thật: chữ trắng ấm `#eceadd`, nền than ấm `#171a16`, thẻ rủi ro giữ sắc
+  nhận diện (xanh/lục đỏ/xám) nhưng giảm bão hòa và độ sáng; `mark`, focus ring, footer
+  pháp lý, technical analysis đều có biến thể dark với tương phản AA.
+- `prefers-reduced-motion` vẫn tắt gần như toàn bộ animation/transition ở cả hai giao diện.
+
+Bằng chứng kiểm thử (Browse CLI, headless Chromium thật):
+
+- `--force-dark-mode` được xác nhận flips `prefers-color-scheme` thật (đây là media query thật,
+  không phải giả lập JS).
+- Light desktop: token giải ra nền ấm `#f4f1ea`, primary `#1d5a44`; check nguy_hiem thật trả
+  đủ risk card + technical analysis (links/signals) + highlight + Cô tâm lý; tin mẫu thứ hai
+  trùng khớp báo "đã dùng kết quả trong bộ nhớ đệm".
+- Dark desktop: nền `#171a16`, chữ `#eceadd`, nút `#46b488` với chữ tối `#06241a`; risk card
+  nguy_hiem/an_toan, footer, mark, eyebrow, accent rule đều đúng token dark.
+- Practice dark: câu hỏi → feedback đúng/sai (warning) → tổng kết điểm → restart thật.
+- Mobile 390px (light + dark): không cuộn ngang, mọi nút ≥ 44px (lựa chọn quiz 86px),
+  bố cục về một cột, actions full-width.
+
+Fresh UX gate theo `utility-ui-eval`:
+
+- Builder: Pi session riêng dùng `glm-5.2` + `anti-ai-design`.
+- Evaluator: các Pi session **fresh** dùng vision model `gpt-5.6-terra`, chỉ nhận screenshot,
+  rubric và interaction probe qua Browse CLI; builder/orchestrator không tự chấm.
+- Main screen vòng đầu phát hiện result mobile quá dài; đã đưa ba hành động lên ngay dưới
+  verdict, collapse technical analysis + thư viện và thêm shortcut thật. Re-eval: **8,6/10**,
+  `true_operational_tool`, không critical/major, `recommend=ship`.
+- Practice vòng đầu phát hiện error không có retry; đã thêm retry thật, đếm từng lần thất bại,
+  progressbar, completion/restart evidence và shortcut bàn phím. Fresh re-eval cuối:
+  **8,0/10**, `true_operational_tool`, không critical/major, `recommend=ship`.
+- Evidence tóm tắt nằm ở `backend/reports/human-dark-ux-gate.json`.
+
+Caveat còn lại: cần kiểm tra iPhone Safari thật và VoiceOver cho dark mode trước demo chính thức;
+headless Chromium không mô phỏng hoàn toàn cách iOS render native controls.
