@@ -290,8 +290,13 @@ class RescueResult:
 ## 8. Triển khai (deploy)
 
 - **Dev**: `python run.py` → `http://localhost:5000`.
-- **Prod (VM exe.dev):**
-  - `scamcheck.service` (systemd) chạy gunicorn.
-  - Reverse proxy exe.dev → địa chỉ công khai (đáp ứng L1-05).
+- **Prod (VM deploy target):**
+  - **VM:** `team6-scamcheck.exe.xyz`.
+  - **Public proxy:** `https://team6-scamcheck.exe.xyz:8000/` (proxy xác thực user, forward vào service nội bộ).
+  - Service chạy gunicorn trong VM ở port nội bộ (vd `:8000`/`:9595`), systemd unit `scamcheck.service`.
+  - Reverse proxy công khai (đáp ứng L1-05).
   - Env `GEMINI_API_KEY` qua systemd `EnvironmentFile=/etc/scamcheck.env`.
 - Tương đương Render/Railway trong đề bài; đảm bảo "không cài app phía người dùng".
+
+> ⚠️ **Lưu ý:** VM deploy `team6-scamcheck.exe.xyz` **khác** VM dev hiện tại.
+> Dev/scaffold/test chạy trên VM hiện tại; chỉ ship bản chạy được lên VM target.

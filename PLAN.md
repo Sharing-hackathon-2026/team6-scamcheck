@@ -44,7 +44,7 @@
 - **Model Gemini:** `gemini-2.x` qua endpoint `generateContent`, yêu cầu **JSON có cấu trúc** (`response_mime_type=application/json`) để parse deterministic.
 - **Biến môi trường:** `GEMINI_API_KEY` (mentor cấp), `GEMINI_MODEL`, `FLASK_SECRET_KEY`, `BASE_URL` (URL công khai).
 - **Test:** `pytest` trong `tests/`. Coverage ≥ cho mọi hàm trong `app/services/`.
-- **Triển khai:** systemd trên VM exe.dev + git. *(Đề bài cho Render/Railway/GitHub Pages; ở đây chạy trên VM riêng nên dùng systemd + reverse proxy exe.dev — tương đương "địa chỉ web công khai" ở Cấp 1 L1-05.)*
+- **Triển khai:** systemd trên **VM target `team6-scamcheck.exe.xyz`** (public proxy đã có ở port `8000`) + git. *(Đề bài cho Render/Railway/GitHub Pages; ở đây dùng VM riêng + proxy công khai — tương đương "địa chỉ web công khai" ở Cấp 1 L1-05.)* VM target **khác** VM dev hiện tại.
 
 ---
 
