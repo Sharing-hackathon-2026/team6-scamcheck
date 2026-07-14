@@ -1,36 +1,40 @@
-// Wrapper fetch cho backend API. Cấp 1: chỉ có check().
+// Wrapper fetch cho backend API structured (L1-03).
 import { API_BASE } from './config.js';
 
 /** Lỗi thân thiện khi gọi API. */
 export class ApiError extends Error {
-  constructor(message, { status } = {}) {
+  constructor(message, { status, code } = {}) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
-/**
- * Gọi POST /api/check với nội dung tin nhắn.
- * @param {string} text
- * @returns {Promise<{result?: string, errors?: string[], error?: string}>}
- */
-export async function check(text) {
-  let resp;
+async function requestJson(path, options = {}) {
+  let response;
   try {
-    resp = await fetch(`${API_BASE}/api/check`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-  } catch (e) {
-    // Mất kết nối / network.
+    response = await fetch(`${API_BASE}${path}`, options);
+  } catch {
     throw new ApiError('Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.');
   }
-
-  const data = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const msg = (data.errors && data.errors.join(' ')) || data.error || 'Có lỗi xảy ra. Vui lòng thử lại.';
-    throw new ApiError(msg, { status: resp.status });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = (data.errors && data.errors.join(' ')) || data.error || 'Có lỗi xảy ra. Vui lòng thử lại.';
+    throw new ApiError(message, { status: response.status, code: data.code });
   }
   return data;
+}
+
+/** Gọi POST /api/check, trả DetectiveResult và thông tin lượt dùng trong phiên. */
+export function check(text) {
+  return requestJson('/api/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+}
+
+/** Đọc nhật ký metadata của đúng phiên hiện tại. */
+export function getCheckLog() {
+  return requestJson('/api/check/log');
 }

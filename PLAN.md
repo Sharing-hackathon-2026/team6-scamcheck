@@ -84,14 +84,14 @@ Chi tiết:
 |---|---|---|---|---|
 | L1-01 | Khởi tạo kho mã và bảo mật khoá | Bắt buộc | ✅ Xong | `.gitignore` + `.env.example`; scan git history = 0 key |
 | L1-02 | Giao diện nhập liệu và dòng pháp lý | Bắt buộc | ✅ Xong | `frontend/index.html`: textarea lớn + nút Kiểm tra + footer pháp lý cố định |
-| L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ⚠️ CẦN NÂNG CẤP | Hiện route trả `{"result": <text thô>}`. Backlog mới yêu cầu cấu trúc {risk_level, red_flags[].excerpt, actions[]} + JSON mode. `generate_json()` đã có sẵn trong services/gemini.py nhưng chưa wire vào route. Cần thêm prompt Thám tử schema + parser |
-| L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ❌ Chưa có | Cần `app/services/parser.py:parse_detective()` validate schema + fallback mặc định an toàn, test 5 mẫu lệch cấu trúc |
-| L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ⚠️ Một phần | Đã có validate rỗng/>5000 ký tự + bắt lỗi mạng/AI (502). **Chưa có:** retry khi 429/503 với backoff tăng dần tối đa 2 lần; mở rộng đủ 5 ca biên |
+| L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ✅ Xong | `/api/check` dùng JSON mode, trả `{detective, usage}` với risk level, dấu hiệu/đoạn trích, đúng 3 hành động |
+| L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ✅ Xong | `parse_detective()` validate/coerce; JSON sai → fallback `nghi_ngo`; xoá excerpt AI bịa; 6 test |
+| L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ✅ Xong | Validate rỗng/>5000; retry 429/503 tối đa 2 lần (0.5s, 1s); exhausted/mạng → lỗi thân thiện 502 |
 | L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz:8000/ (nginx + gunicorn, verified end-to-end) |
-| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ❌ Chưa có | Cần giới hạn số lần gọi AI/phiên (vd 10) + timeout max/gọi; hiển thị số lần đã dùng; chạm trần → báo lịch sự. Harden refusal (đã làm) là tiền đề giảm tiêu hao |
-| L1-08 | Nhật ký gọi AI | Nên có | ❌ Chưa có | Ghi {thời điểm, độ dài đầu vào, tóm tắt kết quả} mỗi lần gọi; xem lại trong phiên; phục vụ đo lường Cấp 4 |
+| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | 10 call/phiên Flask; timeout/call clamp ≤8s; API/UI hiện quota; chạm trần trả 429 lịch sự |
+| L1-08 | Nhật ký gọi AI | Nên có | ✅ Xong | `GET /api/check/log`; tối đa 10 metadata/lượt trong session (thời điểm, độ dài, tóm tắt), không lưu nội dung tin |
 
-**Test (pytest):** `test_gemini_client.py`, `test_routes.py`, `test_validation.py`, `test_prompts.py` (34 test xanh). **Cần thêm:** `test_parser_detective.py`, `test_retry_ratelimit.py`.
+**Test (pytest):** 41 test xanh: JSON mode, parser fallback/excerpt, retry 429/503, quota/session log, validation, prompt và routes.
 
 **Tiêu chí hoàn thành Cấp 1 (mới):** 9/10 lần AI trả đúng cấu trúc; ≤30s; 5 ca biên không gãy; retry 429 đúng cơ chế; có trần + nhật ký.
 

@@ -1,110 +1,91 @@
-"""Test các route API (Cấp 1): /api/health và /api/check."""
+"""Test các route API structured của L1."""
 from __future__ import annotations
 
 
+def _structured(risk_level="nguy_hiem"):
+    return {
+        "risk_level": risk_level,
+        "reason": "Tin yêu cầu mã OTP.",
+        "red_flags": [{"label": "OTP", "excerpt": "mã OTP", "explanation": "Không ai được xin OTP."}],
+        "actions": ["Không gửi OTP.", "Gọi ngân hàng.", "Chặn tin nhắn."],
+    }
+
+
 def test_health_ok(client):
-    r = client.get("/api/health")
-    assert r.status_code == 200
-    assert r.get_json()["ok"] is True
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.get_json()["ok"] is True
 
 
-def test_check_returns_text_from_gemini(client, mock_gemini_text):
-    """POST /api/check hợp lệ → trả JSON {result: ...}."""
-    mock_gemini_text["payload"] = {
-        "candidates": [{"content": {"parts": [{"text": "Tin này lừa đảo."}]}}]
-    }
-    r = client.post("/api/check", json={"text": "Kiếm tiền nhanh"})
-    assert r.status_code == 200
-    assert r.get_json()["result"] == "Tin này lừa đảo."
-    assert mock_gemini_text["calls"] == 1
+def test_check_returns_structured_detective_and_usage(client, mock_gemini_text):
+    import json
+
+    mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": json.dumps(_structured())}]}}]}
+    response = client.post("/api/check", json={"text": "Vui lòng gửi mã OTP ngay"})
+    data = response.get_json()
+    assert response.status_code == 200
+    assert data["detective"]["risk_level"] == "nguy_hiem"
+    assert data["detective"]["red_flags"][0]["excerpt"] == "mã OTP"
+    assert data["usage"] == {"calls_used": 1, "call_limit": 10}
+    assert mock_gemini_text["last_body"]["generationConfig"]["response_mime_type"] == "application/json"
 
 
-def test_check_sends_hardened_system_prompt(client, mock_gemini_text):
-    """Stage 1 harden: phải gửi system_prompt vai ScamCheck để AI từ chối tin không liên quan."""
-    mock_gemini_text["payload"] = {
-        "candidates": [{"content": {"parts": [{"text": "ok"}]}}]
-    }
-    client.post("/api/check", json={"text": "Gửi mã OTP để nhận quà"})
-    body = mock_gemini_text["last_body"]
-    assert body is not None
-    sys_prompt = body["system_instruction"]["parts"][0]["text"]
-    # Phải có vai hẹp + yêu cầu từ chối tin không liên quan.
-    assert "ScamCheck" in sys_prompt
-    assert "TỪ CHỐI" in sys_prompt or "từ chối" in sys_prompt.lower()
-    # Câu canned refusal phải nằm trong prompt để AI复读 nó.
-    from app.prompts import STAGE1_REFUSAL
-    assert STAGE1_REFUSAL in sys_prompt
+def test_check_uses_parser_fallback_for_bad_ai_json(client, mock_gemini_text):
+    mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": "not JSON"}]}}]}
+    response = client.post("/api/check", json={"text": "Bấm link nhận thưởng"})
+    data = response.get_json()
+    assert response.status_code == 200
+    assert data["detective"]["risk_level"] == "nghi_ngo"
+    assert len(data["detective"]["actions"]) == 3
 
 
-def test_check_rejects_empty_input(client, mock_gemini_text):
-    """L2-08: tin trống → 400, không gọi AI."""
-    r = client.post("/api/check", json={"text": ""})
-    assert r.status_code == 400
-    assert "errors" in r.get_json()
-    assert mock_gemini_text["calls"] == 0
-
-
-def test_check_rejects_missing_text_field(client, mock_gemini_text):
-    r = client.post("/api/check", json={})
-    assert r.status_code == 400
-    assert mock_gemini_text["calls"] == 0
-
-
-def test_check_rejects_too_long_input(client, mock_gemini_text):
-    r = client.post("/api/check", json={"text": "a" * 5001})
-    assert r.status_code == 400
+def test_check_rejects_empty_and_too_long_without_ai(client, mock_gemini_text):
+    assert client.post("/api/check", json={"text": ""}).status_code == 400
+    assert client.post("/api/check", json={"text": "a" * 5001}).status_code == 400
     assert mock_gemini_text["calls"] == 0
 
 
 def test_check_returns_502_on_gemini_error(client, monkeypatch):
-    """AI lỗi → 502, không gãy."""
     import app.services.gemini as gemini_mod
 
-    class _FakeResp:
+    class Response:
         status_code = 400
         def json(self):
             return {"error": {"message": "invalid"}}
 
-    monkeypatch.setattr(
-        gemini_mod.requests, "post", lambda *a, **k: _FakeResp()
-    )
-    r = client.post("/api/check", json={"text": "hello"})
-    assert r.status_code == 502
-    assert "error" in r.get_json()
+    monkeypatch.setattr(gemini_mod.requests, "post", lambda *a, **k: Response())
+    assert client.post("/api/check", json={"text": "hãy gửi otp"}).status_code == 502
 
 
-def test_check_handles_network_error(client, monkeypatch):
-    """Mất kết nối → 502, không gãy."""
-    import requests as real_requests
-    import app.services.gemini as gemini_mod
+def test_log_contains_only_metadata(client, mock_gemini_text):
+    import json
 
-    def _boom(*a, **k):
-        raise real_requests.ConnectionError("down")
-
-    monkeypatch.setattr(gemini_mod.requests, "post", _boom)
-    r = client.post("/api/check", json={"text": "hello"})
-    assert r.status_code == 502
+    mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": json.dumps(_structured("an_toan"))}]}}]}
+    client.post("/api/check", json={"text": "Nội dung nhạy cảm bí mật"})
+    data = client.get("/api/check/log").get_json()
+    assert data["calls_used"] == 1
+    assert data["logs"][0]["input_length"] == len("Nội dung nhạy cảm bí mật")
+    assert "Nội dung nhạy cảm" not in str(data["logs"])
 
 
-def test_check_without_body_returns_400(client):
-    """Không có body JSON → 400, không 500."""
-    r = client.post("/api/check", content_type="application/json", data="not json")
-    assert r.status_code == 400
+def test_call_limit_blocks_ai(client, mock_gemini_text):
+    with client.session_transaction() as session:
+        session["ai_call_log"] = [{"at": "x", "input_length": 1, "summary": "x"}] * 10
+    response = client.post("/api/check", json={"text": "Gửi OTP"})
+    assert response.status_code == 429
+    assert response.get_json()["code"] == "ai_call_limit_reached"
+    assert mock_gemini_text["calls"] == 0
 
 
 def test_health_reports_not_ready_without_key(monkeypatch):
-    """Health báo ready=False khi thiếu key."""
     from app import create_app
     from app.config import Config
 
-    class _NoKey(Config):
+    class NoKeyConfig(Config):
         GEMINI_API_KEY = ""
         CORS_ORIGINS = []
 
-    app = create_app(_NoKey)
+    app = create_app(NoKeyConfig)
     app.config["TESTING"] = True
-    with app.test_client() as c:
-        r = c.get("/api/health")
-        data = r.get_json()
-        assert data["ok"] is True
-        assert data["ready"] is False
+    with app.test_client() as client:
+        assert client.get("/api/health").get_json()["ready"] is False

@@ -60,7 +60,7 @@ python -m http.server 5500
 
 - **🟢 LIVE:** https://team6-scamcheck.exe.xyz:8000/
 - `GET /api/health` → `{"ok":true,"ready":true}`
-- `POST /api/check` → phân tích AI (gemini-3.1-flash-lite).
+- `POST /api/check` → phân tích AI có cấu trúc (gemini-3.1-flash-lite), retry rate-limit và quota 10 lượt/phiên.
 
 Deploy idempotent qua `deploy/deploy.sh` (chạy **trên VM target**, cần sudo):
 ```bash
