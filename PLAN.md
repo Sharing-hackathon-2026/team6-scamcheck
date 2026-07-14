@@ -87,7 +87,7 @@ Backlog mapping: **L1-01 → L1-05**.
 - [x] **L1-02** Giao diện nhập liệu cơ bản — `frontend/index.html`: `<textarea>` lớn + nút **Kiểm tra**, footer pháp lý. Chưa cần đẹp.
 - [x] **L1-03** Tích hợp Gemini — `POST /api/check` (Flask) gọi `services/gemini.py:generate_text()`, trả **JSON** `{"result": "..."}`; JS `app.js` fetch rồi hiện văn bản thô.
 - [x] **L1-04** Dòng cảnh báo pháp lý — component footer HTML ở mọi trang frontend.
-- [ ] **L1-05** Triển khai lên mạng _(còn chờ deploy lên VM target)_ — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask); xác nhận địa chỉ công khai.
+- [x] **L1-05** Triển khai lên mạng ✅ — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask) trên VM `team6-scamcheck.exe.xyz`. Địa chỉ công khai: **https://team6-scamcheck.exe.xyz:8000/** (đã verify live).
 
 **Test (pytest):**
 - `backend/tests/test_gemini_raw.py` — mock HTTP, verify request payload đúng (key, model, prompt).

@@ -56,6 +56,23 @@ python -m http.server 5500
 ```
 (Sửa `config.js` chỉ khi dev tách port. Prod để rỗng vì Nginx cùng origin.)
 
+## Deploy (đang chạy trên VM target)
+
+- **🟢 LIVE:** https://team6-scamcheck.exe.xyz:8000/
+- `GET /api/health` → `{"ok":true,"ready":true}`
+- `POST /api/check` → phân tích AI (gemini-3.1-flash-lite).
+
+Deploy idempotent qua `deploy/deploy.sh` (chạy **trên VM target**, cần sudo):
+```bash
+# trên VM target:
+ssh exedev@team6-scamcheck.exe.xyz
+# đã có /etc/scamcheck.env (chứa GEMINI_API_KEY, root:exedev 640)
+git clone https://hackathon-project.int.exe.xyz/Sharing-hackathon-2026/team6-scamcheck.git /tmp/d
+bash /tmp/d/deploy/deploy.sh && rm -rf /tmp/d
+```
+Script tự: clone vào `/opt/scamcheck` → tạo venv → chạy pytest (phải xanh) → cài systemd
+`scamcheck-backend` (gunicorn :5000) + nginx (frontend/ + `/api/*` proxy). Chạy lại = update.
+
 ## Tài liệu
 
 - Kế hoạch triển khai theo cấp: [`PLAN.md`](PLAN.md)
