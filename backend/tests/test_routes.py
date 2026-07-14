@@ -26,6 +26,8 @@ def test_check_returns_structured_detective_without_session_limit(client, mock_g
     assert response.status_code == 200
     assert data["detective"]["risk_level"] == "nguy_hiem"
     assert data["detective"]["red_flags"][0]["excerpt"] == "mã OTP"
+    assert data["technical_analysis"]["rule_signals"]
+    assert data["cache"]["hit"] is False
     assert "usage" not in data
     assert data["psychologist_status"] == "unavailable"
     assert mock_gemini_text["last_body"]["generationConfig"]["response_mime_type"] == "application/json"
@@ -112,3 +114,8 @@ def test_health_reports_not_ready_without_key(monkeypatch):
     app.config["TESTING"] = True
     with app.test_client() as client:
         assert client.get("/api/health").get_json()["ready"] is False
+
+
+def test_production_default_does_not_emit_wildcard_cors(client):
+    response = client.get("/api/health", headers={"Origin": "https://untrusted.example"})
+    assert "Access-Control-Allow-Origin" not in response.headers

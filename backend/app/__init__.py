@@ -24,12 +24,19 @@ def create_app(cfg: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = config.FLASK_SECRET_KEY
     app.config["MAX_INPUT_LENGTH"] = config.MAX_INPUT_LENGTH
     app.config["BASE_URL"] = config.BASE_URL
+    app.config["CHECK_CACHE_CAPACITY"] = config.CHECK_CACHE_CAPACITY
+    app.config["CHECK_CACHE_TTL"] = config.CHECK_CACHE_TTL
 
-    # CORS: bật khi dev tách port. Prod (Nginx cùng origin) không cần.
+    from .services.cache import TTLHashCache
+
+    app.extensions["check_cache"] = TTLHashCache(
+        capacity=config.CHECK_CACHE_CAPACITY,
+        ttl_seconds=config.CHECK_CACHE_TTL,
+    )
+
+    # CORS chỉ bật khi khai báo rõ cho dev tách port. Prod cùng origin không gửi wildcard.
     if config.CORS_ORIGINS:
         CORS(app, origins=config.CORS_ORIGINS)
-    else:
-        CORS(app)  # permissive theo mặc định cho dev; chặn lại bằng Nginx khi prod.
 
     # Đăng ký blueprints.
     from .routes import register_blueprints

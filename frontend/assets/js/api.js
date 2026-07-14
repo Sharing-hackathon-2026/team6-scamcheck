@@ -14,7 +14,10 @@ async function requestJson(path, options = {}) {
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, options);
-  } catch {
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Đã dừng lượt kiểm tra. Bác có thể thử lại khi sẵn sàng.', { code: 'cancelled' });
+    }
     throw new ApiError('Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng và thử lại.');
   }
   const data = await response.json().catch(() => ({}));
@@ -25,17 +28,22 @@ async function requestJson(path, options = {}) {
   return data;
 }
 
-/** Gọi POST /api/check, trả DetectiveResult và thông tin lượt dùng trong phiên. */
-export function check(text) {
+/** Gọi POST /api/check, hỗ trợ hủy request bằng AbortSignal. */
+export function check(text, { signal } = {}) {
   return requestJson('/api/check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
+    signal,
   });
 }
 
 export function getScamLibrary() {
   return requestJson('/api/scam-library');
+}
+
+export function getQuiz() {
+  return requestJson('/api/quiz');
 }
 
 /** Đọc nhật ký metadata của đúng phiên hiện tại. */

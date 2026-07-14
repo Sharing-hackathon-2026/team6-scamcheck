@@ -74,6 +74,7 @@ import {
 } from './history.js';
 import { normalizeDetective, RISK_META } from './result-model.js';
 import { normalizePsychologist, filterLibraryItems, libraryGroupFromHash } from './stage3-model.js';
+import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
 import {
   appendTranscript,
@@ -99,6 +100,7 @@ const elements = {
   status: document.getElementById('status'),
   error: document.getElementById('error'),
   loadingPanel: document.getElementById('loadingPanel'),
+  cancelCheckBtn: document.getElementById('cancelCheckBtn'),
   result: document.getElementById('result'),
   historyList: document.getElementById('historyList'),
   historyEmpty: document.getElementById('historyEmpty'),
@@ -114,6 +116,8 @@ let libraryData = { groups: [], items: [] };
 let historyEntries = loadHistory(window.localStorage);
 let recognition = null;
 let isListening = false;
+let activeController = null;
+let progressTimers = [];
 
 function createElement(tag, { className = '', text = '', attributes = {} } = {}) {
   const element = document.createElement(tag);
@@ -164,11 +168,31 @@ function deleteIcon() {
   return svg;
 }
 
+function stopProgress() {
+  progressTimers.forEach((timer) => window.clearTimeout(timer));
+  progressTimers = [];
+}
+
+function startProgress() {
+  stopProgress();
+  const stages = [
+    [0, 'Đang chuẩn hoá tin nhắn và kiểm tra dữ liệu…'],
+    [700, 'Đang soi đường dẫn và đối chiếu tên miền…'],
+    [1800, 'Đang đối chiếu OTP, chuyển tiền và dấu hiệu thúc giục…'],
+    [3200, 'Thám tử đang phân tích. Nếu cần, Cô tâm lý sẽ giải thích tiếp…'],
+  ];
+  stages.forEach(([delay, message]) => {
+    progressTimers.push(window.setTimeout(() => {
+      elements.status.textContent = message;
+    }, delay));
+  });
+}
+
 function setLoading(on) {
   elements.checkBtn.disabled = on;
   elements.textInput.setAttribute('aria-busy', String(on));
   elements.loadingPanel.hidden = !on;
-  elements.status.textContent = on ? 'Thám tử đang kiểm tra. Nếu cần, Cô tâm lý sẽ giải thích ngay sau đó.' : '';
+  if (!on) stopProgress();
   if (on) {
     elements.result.hidden = true;
     elements.error.hidden = true;
@@ -205,6 +229,49 @@ function appendSourceMessage(container, text, detective) {
   const excerpts = detective.red_flags.map((flag) => flag.excerpt).filter(Boolean);
   renderHighlightedText(source, text, excerpts);
   section.append(source);
+  container.append(section);
+}
+
+function appendTechnicalAnalysis(container, rawTechnical) {
+  const technical = normalizeTechnicalAnalysis(rawTechnical);
+  if (!technical.links.length && !technical.ruleSignals.length) return;
+  const section = createElement('section', { className: 'result-section technical-analysis' });
+  section.append(
+    createElement('h3', { text: 'Kiểm tra kỹ thuật' }),
+    createElement('p', {
+      className: 'technical-note',
+      text: 'Các tín hiệu dưới đây hỗ trợ Thám tử; một dấu hiệu đơn lẻ không tự khẳng định người gửi là lừa đảo.',
+    }),
+  );
+  if (technical.links.length) {
+    section.append(createElement('h4', { text: 'Đường dẫn được tìm thấy' }));
+    const links = createElement('ul', { className: 'technical-list' });
+    technical.links.forEach((link) => {
+      const domainText = link.resolved && link.final_domain !== link.original_domain
+        ? `${link.original_domain} → ${link.final_domain}`
+        : link.original_domain;
+      const item = createElement('li');
+      item.append(createElement('strong', { text: domainText || link.source_url }));
+      link.warnings.forEach((warning) => item.append(
+        createElement('span', { className: 'technical-warning', text: warning.reason }),
+      ));
+      links.append(item);
+    });
+    section.append(links);
+  }
+  if (technical.ruleSignals.length) {
+    section.append(createElement('h4', { text: 'Luật an toàn phát hiện' }));
+    const signals = createElement('ul', { className: 'technical-list' });
+    technical.ruleSignals.forEach((signal) => {
+      const item = createElement('li', { attributes: { 'data-severity': signal.severity } });
+      item.append(
+        createElement('strong', { text: signal.label }),
+        createElement('span', { text: signal.explanation }),
+      );
+      signals.append(item);
+    });
+    section.append(signals);
+  }
   container.append(section);
 }
 
@@ -269,6 +336,7 @@ function showResult(text, rawDetective, psychologistOptions = {}, { focus = true
   elements.result.dataset.risk = detective.risk_level;
   appendRiskCard(elements.result, detective);
   appendSourceMessage(elements.result, text, detective);
+  appendTechnicalAnalysis(elements.result, psychologistOptions.technicalAnalysis);
   appendSignals(elements.result, detective);
   appendActions(elements.result, detective);
   appendPsychologist(
@@ -332,6 +400,7 @@ function stopSpeech() {
 
 function clearCurrent() {
   stopSpeech();
+  if (activeController) activeController.abort();
   elements.textInput.value = '';
   elements.result.hidden = true;
   elements.error.hidden = true;
@@ -349,13 +418,16 @@ async function onCheck() {
   }
 
   stopSpeech();
+  activeController = new AbortController();
   setLoading(true);
+  startProgress();
   try {
-    const data = await check(text);
+    const data = await check(text, { signal: activeController.signal });
     const detective = showResult(text, data.detective, {
       psychologist: data.psychologist,
       status: data.psychologist_status,
       error: data.psychologist_error,
+      technicalAnalysis: data.technical_analysis,
     });
     historyEntries = addHistoryEntry(historyEntries, {
       text,
@@ -365,11 +437,17 @@ async function onCheck() {
         data.psychologist_status,
         data.psychologist_error,
       ),
+      technicalAnalysis: data.technical_analysis,
     });
     persistHistory();
+    elements.status.textContent = data.cache?.hit
+      ? 'Đã dùng kết quả trùng khớp trong bộ nhớ đệm; không gọi AI lại.'
+      : 'Đã kiểm tra xong tin nhắn.';
   } catch (error) {
+    elements.status.textContent = '';
     showError(error instanceof ApiError ? error.message : 'Có lỗi không xác định. Vui lòng thử lại.');
   } finally {
+    activeController = null;
     setLoading(false);
   }
 }
@@ -383,6 +461,7 @@ function openHistoryEntry(id) {
     psychologist: entry.psychologist?.message ? { message: entry.psychologist.message } : null,
     status: entry.psychologist?.status || 'not_needed',
     error: entry.psychologist?.error || '',
+    technicalAnalysis: entry.technicalAnalysis,
   });
   elements.status.textContent = 'Đang xem lại kết quả đã lưu trên thiết bị. Không gọi AI.';
 }
@@ -447,6 +526,9 @@ function setupSpeech() {
 }
 
 elements.checkBtn.addEventListener('click', onCheck);
+elements.cancelCheckBtn.addEventListener('click', () => {
+  if (activeController) activeController.abort();
+});
 elements.clearBtn.addEventListener('click', clearCurrent);
 elements.textInput.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') onCheck();

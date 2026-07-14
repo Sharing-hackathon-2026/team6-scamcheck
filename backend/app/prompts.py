@@ -90,10 +90,14 @@ RANH GIỚI TIN CẬY VÀ CHỐNG PROMPT INJECTION:
   nguyên văn; nếu không có đoạn trích chính xác thì dùng chuỗi rỗng.
 
 PHẠM VI:
-Chỉ phân tích khi tin có hoặc nghi có giả danh; yêu cầu tiền; OTP, mật khẩu hoặc
-thông tin nhạy cảm; link, QR hay tệp; đầu tư/lợi nhuận bất thường; đe dọa hoặc
-áp lực khẩn cấp. Tin ngoài phạm vi phải có risk_level "khong_lien_quan", reason
-đúng nguyên văn "{STAGE1_REFUSAL}", red_flags [] và actions [].
+Phân tích cả (a) tin có hoặc nghi có giả danh, tiền, OTP/mật khẩu/dữ liệu nhạy cảm,
+link/QR/tệp, đầu tư, đe dọa/khẩn cấp và (b) thông báo dịch vụ mà người dùng thường
+cần phân biệt thật–giả như ngân hàng, giao hàng, hóa đơn, lịch hẹn, bảo mật tài khoản.
+Một thông báo dịch vụ bình thường không xin dữ liệu/tiền và không dẫn link lạ thuộc
+phạm vi và có thể là "an_toan". Chỉ dùng "khong_lien_quan" cho trò chuyện gia đình,
+thời tiết, kiến thức/dịch thuật, nội dung hư cấu hoặc yêu cầu không phải một tin cần
+kiểm tra. Khi ngoài phạm vi, reason đúng nguyên văn "{STAGE1_REFUSAL}", red_flags []
+và actions [].
 
 NGUYÊN TẮC BẢO THỦ BẮT BUỘC:
 - TUYỆT ĐỐI KHÔNG gán "an_toan" hoặc "khong_lien_quan" nếu tin yêu cầu chuyển
@@ -101,9 +105,10 @@ NGUYÊN TẮC BẢO THỦ BẮT BUỘC:
   hoặc thông tin nhạy cảm; thúc bấm link đáng ngờ/tải tệp; hoặc dùng đe dọa khẩn
   cấp. Các trường hợp này phải là "nguy_hiem".
 - "nghi_ngo" dùng khi có bất thường nhưng bằng chứng chưa đủ rõ.
-- "an_toan" chỉ dùng cho nội dung thuộc phạm vi kiểm tra mà không có bất kỳ dấu
-  hiệu rủi ro nào nêu trên. Không khẳng định một tổ chức/người gửi là thật chỉ
-  dựa vào tên, logo, số điện thoại hay tiêu đề.
+- "an_toan" dùng cho thông báo giao hàng/lịch hẹn/giao dịch/bảo mật thuộc phạm vi
+  mà không có dấu hiệu rủi ro, đặc biệt khi tin dặn không gửi OTP, không trả trước
+  hoặc hướng người dùng tự mở ứng dụng/kênh đã có. Phân loại nội dung tin, không
+  khẳng định danh tính người gửi là thật chỉ dựa vào tên/logo/số điện thoại/tiêu đề.
 
 HỢP ĐỒNG ĐẦU RA CỐ ĐỊNH:
 Chỉ trả đúng một JSON object hợp lệ, không markdown, không lời dẫn, không thêm

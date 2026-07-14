@@ -424,3 +424,91 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
 > ```
 
 Tương đương Render/Railway trong đề bài; đảm bảo "không cài app phía người dùng".
+
+## 10. Stage 4 — kiến trúc chiều sâu kỹ thuật
+
+Phần này là thiết kế triển khai cho Stage 4; các tên file Stage 4 trong sơ đồ thư mục
+ở trên là đích kiến trúc, không phải mô tả nhầm của Stage 3.
+
+### 10.1 Pipeline kiểm tra sau Stage 4
+
+```text
+normalize + validate
+      │
+      ├─ SHA-256(normalized text + model + pipeline version)
+      │       └─ cache hit: trả kết quả typed, không gọi AI/không lưu plaintext server
+      │
+      ├─ extract/normalize URL
+      │       ├─ URL thường: phân tích domain tại chỗ
+      │       └─ shortener: resolve tối đa 3 redirect
+      │              └─ chặn scheme lạ + private/loopback/link-local/reserved IP mỗi hop
+      │
+      ├─ domain detector
+      │       └─ IDN/punycode + zero-width + confusable skeleton + edit distance
+      │
+      ├─ pure rule engine
+      │       └─ OTP/credential/tiền/STK/khẩn cấp/URL đáng ngờ theo từng mệnh đề
+      │
+      ├─ Gemini Thám tử terminal function call
+      │
+      ├─ parser + merge policy bảo thủ
+      │       ├─ danger rule: verdict cuối = nguy_hiem
+      │       └─ warning rule: không cho an_toan/khong_lien_quan, nâng tối thiểu nghi_ngo
+      │
+      ├─ Cô tâm lý nếu verdict cuối nghi_ngo/nguy_hiem
+      └─ cache kết quả hoàn chỉnh + trả technical_analysis và cache metadata
+```
+
+### 10.2 URL/SSRF và tên miền giả
+
+- `services/links.py` chỉ nhận HTTP/HTTPS, bỏ fragment, chuẩn hoá host bằng IDNA.
+- Chỉ shortener trong allowlist mới được gọi mạng; URL thường không bị backend truy cập.
+- Trước **mỗi redirect hop**, resolver kiểm tra mọi địa chỉ DNS. Chỉ địa chỉ public
+  (`ipaddress.is_global`) được phép; chặn localhost, private, loopback, link-local,
+  multicast, reserved và URL có user-info.
+- Request redirect dùng timeout ngắn, `allow_redirects=False`, `stream=True`, không đọc body,
+  giới hạn hop và đóng response ngay. Lỗi resolve là warning bảo thủ, không làm gãy `/api/check`.
+- `data/legit_domains.json` là allowlist có brand, domain chính thức, nguồn và ngày review.
+  Detector không tự tuyên bố chắc chắn lừa đảo: nó trả lý do heuristic có cấu trúc.
+
+### 10.3 Rule engine và merge policy
+
+- `services/rule_engine.py` là pure functions; phủ OTP/PIN/password, dữ liệu cá nhân,
+  yêu cầu tiền, số tài khoản, thúc giục/đe doạ và URL đáng ngờ.
+- Phủ định được xét trong cùng câu/mệnh đề, không dùng một câu “không gửi OTP” để
+  vô hiệu hoá yêu cầu “hãy gửi OTP” ở câu sau.
+- Rule signal có `code`, `severity`, `label`, `excerpt`, `explanation`; excerpt luôn là
+  lát cắt thật từ input.
+- Rule nguy hiểm có quyền nâng verdict nhưng không hạ verdict AI. Signal cảnh báo chỉ
+  nâng nhãn lạc quan lên `nghi_ngo`. Frontend hiển thị riêng nguồn kỹ thuật, không giả
+  là kết luận chắc chắn của một heuristic.
+
+### 10.4 Cache và quyền riêng tư
+
+- Cache backend là TTL/LRU bounded theo từng gunicorn process, mặc định 256 mục/1 giờ.
+- Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload
+  typed. Không log key như định danh người dùng và không persist plaintext xuống đĩa.
+- Không cache lỗi Detective hoặc kết quả Cô tâm lý `unavailable` để tránh giữ lỗi tạm thời.
+- Frontend vẫn giữ lịch sử plaintext tối đa 10 mục trên thiết bị theo yêu cầu sản phẩm.
+
+### 10.5 Đo chất lượng
+
+- `data/evaluation_messages.json`: ít nhất 60 tin cân bằng bốn nhãn, có dev/eval split
+  và tối thiểu 15 ca khó.
+- `services/evaluation.py` sinh accuracy, precision/recall/F1 từng lớp, confusion matrix,
+  latency và invalid/fallback rate.
+- `scripts/run_stage4_evaluation.py` hỗ trợ `--prompt-mode stage3|stage4`, throttle mặc
+  định 4,2 giây để không vượt rate limit. Report chính so baseline Stage 3 với prompt
+  scope Stage 4 + URL/domain/rules; mỗi run dùng cùng 60 ca và ghi invalid rate để không
+  che lỗi provider. Khi chỉ đo tác động rule, cùng raw output trong một run vẫn được chấm
+  baseline/improved để giảm nhiễu model.
+- Report ghi model, prompt/pipeline version, commit và timestamp; JSON machine-readable
+  đi cùng Markdown để review.
+
+### 10.6 Luyện tập và phản hồi tiến trình
+
+- `GET /api/quiz` phục vụ 10 câu curated, không gọi AI. `practice.html` + `practice.js`
+  quản lý state thật: trả lời, giải thích ngay, tổng kết, restart và bàn phím/screen reader.
+- Luồng kiểm tra giữ contract JSON deterministic. UI phát các trạng thái tiến trình hữu ích
+  ngay từ lúc gửi (soi link → đối chiếu dấu hiệu → chờ persona), có timeout/cancel bằng
+  `AbortController`; không giả token streaming làm hỏng function-call parsing.

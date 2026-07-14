@@ -15,11 +15,15 @@ export function sanitizeHistoryEntry(value) {
   const psychologist = value.psychologist && typeof value.psychologist === 'object'
     ? value.psychologist
     : null;
+  const technicalAnalysis = value.technicalAnalysis && typeof value.technicalAnalysis === 'object'
+    ? value.technicalAnalysis
+    : null;
   return {
     id: typeof value.id === 'string' && value.id ? value.id : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     text,
     detective,
     psychologist,
+    technicalAnalysis,
     createdAt: Number.isFinite(value.createdAt) ? value.createdAt : Date.now(),
   };
 }
@@ -50,9 +54,11 @@ export function saveHistory(storage, entries) {
 }
 
 export function addHistoryEntry(entries, {
-  text, detective, psychologist = null, now = Date.now(), id,
+  text, detective, psychologist = null, technicalAnalysis = null, now = Date.now(), id,
 } = {}) {
-  const entry = sanitizeHistoryEntry({ id, text, detective, psychologist, createdAt: now });
+  const entry = sanitizeHistoryEntry({
+    id, text, detective, psychologist, technicalAnalysis, createdAt: now,
+  });
   if (!entry) return Array.isArray(entries) ? entries.slice(0, HISTORY_LIMIT) : [];
   const current = Array.isArray(entries) ? entries : [];
   const withoutDuplicate = current.filter((item) => item.text !== entry.text);

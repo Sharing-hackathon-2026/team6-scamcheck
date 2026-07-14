@@ -42,3 +42,17 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 - Bộ lọc thư viện là button có `aria-pressed`, dùng được bằng bàn phím và không reload trang.
 - Trạng thái tải/lỗi/số mục thư viện có `role=status`/`role=alert`; card giữ cỡ chữ ≥18px.
 - Grid thư viện về một cột trên mobile; mọi nút lọc giữ touch target tối thiểu 44px.
+
+## Stage 4
+
+- Trạng thái tiến trình soi link/luật/AI dùng `role=status` hiện ngay; nút “Dừng kiểm tra”
+  là button thật và AbortController trả lỗi thân thiện, không để UI treo.
+- Technical analysis dùng heading/list/chữ và lý do; không chỉ dựa màu severity. Domain dài
+  có `overflow-wrap:anywhere`, không gây cuộn ngang ở 320px.
+- Trang `/practice.html` có landmark/footer pháp lý riêng, native buttons, nhóm đáp án có
+  accessible name, `aria-pressed`, feedback live, focus chuyển tới câu/tổng kết và restart thật.
+- Hai lựa chọn luyện tập luôn có nhãn chữ “Có dấu hiệu lừa đảo”/“Có vẻ an toàn”; màu đỏ/xanh
+  chỉ là tín hiệu bổ sung. Touch target tối thiểu 60px.
+- Cả trang chính và luyện tập giữ font thân bài 18px, reflow một cột và reduced-motion.
+- Cần gate trực quan cuối Stage 4 trên iPhone-like + desktop cho empty/loading/result/link,
+  quiz question/correct/incorrect/summary và error state trước demo chính thức.

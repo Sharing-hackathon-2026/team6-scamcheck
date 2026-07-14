@@ -47,6 +47,8 @@ class Config:
     # `AI_CALL_LIMIT` cũ nếu còn trong env được bỏ qua để không chặn phiên.
     GEMINI_TIMEOUT: float = _bounded_timeout(os.environ.get("GEMINI_TIMEOUT"))
     GEMINI_MAX_RETRIES: int = 2
+    CHECK_CACHE_CAPACITY: int = _positive_int(os.environ.get("CHECK_CACHE_CAPACITY"), 256)
+    CHECK_CACHE_TTL: int = _positive_int(os.environ.get("CHECK_CACHE_TTL"), 3600)
 
 
 def is_configured() -> bool:

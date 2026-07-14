@@ -91,9 +91,21 @@ sudo systemctl enable nginx >/dev/null
 sudo systemctl restart nginx
 
 echo "==> [6/6] Kiểm tra sức khoẻ"
-sleep 2
-echo "    backend health:"; curl -fsS http://127.0.0.1:5000/api/health || echo "    ! backend chưa sẵn sàng" >&2
-echo
-echo "    frontend :"; curl -fsS -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/
+health=""
+for attempt in $(seq 1 15); do
+  if health=$(curl -fsS --max-time 3 http://127.0.0.1:5000/api/health 2>/dev/null); then
+    break
+  fi
+  sleep 1
+done
+if [ -z "$health" ] || ! printf '%s' "$health" | "$VENV/bin/python" -c \
+  'import json,sys; value=json.load(sys.stdin); raise SystemExit(not (value.get("ok") is True and value.get("ready") is True))'; then
+  echo "    ! Backend không healthy/ready sau deploy: ${health:-không có phản hồi}" >&2
+  sudo systemctl status scamcheck-backend --no-pager >&2 || true
+  exit 1
+fi
+echo "    backend health: $health"
+echo "    frontend:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/
+echo "    practice:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/practice.html
 echo
 echo "✓ Deploy xong. Public: https://team6-scamcheck.exe.xyz:8000/"

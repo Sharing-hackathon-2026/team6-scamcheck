@@ -169,22 +169,34 @@ fallback và accessible names tiếp tục được phủ bởi test Stage 2.
 ### Stage 4 — Cấp 4: N5 Chiều sâu kỹ thuật — 9 hạng mục
 
 > **Thay đổi lớn so với backlog cũ:** không còn "chọn cặp B+C" — 9 hạng mục cụ thể, nặng về đo lường chất lượng AI có số liệu.
+>
+> **Kiến trúc triển khai đã chốt trước khi code:** URL thường chỉ phân tích tại chỗ;
+> shortener mới được resolve với chặn SSRF mỗi hop. Rule engine pure-function merge sau
+> parser theo chính sách chỉ nâng rủi ro. Cache TTL/LRU dùng hash NFC + model + pipeline
+> version, không persist plaintext. Bộ 60 tin có dev/eval split; runner throttle hỗ trợ
+> baseline Stage 3 và improved Stage 4, đồng thời có thể chấm cùng raw output để cô lập
+> tác động rule. Function-call typed được giữ nguyên;
+> phản hồi thời gian thực ưu tiên progress state + cancel thay vì token stream không ổn định.
 
 | Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| L4-01 | Soi và **giải** đường dẫn | Bắt buộc | ❌ | Regex tách mọi link (kể cả rút gọn) + giải redirect rút gọn về thật trước cảnh báo |
-| L4-02 | Phát hiện tên miền giả bằng thuật toán | Bắt buộc | ❌ | Ký tự đồng hình (homoglyph) + khoảng cách chuỗi; ≥10 kiểu giả; nêu lý do nghi |
-| L4-03 | Phát hiện dấu hiệu bằng **luật** | Bắt buộc | ❌ | Lớp luật ngoài AI: yêu cầu OTP/chuyển khoản/STK lạ/cụm từ gấp; kết hợp AI không mâu thuẫn |
-| L4-04 | Bộ dữ liệu đánh giá **60 tin** | Bắt buộc | ❌ | ≥60 tin gán nhãn cân bằng + tập khó ≥15 tin mơ hồ; mỗi tin có lý do nhãn |
-| L4-05 | Đo chất lượng AI có số liệu | Bắt buộc | ❌ | Chạy Thám tử trên 60 tin; accuracy + recall + ma trận nhầm lẫn; nêu ≥3 điểm yếu |
-| L4-06 | Cải thiện dựa trên số liệu | Bắt buộc | ❌ | Đo trước → chỉnh prompt/logic → đo lại; chứng minh accuracy/recall tăng thật |
-| L4-07 | Chế độ luyện tập 10 câu | Bắt buộc | ❌ | Đoán lừa/an toàn, chấm + giải thích từng câu, tổng kết có gợi ý cải thiện |
-| L4-08 | Phản hồi thời gian thực (streaming) | Nên có | ❌ | Stream output AI; chữ hiện dần trong 3s đầu; ngắt giữa không gãy |
-| L4-09 | Bộ nhớ đệm kết quả | Bắt buộc | ❌ | Cache tin đã kiểm tra → trùng không gọi lại; giới hạn hợp lý |
+| L4-01 | Soi và **giải** đường dẫn | Bắt buộc | ✅ Xong | Tách scheme/www/bare URL; shortener resolve ≤3 hop, timeout, không đọc body, chặn SSRF mỗi hop |
+| L4-02 | Phát hiện tên miền giả bằng thuật toán | Bắt buộc | ✅ Xong | IDN/punycode, zero-width, mixed-script, confusable skeleton, Levenshtein; test 11 kiểu giả |
+| L4-03 | Phát hiện dấu hiệu bằng **luật** | Bắt buộc | ✅ Xong | Pure rules OTP/dữ liệu/tiền/STK/khẩn cấp/URL; phủ định theo mệnh đề; merge chỉ nâng verdict |
+| L4-04 | Bộ dữ liệu đánh giá **60 tin** | Bắt buộc | ✅ Xong | 60 tin cân bằng 15/nhãn, 28 ca khó, dev/eval split, rationale/tags, dữ liệu tổng hợp NFC |
+| L4-05 | Đo chất lượng AI có số liệu | Bắt buộc | ✅ Xong | JSON+Markdown: accuracy, class metrics, confusion, latency, invalid, 3 failure modes và metadata tái lập |
+| L4-06 | Cải thiện dựa trên số liệu | Bắt buộc | ✅ Xong | Prompt scope + rules: accuracy 51,7%→66,7%; hard accuracy 53,6%→71,4%; danger recall giữ 100% |
+| L4-07 | Chế độ luyện tập 10 câu | Bắt buộc | ✅ Xong | `/practice.html`: chấm ngay, giải thích/mẹo, tổng kết, restart, native keyboard/screen-reader controls |
+| L4-08 | Phản hồi thời gian thực (streaming) | Nên có | ✅ Xong | Progressive stage text xuất hiện ngay và đổi trong <3s; AbortController hủy request; giữ typed function-call parsing |
+| L4-09 | Bộ nhớ đệm kết quả | Bắt buộc | ✅ Xong | SHA-256 NFC+model+version, TTL/LRU 256 mục/1h mỗi process; cache hit không gọi AI; không cache lỗi |
 
-**Test:** `test_links.py`, `test_homoglyph.py`, `test_rule_engine.py`, `test_quiz.py`, `test_eval_report.py`.
+**Test:** 150 pytest backend + 29 Node tests frontend; gồm `test_links.py`, `test_homoglyph.py`, `test_rule_engine.py`, `test_cache.py`, `test_quiz.py`, `test_eval_report.py`.
 
-**🚦 Gate utility-ui-eval:** 2 tính năng × 3 tình huống (thuận/lỗi/biên) không gãy.
+**🚦 Gate utility-ui-eval Stage 4:** ✅ PASS — evaluator vision độc lập
+`gemini-3.1-flash-lite` chấm `9,5/10`, `usable=true`, không có critical/major finding.
+Đã xem desktop/mobile empty, result + technical evidence, quiz feedback và input-error attempt.
+Minor duy nhất nhắc kiểm tra touch target nút mẫu; CSS toàn cục đang cưỡng chế `min-height:44px`.
+Evidence machine-readable: `backend/reports/stage4-ux-gate.json`.
 
 ---
 

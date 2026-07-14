@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "reviewed_at": "2026-07-14",
+  "policy": "Chỉ thêm domain sau khi đối chiếu website chính thức của tổ chức. Review lại trước mỗi bản phát hành lớn; dữ liệu dùng cho cảnh báo heuristic, không phải chứng nhận an toàn.",
+  "license_note": "Danh sách tên miền và tên tổ chức là dữ kiện công khai; không sao chép nội dung website.",
+  "domains": [
+    {"brand": "Vietcombank", "domain": "vietcombank.com.vn", "source": "https://www.vietcombank.com.vn/"},
+    {"brand": "VietinBank", "domain": "vietinbank.vn", "source": "https://www.vietinbank.vn/"},
+    {"brand": "BIDV", "domain": "bidv.com.vn", "source": "https://bidv.com.vn/"},
+    {"brand": "Agribank", "domain": "agribank.com.vn", "source": "https://www.agribank.com.vn/"},
+    {"brand": "Techcombank", "domain": "techcombank.com", "source": "https://techcombank.com/"},
+    {"brand": "MB Bank", "domain": "mbbank.com.vn", "source": "https://www.mbbank.com.vn/"},
+    {"brand": "ACB", "domain": "acb.com.vn", "source": "https://acb.com.vn/"},
+    {"brand": "Sacombank", "domain": "sacombank.com.vn", "source": "https://www.sacombank.com.vn/"},
+    {"brand": "VPBank", "domain": "vpbank.com.vn", "source": "https://www.vpbank.com.vn/"},
+    {"brand": "TPBank", "domain": "tpb.vn", "source": "https://tpb.vn/"},
+    {"brand": "VIB", "domain": "vib.com.vn", "source": "https://www.vib.com.vn/"},
+    {"brand": "Ngân hàng Nhà nước Việt Nam", "domain": "sbv.gov.vn", "source": "https://www.sbv.gov.vn/"},
+    {"brand": "Cổng thông tin Chính phủ", "domain": "chinhphu.vn", "source": "https://chinhphu.vn/"},
+    {"brand": "Bộ Công an", "domain": "mps.gov.vn", "source": "https://mps.gov.vn/"}
+  ]
+}

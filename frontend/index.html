@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f5f7f4">
   <title>ScamCheck — Kiểm tra tin nhắn lừa đảo</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage3-unlimited">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage3-unlimited">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage4-v1">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage4-v1">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Đi đến nội dung chính</a>
@@ -22,18 +22,21 @@
       <h1 class="brand-name">ScamCheck</h1>
       <p class="brand-note">Kiểm tra bình tĩnh trước khi bấm, gửi mã hoặc chuyển tiền.</p>
     </div>
+    <nav class="top-nav" aria-label="Chức năng chính">
+      <a href="/practice.html">Luyện tập 10 câu</a>
+    </nav>
   </header>
 
   <main id="main-content" class="app-shell" tabindex="-1">
     <section class="workspace" aria-labelledby="page-title">
       <div class="intro">
         <h2 id="page-title">Tin nhắn này có đáng tin không?</h2>
-        <p>Dán nguyên văn tin nhắn. ScamCheck sẽ chỉ ra mức rủi ro, đoạn đáng chú ý và ba việc nên làm tiếp theo.</p>
+        <p>Dán nguyên văn tin nhắn. ScamCheck sẽ chỉ ra mức rủi ro, soi đường dẫn, đối chiếu luật an toàn và đề xuất ba việc nên làm.</p>
       </div>
 
       <div class="input-card">
         <label class="field-label" for="textInput">Nội dung tin nhắn cần kiểm tra</label>
-        <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác.</p>
+        <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác. Nội dung sẽ được gửi tới dịch vụ AI để phân tích.</p>
         <textarea id="textInput" aria-describedby="inputHelp speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
 
         <div class="sample-area" aria-labelledby="sampleTitle">
@@ -81,6 +84,7 @@
           <div class="skeleton-line"></div>
           <div class="skeleton-line"></div>
         </div>
+        <button id="cancelCheckBtn" class="button-secondary cancel-check" type="button">Dừng kiểm tra</button>
       </section>
 
       <section id="result" class="result-panel" aria-live="polite" aria-atomic="true" tabindex="-1" hidden></section>
@@ -121,7 +125,7 @@
     </div>
   </footer>
 
-  <script type="module" src="/assets/js/app.js?v=stage3-unlimited"></script>
+  <script type="module" src="/assets/js/app.js?v=stage4-v1"></script>
   <noscript><p class="noscript-warning">ScamCheck cần JavaScript để kiểm tra tin nhắn. Bác vui lòng bật JavaScript hoặc nhờ người thân hỗ trợ.</p></noscript>
 </body>
 </html>

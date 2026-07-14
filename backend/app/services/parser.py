@@ -6,11 +6,11 @@ hình dạng an toàn trước khi route trả cho trình duyệt.
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Iterable
 
 from ..prompts import STAGE1_REFUSAL
+from .rule_engine import RuleSignal, evaluate_rules
 
 RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"}
 DEFAULT_ACTIONS = [
@@ -22,54 +22,9 @@ CONSERVATIVE_REASON = (
     "Tin nhắn có yêu cầu hoặc dấu hiệu rủi ro cao; không nên làm theo trước khi kiểm tra qua kênh chính thức."
 )
 
-# Đây là guardrail hậu kiểm, không phải bộ phân loại lừa đảo. Nó chỉ nhận diện
-# các tín hiệu rõ ràng mà theo hợp đồng tuyệt đối không được trả ``an_toan`` hay
-# ``khong_lien_quan``. Việc phân tích ngữ cảnh và red flags vẫn do model thực hiện.
-_REQUEST_VERBS = r"(?:gửi|gui|cung\s*cấp|cung\s*cap|nhập|nhap|đọc|doc|cho\s*biết|cho\s*biet|xác\s*nhận|xac\s*nhan)"
-_CREDENTIALS = r"(?:otp|mã\s*pin|ma\s*pin|mật\s*khẩu|mat\s*khau|password|passcode)"
-_SENSITIVE_DATA = r"(?:cccd|cmnd|căn\s*cước|can\s*cuoc|số\s*thẻ|so\s*the|cvv|số\s*tài\s*khoản|so\s*tai\s*khoan)"
-_NEGATED_CREDENTIAL_REQUEST = re.compile(
-    rf"\b(?:không|khong|đừng|dung|chớ)\b.{{0,24}}{_REQUEST_VERBS}.{{0,48}}(?:{_CREDENTIALS}|{_SENSITIVE_DATA})",
-    re.I,
-)
-_CREDENTIAL_REQUEST_PATTERNS = (
-    re.compile(rf"{_REQUEST_VERBS}.{{0,48}}(?:{_CREDENTIALS}|{_SENSITIVE_DATA})", re.I),
-    re.compile(rf"(?:{_CREDENTIALS}|{_SENSITIVE_DATA}).{{0,48}}{_REQUEST_VERBS}", re.I),
-)
-_HIGH_RISK_PATTERNS = (
-    re.compile(
-        r"\b(?:chuyển|chuyen|nộp|nop|gửi|gui|đóng|dong|thanh\s*toán|thanh\s*toan)\b"
-        r".{0,36}\b(?:tiền|tien|phí|phi|cọc|coc|vnđ|vnd|đồng|dong|usd|usdt)\b",
-        re.I,
-    ),
-    # Chỉ hậu kiểm URL có đặc điểm đáng ngờ rõ, không coi mọi URL là độc hại.
-    re.compile(
-        r"(?:https?://)?(?:[^\s/@]+@|(?:\d{1,3}\.){3}\d{1,3}|(?:bit\.ly|tinyurl\.com|t\.co|"
-        r"[a-z0-9-]+\.(?:xyz|top|click|site))(?:[/:?]|\b))",
-        re.I,
-    ),
-    re.compile(
-        r"\b(?:khẩn\s*cấp|khan\s*cap|ngay\s*lập\s*tức|ngay\s*lap\s*tuc|trong\s*\d+\s*(?:phút|phut|giờ|gio)|"
-        r"bắt\s*giam|bat\s*giam|khóa\s*tài\s*khoản|khoa\s*tai\s*khoan|truy\s*tố|truy\s*to)\b",
-        re.I,
-    ),
-)
-
-
-def _searchable_text(value: str) -> str:
-    """Chuẩn hoá Unicode vừa đủ để guardrail nhận diện chữ có dấu tổ hợp."""
-    return unicodedata.normalize("NFC", value)
-
-
 def has_explicit_high_risk_signal(source_text: str) -> bool:
-    """Có tín hiệu thuộc nhóm tuyệt đối không được gán an toàn hay không."""
-    if not isinstance(source_text, str) or not source_text:
-        return False
-    searchable = _searchable_text(source_text)
-    credential_request = any(pattern.search(searchable) for pattern in _CREDENTIAL_REQUEST_PATTERNS)
-    if credential_request and not _NEGATED_CREDENTIAL_REQUEST.search(searchable):
-        return True
-    return any(pattern.search(searchable) for pattern in _HIGH_RISK_PATTERNS)
+    """Tương thích API cũ: dùng rule engine theo mệnh đề để tránh bypass phủ định."""
+    return any(signal.severity == "danger" for signal in evaluate_rules(source_text))
 
 
 @dataclass(frozen=True)
@@ -189,38 +144,58 @@ def should_activate_psychologist(risk_level: str) -> bool:
     return risk_level in {"nghi_ngo", "nguy_hiem"}
 
 
-def parse_detective(raw: Any, source_text: str = "") -> DetectiveResult:
-    """Validate và chuẩn hoá JSON Thám tử; không bao giờ ném exception.
+def _flags_from_rules(signals: Iterable[RuleSignal], source_text: str) -> list[RedFlag]:
+    flags: list[RedFlag] = []
+    for signal in signals:
+        excerpt = signal.excerpt if signal.excerpt and signal.excerpt in source_text else ""
+        flag = RedFlag(
+            label=_clean_text(signal.label, 80),
+            excerpt=_clean_text(excerpt, 100),
+            explanation=_clean_text(signal.explanation, 220),
+        )
+        if flag.label and flag.explanation and flag not in flags:
+            flags.append(flag)
+        if len(flags) == 3:
+            break
+    return flags
 
-    Nếu root hoặc mức rủi ro sai, dùng fallback thận trọng ``nghi_ngo``. Các
-    trường con sai chỉ bị bỏ/điền fallback để vẫn giữ kết quả hữu ích.
-    """
-    if not isinstance(raw, dict):
-        return fallback_detective_result()
 
-    risk_level = raw.get("risk_level")
-    if risk_level not in RISK_LEVELS:
-        return fallback_detective_result()
+def parse_detective(
+    raw: Any,
+    source_text: str = "",
+    rule_signals: Iterable[RuleSignal] | None = None,
+) -> DetectiveResult:
+    """Validate model output rồi merge rule signals theo chính sách chỉ nâng rủi ro."""
+    signals = list(rule_signals) if rule_signals is not None else evaluate_rules(source_text)
+    danger = any(signal.severity == "danger" for signal in signals)
+    warning = any(signal.severity == "warning" for signal in signals)
 
-    # Model không có quyền hạ mức rủi ro khi input chứa một tín hiệu cấm rõ ràng.
-    # Guardrail chỉ nâng hai nhãn lạc quan; không thay thế phân tích của model.
-    forced_high_risk = risk_level in {"an_toan", "khong_lien_quan"} and has_explicit_high_risk_signal(
-        source_text
-    )
-    if forced_high_risk:
+    if not isinstance(raw, dict) or raw.get("risk_level") not in RISK_LEVELS:
+        fallback = fallback_detective_result()
+        if danger:
+            return DetectiveResult(
+                "nguy_hiem", CONSERVATIVE_REASON, _flags_from_rules(signals, source_text),
+                fallback.actions,
+            )
+        return fallback
+
+    risk_level = raw["risk_level"]
+    forced_by_rules = False
+    if danger and risk_level != "nguy_hiem":
         risk_level = "nguy_hiem"
+        forced_by_rules = True
+    elif warning and risk_level in {"an_toan", "khong_lien_quan"}:
+        risk_level = "nghi_ngo"
+        forced_by_rules = True
 
     if risk_level == "khong_lien_quan":
-        return DetectiveResult(
-            risk_level=risk_level,
-            reason=STAGE1_REFUSAL,
-            red_flags=[],
-            actions=[],
-        )
+        return DetectiveResult(risk_level, STAGE1_REFUSAL, [], [])
 
     reason = _clean_text(raw.get("reason"), 350)
-    if forced_high_risk:
-        reason = CONSERVATIVE_REASON
+    if forced_by_rules:
+        reason = CONSERVATIVE_REASON if danger else (
+            "Tin nhắn có tín hiệu kỹ thuật cần xác minh thêm; không nên mở đường dẫn hoặc làm theo vội."
+        )
     elif not reason:
         reason = "Kết quả cần được kiểm tra thận trọng trước khi làm theo."
 
@@ -233,8 +208,12 @@ def parse_detective(raw: Any, source_text: str = "") -> DetectiveResult:
             label = _clean_text(item.get("label"), 80)
             explanation = _clean_text(item.get("explanation"), 220)
             excerpt = _safe_excerpt(item.get("excerpt"), source_text)
-            if label and explanation:
-                flags.append(RedFlag(label=label, excerpt=excerpt, explanation=explanation))
+            flag = RedFlag(label=label, excerpt=excerpt, explanation=explanation)
+            if label and explanation and flag not in flags:
+                flags.append(flag)
+    for flag in _flags_from_rules(signals, source_text):
+        if flag not in flags and len(flags) < 3:
+            flags.append(flag)
 
     return DetectiveResult(
         risk_level=risk_level,

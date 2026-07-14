@@ -11,8 +11,11 @@ from ..prompts import (
     build_psychologist_user_prompt,
 )
 from ..services.audit import append_ai_log, get_ai_log
+from ..services.cache import build_cache_key
 from ..services.gemini import GeminiError, generate_function_call, generate_json
+from ..services.links import analyze_links
 from ..services.parser import parse_detective, parse_psychologist, should_activate_psychologist
+from ..services.rule_engine import evaluate_rules, signals_to_payload
 from ..services.validation import normalize_nfc, validate_input
 
 bp = Blueprint("check", __name__)
@@ -31,8 +34,21 @@ def check():
     if errors:
         return jsonify({"errors": errors}), 400
 
+    cache_key = build_cache_key(text, model=current_app.config["GEMINI_MODEL"])
+    cache = current_app.extensions["check_cache"]
+    cached = cache.get(cache_key)
+    if cached is not None:
+        cached["cache"] = {
+            "hit": True,
+            "ttl_seconds": current_app.config["CHECK_CACHE_TTL"],
+        }
+        return jsonify(cached)
+
+    links = analyze_links(text)
+    rule_signals = evaluate_rules(text, links)
+
     try:
-        tool_name, tool_args = generate_function_call(
+        _tool_name, tool_args = generate_function_call(
             api_key=current_app.config["GEMINI_API_KEY"],
             model=current_app.config["GEMINI_MODEL"],
             user_prompt=text,
@@ -50,7 +66,7 @@ def check():
         )
         return jsonify({"error": str(exc)}), 502
 
-    detective = parse_detective(tool_args, source_text=text)
+    detective = parse_detective(tool_args, source_text=text, rule_signals=rule_signals)
     detective_payload = detective.to_dict()
     _record_call("detective", text, detective_payload)
 
@@ -59,6 +75,14 @@ def check():
         "psychologist": None,
         "psychologist_status": "not_needed",
         "psychologist_error": None,
+        "technical_analysis": {
+            "links": [item.to_dict() for item in links],
+            "rule_signals": signals_to_payload(rule_signals),
+        },
+        "cache": {
+            "hit": False,
+            "ttl_seconds": current_app.config["CHECK_CACHE_TTL"],
+        },
     }
 
     if should_activate_psychologist(detective.risk_level):
@@ -91,6 +115,8 @@ def check():
             )
             _record_call("psychologist", text, detective_payload, status="error")
 
+    if response["psychologist_status"] != "unavailable":
+        cache.put(cache_key, response)
     return jsonify(response)
 
 

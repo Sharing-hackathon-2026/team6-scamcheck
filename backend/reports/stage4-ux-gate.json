@@ -1,0 +1,27 @@
+{
+  "evaluator_model": "gemini-3.1-flash-lite",
+  "screenshots": [
+    "desktop empty",
+    "mobile empty",
+    "desktop result and technical analysis",
+    "mobile quiz incorrect feedback",
+    "mobile input error attempt"
+  ],
+  "result": {
+    "score": 9.5,
+    "usable": true,
+    "verdict": "Giao diện được thiết kế rất tốt, tập trung cao độ vào trải nghiệm người dùng 45+. Hệ thống phân cấp thông tin rõ ràng, dễ hiểu. Màu sắc và font chữ hỗ trợ tốt cho khả năng đọc hiểu. Chức năng quiz mang tính giáo dục cao và an toàn.",
+    "critical": [],
+    "major": [],
+    "minor": [
+      "Kích thước của các nút nhấn Thử nhanh (Giả ngân hàng, Trúng thưởng) có thể hơi nhỏ trên một số thiết bị di động với người dùng có thị lực kém, cần đảm bảo touch target đạt chuẩn 44x44px hoặc lớn hơn."
+    ],
+    "strengths": [
+      "Thông điệp chính rõ ràng, hiểu nhiệm vụ ngay lập tức.",
+      "Font chữ lớn, độ tương phản tốt, rất thân thiện với nhóm tuổi 45+.",
+      "Phân tích kỹ thuật được trình bày đơn giản, dễ hiểu, không gây sợ hãi (non-alarmist).",
+      "Có Legal footer đầy đủ, làm rõ trách nhiệm công cụ giáo dục.",
+      "Mobile reflow thực hiện tốt, nội dung vẫn giữ được cấu trúc trên mobile."
+    ]
+  }
+}
