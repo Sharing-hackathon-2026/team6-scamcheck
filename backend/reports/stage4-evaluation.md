@@ -2,7 +2,7 @@
 
 - Thời điểm: 2026-07-14T17:19:40+00:00
 - Model: `gemini-3.1-flash-lite`
-- Commit: `uncommitted-stage4-working-tree`
+- Commit: `ffe8a4aff9654e171b58afb8760201300d43e5cf`
 - Prompt/pipeline: `baseline=detective-function-call-v2-stage3-scope; improved=detective-function-call-v3-stage4-scope` / `stage4-v1-prompt3`
 - Dataset: 60 tin
 - Phương pháp: two throttled 60-case runs; baseline Stage 3 prompt vs improved Stage 4 prompt + deterministic rules; no invalid outputs
