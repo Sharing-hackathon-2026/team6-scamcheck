@@ -1,0 +1,28 @@
+# systemd unit cho backend ScamCheck (gunicorn + Flask).
+#
+# Cài trên VM target:
+#   sudo cp deploy/scamcheck-backend.service /etc/systemd/system/scamcheck-backend.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now scamcheck-backend
+# Quản lý: systemctl status/restart scamcheck-backend, journalctl -u scamcheck-backend -f
+#
+# GEMINI_API_KEY đọc từ /etc/scamcheck.env (KHÔNG commit file này).
+
+[Unit]
+Description=ScamCheck backend (Flask/gunicorn)
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/scamcheck/backend
+EnvironmentFile=/etc/scamcheck.env
+ExecStart=/opt/scamcheck/backend/.venv/bin/gunicorn \
+    --workers 2 --bind 127.0.0.1:5000 \
+    --timeout 45 \
+    "app:create_app()"
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

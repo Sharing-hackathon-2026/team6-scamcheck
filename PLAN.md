@@ -65,13 +65,13 @@ Chi tiết:
 
 **Mục tiêu:** Nền móng repo, config, CI tối thiểu, chốt lựa chọn Cấp 4.
 
-- [ ] Tạo repo `scamcheck`, `git init`, nhánh `main`.
-- [ ] `.gitignore` (loại trừ `.env`, `__pycache__`, `venv`, `*.db`).
-- [ ] `.env.example` (không chứa key thật) + hướng dẫn điền key.
-- [ ] Cấu trúc thư mục + skeleton Flask (xem `ARCHITECTURE.md`).
-- [ ] `requirements.txt`, `pytest` cấu hình.
-- [ ] **Chốt cặp tính năng Cấp 4 = B + C** (ghi vào README + báo mentor).
-- [ ] Cài `google-generativeai`/`requests`, verify key gọi được 1 request test.
+- [x] ~~Tạo repo~~ Repo `Sharing-hackathon-2026/team6-scamcheck` (remote có sẵn).
+- [x] `.gitignore` (loại trừ `.env`, `__pycache__`, `venv`, `*.db`).
+- [x] `.env.example` (không chứa key thật) + hướng dẫn điền key.
+- [x] Cấu trúc thư mục monorepo (frontend/ + backend/) + Flask skeleton.
+- [x] `backend/requirements.txt`, `backend/pytest.ini` (28 test xanh).
+- [x] **Chốt cặp tính năng Cấp 4 = B + C** (ghi trong §4).
+- [x] `requests` + verify key thật `gemini-3.1-flash-lite` gọi OK.
 
 **Hoàn thành:** Repo chạy `flask run` lên trang trắng với footer pháp lý. Key không lộ trong git history (`git log -p | grep GEMINI_API_KEY` = rỗng).
 
@@ -83,11 +83,11 @@ Chi tiết:
 
 Backlog mapping: **L1-01 → L1-05**.
 
-- [ ] **L1-01** Khởi tạo kho mã — `.gitignore` + `.env.example` (đã làm ở Stage 0, verify lại).
-- [ ] **L1-02** Giao diện nhập liệu cơ bản — `frontend/index.html`: `<textarea>` lớn + nút **Kiểm tra**, footer pháp lý. Chưa cần đẹp.
-- [ ] **L1-03** Tích hợp Gemini — `POST /api/check` (Flask) gọi `services/gemini.py:generate_text()`, trả **JSON** `{"result": "..."}`; JS `app.js` fetch rồi hiện văn bản thô.
-- [ ] **L1-04** Dòng cảnh báo pháp lý — component footer HTML ở mọi trang frontend.
-- [ ] **L1-05** Triển khai lên mạng — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask); xác nhận địa chỉ công khai.
+- [x] **L1-01** Khởi tạo kho mã — `.gitignore` + `.env.example` (đã làm ở Stage 0, verify lại).
+- [x] **L1-02** Giao diện nhập liệu cơ bản — `frontend/index.html`: `<textarea>` lớn + nút **Kiểm tra**, footer pháp lý. Chưa cần đẹp.
+- [x] **L1-03** Tích hợp Gemini — `POST /api/check` (Flask) gọi `services/gemini.py:generate_text()`, trả **JSON** `{"result": "..."}`; JS `app.js` fetch rồi hiện văn bản thô.
+- [x] **L1-04** Dòng cảnh báo pháp lý — component footer HTML ở mọi trang frontend.
+- [ ] **L1-05** Triển khai lên mạng _(còn chờ deploy lên VM target)_ — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask); xác nhận địa chỉ công khai.
 
 **Test (pytest):**
 - `backend/tests/test_gemini_raw.py` — mock HTTP, verify request payload đúng (key, model, prompt).

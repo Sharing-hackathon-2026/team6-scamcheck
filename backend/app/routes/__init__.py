@@ -1,0 +1,12 @@
+"""Đăng ký tất cả route blueprints, đều nằm dưới /api."""
+from __future__ import annotations
+
+from flask import Flask
+
+
+def register_blueprints(app: Flask) -> None:
+    from .health import bp as health_bp
+    from .check import bp as check_bp
+
+    app.register_blueprint(health_bp)
+    app.register_blueprint(check_bp)

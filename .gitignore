@@ -1,0 +1,27 @@
+# Secrets — KHÔNG bao giờ commit
+.env
+*.env
+!/env.example
+backend/.env
+
+# Frontend config chứa key? (Stage 1 không có key ở FE, nhưng giữ rule phòng hờ)
+frontend/assets/js/config.local.js
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+*.db
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Build
+node_modules/
+dist/
