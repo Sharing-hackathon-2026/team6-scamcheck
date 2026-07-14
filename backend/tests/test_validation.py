@@ -4,7 +4,7 @@ Cấp 1 dùng luôn để chặn sớm; Cấp 2 mở rộng thêm.
 """
 from __future__ import annotations
 
-from app.services.validation import validate_input
+from app.services.validation import normalize_nfc, validate_input
 
 
 def test_empty_string_invalid():
@@ -38,6 +38,13 @@ def test_too_long_text_invalid():
 
 def test_exactly_max_len_ok():
     assert validate_input("a" * 5000, max_len=5000) == []
+
+
+def test_normalize_nfc_composes_vietnamese_combining_marks():
+    decomposed = "Cung c" + "a\u0302\u0301" + "p m" + "a\u0323\u0302" + "t kh" + "a\u0302\u0309" + "u"
+    normalized = normalize_nfc(decomposed)
+    assert normalized == "Cung cấp mật khẩu"
+    assert normalized != decomposed
 
 
 def test_error_message_is_friendly_vietnamese():

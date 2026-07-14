@@ -1,3 +1,4 @@
+// Logic giao diện Stage 2. Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
 import { check, ApiError } from './api.js';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
@@ -8,6 +9,7 @@ import {
   saveHistory,
 } from './history.js';
 import { normalizeDetective, RISK_META } from './result-model.js';
+import { normalizeNfc } from './unicode.js';
 import {
   appendTranscript,
   getSpeechRecognitionConstructor,
@@ -204,6 +206,7 @@ function renderHistory() {
 
   historyEntries.forEach((entry) => {
     const detective = normalizeDetective(entry.detective);
+    const normalizedText = normalizeNfc(entry.text);
     const item = createElement('li', { className: 'history-item' });
     const openButton = createElement('button', {
       className: 'history-open',
@@ -211,14 +214,14 @@ function renderHistory() {
     });
     openButton.append(
       createElement('span', { className: 'history-risk', text: RISK_META[detective.risk_level].label }),
-      createElement('span', { className: 'history-preview', text: previewText(entry.text) }),
+      createElement('span', { className: 'history-preview', text: previewText(normalizedText) }),
     );
     const removeButton = createElement('button', {
       className: 'icon-button danger',
       attributes: {
         type: 'button',
         'data-history-delete': entry.id,
-        'aria-label': `Xoá mục lịch sử: ${previewText(entry.text)}`,
+        'aria-label': `Xoá mục lịch sử: ${previewText(normalizedText)}`,
         title: 'Xoá mục này',
       },
     });
@@ -249,6 +252,7 @@ function clearCurrent() {
 }
 
 async function onCheck() {
+  elements.textInput.value = normalizeNfc(elements.textInput.value);
   const text = elements.textInput.value.trim();
   if (!text) {
     showError('Vui lòng dán, gõ hoặc đọc nội dung tin nhắn cần kiểm tra.');
@@ -274,7 +278,7 @@ function openHistoryEntry(id) {
   const entry = historyEntries.find((item) => item.id === id);
   if (!entry) return;
   stopSpeech();
-  elements.textInput.value = entry.text;
+  elements.textInput.value = normalizeNfc(entry.text);
   showResult(entry.text, entry.detective);
   elements.status.textContent = 'Đang xem lại kết quả đã lưu trên thiết bị. Không gọi AI.';
   elements.usage.textContent = '';
@@ -304,7 +308,9 @@ function setupSpeech() {
 
   recognition.addEventListener('result', (event) => {
     const transcript = transcriptFromEvent(event);
-    if (transcript) elements.textInput.value = appendTranscript(elements.textInput.value, transcript);
+    if (transcript) {
+      elements.textInput.value = normalizeNfc(appendTranscript(elements.textInput.value, transcript));
+    }
   });
 
   recognition.addEventListener('error', (event) => {
@@ -342,10 +348,13 @@ elements.clearBtn.addEventListener('click', clearCurrent);
 elements.textInput.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') onCheck();
 });
+elements.textInput.addEventListener('change', () => {
+  elements.textInput.value = normalizeNfc(elements.textInput.value);
+});
 
 document.querySelectorAll('[data-sample]').forEach((button) => {
   button.addEventListener('click', () => {
-    elements.textInput.value = samples[button.dataset.sample] || '';
+    elements.textInput.value = normalizeNfc(samples[button.dataset.sample] || '');
     elements.textInput.focus();
     elements.status.textContent = 'Đã điền tin mẫu. Bấm “Kiểm tra tin nhắn” để phân tích.';
   });

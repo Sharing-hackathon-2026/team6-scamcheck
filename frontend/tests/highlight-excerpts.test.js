@@ -6,6 +6,15 @@ import {
   normalizeWithMap,
 } from '../assets/js/highlight-excerpts.js';
 
+test('findExcerptRanges composes NFD source before matching and slicing', () => {
+  const source = `Cung c${'a\u0302\u0301'}p ma${'\u0323\u0302'}t khau`;
+  const segments = buildHighlightedSegments(source, ['cấp mật']);
+  assert.equal(segments.map((item) => item.text).join(''), 'Cung cấp mật khau');
+  assert.deepEqual(segments.filter((item) => item.highlighted), [
+    { text: 'cấp mật', highlighted: true },
+  ]);
+});
+
 test('normalizeWithMap folds Vietnamese case and whitespace while retaining source positions', () => {
   const value = normalizeWithMap('MÃ   OTP\nNgay');
   assert.equal(value.normalized, 'mã otp ngay');

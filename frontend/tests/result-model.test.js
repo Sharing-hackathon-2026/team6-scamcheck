@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { normalizeNfc } from '../assets/js/unicode.js';
 import {
   FALLBACK_ACTIONS,
   normalizeActions,
   normalizeDetective,
   RISK_META,
 } from '../assets/js/result-model.js';
+
+test('normalizeNfc composes Vietnamese combining marks', () => {
+  const decomposed = `Ca${'\u0302\u0301'}p nha${'\u0323\u0302'}t`;
+  assert.equal(normalizeNfc(decomposed), 'Cấp nhật');
+  assert.notEqual(normalizeNfc(decomposed), decomposed);
+});
 
 test('all four backend risk levels have friendly UI metadata', () => {
   assert.deepEqual(Object.keys(RISK_META), ['an_toan', 'nghi_ngo', 'nguy_hiem', 'khong_lien_quan']);

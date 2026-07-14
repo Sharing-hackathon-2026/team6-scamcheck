@@ -1,3 +1,5 @@
+import { normalizeNfc } from './unicode.js';
+
 export const RISK_META = Object.freeze({
   an_toan: { label: 'An toàn', announcement: 'Kết quả: An toàn' },
   nghi_ngo: { label: 'Nghi ngờ', announcement: 'Kết quả: Nghi ngờ' },
@@ -12,7 +14,7 @@ export const FALLBACK_ACTIONS = Object.freeze([
 ]);
 
 function cleanText(value) {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === 'string' ? normalizeNfc(value).trim() : '';
 }
 
 /** Bảo đảm giao diện luôn có đúng ba hành động cho ba mức rủi ro chính. */

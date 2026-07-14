@@ -63,6 +63,8 @@ npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 
 Stage 2 bổ sung thẻ rủi ro, tô vàng excerpt an toàn XSS, lịch sử localStorage 10 mục,
 3 tin mẫu, loading/error state, Web Speech API và giao diện ≥18px/touch target ≥44px.
+Mọi text đi qua boundary API, textarea, speech và localStorage được chuẩn hoá Unicode NFC
+(precomposed) để tiếng Việt render ổn định trên các trình duyệt cũ.
 Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
 
 (Sửa `config.js` chỉ khi dev tách port. Prod để rỗng vì Nginx cùng origin.)

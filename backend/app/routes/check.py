@@ -7,7 +7,7 @@ from ..prompts import STAGE1_SYSTEM_PROMPT
 from ..services.audit import append_ai_log, get_ai_log
 from ..services.gemini import GeminiError, generate_json
 from ..services.parser import parse_detective
-from ..services.validation import validate_input
+from ..services.validation import normalize_nfc, validate_input
 
 bp = Blueprint("check", __name__)
 
@@ -16,7 +16,7 @@ bp = Blueprint("check", __name__)
 def check():
     """Phân tích tin nhắn và luôn trả kết quả Thám tử có cấu trúc."""
     data = request.get_json(silent=True) or {}
-    text = data.get("text", "")
+    text = normalize_nfc(data.get("text", ""))
     errors = validate_input(text, max_len=current_app.config["MAX_INPUT_LENGTH"])
     if errors:
         return jsonify({"errors": errors}), 400

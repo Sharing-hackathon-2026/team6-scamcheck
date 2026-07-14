@@ -5,7 +5,16 @@ Trả về danh sách lỗi thân thiện (tiếng Việt) thay vì ném excepti
 """
 from __future__ import annotations
 
+import unicodedata
+
 from ..config import Config
+
+
+def normalize_nfc(value: str) -> str:
+    """Chuẩn hoá Unicode dựng sẵn để trình duyệt cũ render tiếng Việt ổn định."""
+    if not isinstance(value, str):
+        return value
+    return unicodedata.normalize("NFC", value)
 
 
 def validate_input(text: str, max_len: int | None = None) -> list[str]:

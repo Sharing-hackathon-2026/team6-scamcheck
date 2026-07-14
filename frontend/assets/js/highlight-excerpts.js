@@ -1,9 +1,11 @@
+import { normalizeNfc } from './unicode.js';
+
 /**
  * Chuẩn hoá chuỗi để đối chiếu excerpt thân thiện với hoa/thường và khoảng trắng.
  * Mảng map giữ vị trí từng ký tự đã chuẩn hoá trong chuỗi gốc.
  */
 export function normalizeWithMap(value, locale = 'vi') {
-  const source = String(value ?? '');
+  const source = normalizeNfc(String(value ?? ''));
   let normalized = '';
   const map = [];
   let pendingWhitespace = false;
@@ -37,8 +39,9 @@ export function normalizeWithMap(value, locale = 'vi') {
 }
 
 function findAllRanges(source, excerpt, locale) {
-  const sourceNormalized = normalizeWithMap(source, locale);
-  const excerptNormalized = normalizeWithMap(excerpt, locale).normalized.trim();
+  const normalizedSource = normalizeNfc(String(source ?? ''));
+  const sourceNormalized = normalizeWithMap(normalizedSource, locale);
+  const excerptNormalized = normalizeWithMap(normalizeNfc(excerpt), locale).normalized.trim();
   if (!excerptNormalized) return [];
 
   const ranges = [];
@@ -49,7 +52,7 @@ function findAllRanges(source, excerpt, locale) {
 
     const start = sourceNormalized.map[foundAt];
     const lastMappedIndex = sourceNormalized.map[foundAt + excerptNormalized.length - 1];
-    const lastCodePoint = source.codePointAt(lastMappedIndex);
+    const lastCodePoint = normalizedSource.codePointAt(lastMappedIndex);
     const end = lastMappedIndex + String.fromCodePoint(lastCodePoint).length;
     ranges.push({ start, end });
     fromIndex = foundAt + Math.max(1, excerptNormalized.length);
@@ -65,7 +68,7 @@ function findAllRanges(source, excerpt, locale) {
  * - Excerpt không tồn tại bị bỏ qua.
  */
 export function findExcerptRanges(source, excerpts, { locale = 'vi' } = {}) {
-  const text = String(source ?? '');
+  const text = normalizeNfc(String(source ?? ''));
   if (!text || !Array.isArray(excerpts)) return [];
 
   const ranges = excerpts
@@ -85,7 +88,7 @@ export function findExcerptRanges(source, excerpts, { locale = 'vi' } = {}) {
 
 /** Trả các đoạn text/mark thuần dữ liệu để render bằng textContent (an toàn XSS). */
 export function buildHighlightedSegments(source, excerpts, options) {
-  const text = String(source ?? '');
+  const text = normalizeNfc(String(source ?? ''));
   const ranges = findExcerptRanges(text, excerpts, options);
   if (!ranges.length) return text ? [{ text, highlighted: false }] : [];
 

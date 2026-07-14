@@ -1,3 +1,5 @@
+import { normalizeNfc } from './unicode.js';
+
 export const SPEECH_MESSAGES = Object.freeze({
   unsupported: 'Trình duyệt này chưa hỗ trợ nhập bằng giọng nói. Bác vẫn có thể dán hoặc gõ tin nhắn.',
   listening: 'Đang nghe. Bác đọc tin nhắn, rồi bấm Dừng nghe khi xong.',
@@ -29,9 +31,11 @@ export function transcriptFromEvent(event) {
     const transcript = results[index]?.[0]?.transcript;
     if (typeof transcript === 'string' && transcript.trim()) chunks.push(transcript.trim());
   }
-  return chunks.join(' ');
+  return normalizeNfc(chunks.join(' '));
 }
 
 export function appendTranscript(currentText, transcript) {
-  return [String(currentText ?? '').trim(), String(transcript ?? '').trim()].filter(Boolean).join(' ');
+  return normalizeNfc(
+    [String(currentText ?? '').trim(), String(transcript ?? '').trim()].filter(Boolean).join(' '),
+  );
 }

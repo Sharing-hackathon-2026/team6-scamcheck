@@ -1,3 +1,5 @@
+import { normalizeNfc } from './unicode.js';
+
 export const HISTORY_KEY = 'scamcheck.history.v2';
 export const HISTORY_LIMIT = 10;
 
@@ -7,7 +9,7 @@ function hasStorageShape(storage) {
 
 export function sanitizeHistoryEntry(value) {
   if (!value || typeof value !== 'object') return null;
-  const text = typeof value.text === 'string' ? value.text.trim() : '';
+  const text = typeof value.text === 'string' ? normalizeNfc(value.text).trim() : '';
   const detective = value.detective;
   if (!text || !detective || typeof detective !== 'object') return null;
   return {

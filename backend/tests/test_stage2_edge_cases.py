@@ -15,7 +15,7 @@ EDGE_CASES: list[dict[str, Any]] = [
     {"id": "too_long", "text": "a" * 5001, "expected": "invalid"},
     {
         "id": "unicode_nfd",
-        "text": "Cung cấp mật khẩu ngay",
+        "text": "Cung c" + "a\u0302\u0301" + "p m" + "a\u0323\u0302" + "t kh" + "a\u0302\u0309" + "u ngay",
         "expected": "nguy_hiem",
         "ai_risk": "an_toan",
     },

@@ -73,7 +73,7 @@ def test_conservative_guard_overrides_unrelated_money_request():
 
 
 def test_high_risk_guard_handles_unicode_combining_marks():
-    text = "Cung cấp mật khẩu ngay"  # chữ Việt ở dạng NFD
+    text = "Cung c" + "a\u0302\u0301" + "p m" + "a\u0323\u0302" + "t kh" + "a\u0302\u0309" + "u ngay"
     assert has_explicit_high_risk_signal(text) is True
 
 
