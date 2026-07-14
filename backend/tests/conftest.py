@@ -46,7 +46,7 @@ def mock_gemini_text(monkeypatch):
     """
     import app.services.gemini as gemini_mod
 
-    state = {"calls": 0, "payload": _gemini_payload(), "raise": None}
+    state = {"calls": 0, "payload": _gemini_payload(), "raise": None, "last_body": None}
 
     class _FakeResponse:
         status_code = 200
@@ -59,6 +59,7 @@ def mock_gemini_text(monkeypatch):
 
     def _fake_post(url, json=None, timeout=None, **kwargs):
         state["calls"] += 1
+        state["last_body"] = json
         if state["raise"]:
             raise state["raise"]
         return _FakeResponse(state["payload"])

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from flask import Blueprint, current_app, jsonify, request
 
+from ..prompts import STAGE1_SYSTEM_PROMPT
 from ..services.gemini import GeminiError, generate_text
 from ..services.validation import validate_input
 
@@ -40,6 +41,7 @@ def check():
             api_key=api_key,
             model=model,
             user_prompt=text,
+            system_prompt=STAGE1_SYSTEM_PROMPT,
         )
     except GeminiError as exc:
         # Lỗi gọi AI: trả 502 + thông báo thân thiện, KHÔNG gãy.

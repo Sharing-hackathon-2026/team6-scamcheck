@@ -86,12 +86,15 @@ Backlog mapping: **L1-01 → L1-05**.
 - [x] **L1-01** Khởi tạo kho mã — `.gitignore` + `.env.example` (đã làm ở Stage 0, verify lại).
 - [x] **L1-02** Giao diện nhập liệu cơ bản — `frontend/index.html`: `<textarea>` lớn + nút **Kiểm tra**, footer pháp lý. Chưa cần đẹp.
 - [x] **L1-03** Tích hợp Gemini — `POST /api/check` (Flask) gọi `services/gemini.py:generate_text()`, trả **JSON** `{"result": "..."}`; JS `app.js` fetch rồi hiện văn bản thô.
+- [x] **L1-03b** Harden Stage 1 — `app/prompts.py:STAGE1_SYSTEM_PROMPT` định nghĩa vai ScamCheck + quy tắc **từ chối** tin không liên quan (trả canned `STAGE1_REFUSAL`), giới hạn output ≤120 từ → tránh lãng phí quota khi user dán tin thường. Verify AI thật: 3 tin thường → refusal, 4 tin lừa đảo (gồm giả danh người quen xin tiền) → phân tích đúng.
 - [x] **L1-04** Dòng cảnh báo pháp lý — component footer HTML ở mọi trang frontend.
 - [x] **L1-05** Triển khai lên mạng ✅ — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask) trên VM `team6-scamcheck.exe.xyz`. Địa chỉ công khai: **https://team6-scamcheck.exe.xyz:8000/** (đã verify live).
 
 **Test (pytest):**
 - `backend/tests/test_gemini_raw.py` — mock HTTP, verify request payload đúng (key, model, prompt).
 - `backend/tests/test_routes.py::test_api_check_returns_json`.
+- `backend/tests/test_prompts.py` — ràng buộc nội dung system prompt (refusal canned, vai hẹp, giới hạn output).
+- `backend/tests/test_routes.py::test_check_sends_hardened_system_prompt` — verify route gửi `system_prompt` đi.
 
 **Tiêu chí hoàn thành:** Mentor mở URL trên iPhone, dán tin mẫu, thấy kết quả AI trong ≤30s. Git history sạch key.
 

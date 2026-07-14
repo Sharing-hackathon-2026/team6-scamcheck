@@ -19,6 +19,23 @@ def test_check_returns_text_from_gemini(client, mock_gemini_text):
     assert mock_gemini_text["calls"] == 1
 
 
+def test_check_sends_hardened_system_prompt(client, mock_gemini_text):
+    """Stage 1 harden: phải gửi system_prompt vai ScamCheck để AI từ chối tin không liên quan."""
+    mock_gemini_text["payload"] = {
+        "candidates": [{"content": {"parts": [{"text": "ok"}]}}]
+    }
+    client.post("/api/check", json={"text": "Gửi mã OTP để nhận quà"})
+    body = mock_gemini_text["last_body"]
+    assert body is not None
+    sys_prompt = body["system_instruction"]["parts"][0]["text"]
+    # Phải có vai hẹp + yêu cầu từ chối tin không liên quan.
+    assert "ScamCheck" in sys_prompt
+    assert "TỪ CHỐI" in sys_prompt or "từ chối" in sys_prompt.lower()
+    # Câu canned refusal phải nằm trong prompt để AI复读 nó.
+    from app.prompts import STAGE1_REFUSAL
+    assert STAGE1_REFUSAL in sys_prompt
+
+
 def test_check_rejects_empty_input(client, mock_gemini_text):
     """L2-08: tin trống → 400, không gọi AI."""
     r = client.post("/api/check", json={"text": ""})
