@@ -1,0 +1,180 @@
+{
+  "version": "stage3-v1",
+  "certainty_note": "Đây là các mẫu thường gặp, không phải danh sách đầy đủ tuyệt đối.",
+  "groups": [
+    {
+      "key": "fake_bank",
+      "label": "Giả mạo ngân hàng"
+    },
+    {
+      "key": "fake_police",
+      "label": "Giả mạo công an"
+    },
+    {
+      "key": "prize",
+      "label": "Trúng thưởng"
+    },
+    {
+      "key": "delivery",
+      "label": "Giao hàng"
+    }
+  ],
+  "items": [
+    {
+      "id": "fake_bank-1",
+      "group": "fake_bank",
+      "slug": "xac-minh-khan",
+      "title": "Yêu cầu xác minh tài khoản khẩn",
+      "summary": "Tin dọa khóa tài khoản và thúc bác xác minh ngay.",
+      "warning_signs": [
+        "Tạo áp lực thời gian",
+        "Kèm liên kết lạ",
+        "Xin mã OTP hoặc mật khẩu"
+      ],
+      "safe_action": "Dừng thao tác và tự mở ứng dụng ngân hàng chính thức để kiểm tra."
+    },
+    {
+      "id": "fake_bank-2",
+      "group": "fake_bank",
+      "slug": "hoan-tien",
+      "title": "Hoàn tiền cần cung cấp thông tin thẻ",
+      "summary": "Tin hứa hoàn phí nhưng yêu cầu nhập dữ liệu thẻ hoặc mã xác thực.",
+      "warning_signs": [
+        "Hứa hoàn tiền bất ngờ",
+        "Xin số thẻ hoặc CVV",
+        "Dẫn sang trang không quen thuộc"
+      ],
+      "safe_action": "Không nhập thông tin; gọi số chính thức in trên thẻ nếu cần xác minh."
+    },
+    {
+      "id": "fake_bank-3",
+      "group": "fake_bank",
+      "slug": "nang-cap-bao-mat",
+      "title": "Mời nâng cấp bảo mật qua liên kết",
+      "summary": "Tin nói cần định danh lại hoặc nâng cấp để tiếp tục dùng tài khoản.",
+      "warning_signs": [
+        "Yêu cầu làm ngoài ứng dụng",
+        "Dọa gián đoạn dịch vụ",
+        "Xin quyền đăng nhập"
+      ],
+      "safe_action": "Tự cập nhật từ kho ứng dụng và kiểm tra thông báo trong ứng dụng chính thức."
+    },
+    {
+      "id": "fake_police-1",
+      "group": "fake_police",
+      "slug": "moi-lam-viec",
+      "title": "Mời làm việc khẩn qua điện thoại",
+      "summary": "Người gọi tự xưng cán bộ và yêu cầu bác giữ bí mật.",
+      "warning_signs": [
+        "Mượn uy tín cơ quan",
+        "Cấm báo người thân",
+        "Đe dọa xử lý ngay"
+      ],
+      "safe_action": "Bình tĩnh kết thúc cuộc gọi và tự liên hệ cơ quan qua kênh công khai."
+    },
+    {
+      "id": "fake_police-2",
+      "group": "fake_police",
+      "slug": "tai-san-vu-an",
+      "title": "Nói tài khoản liên quan vụ án",
+      "summary": "Người lạ nói tiền của bác cần được kiểm tra hoặc chuyển để chứng minh.",
+      "warning_signs": [
+        "Gây sợ bị truy tố",
+        "Đòi chuyển tiền kiểm tra",
+        "Gửi giấy tờ qua ứng dụng chat"
+      ],
+      "safe_action": "Không chuyển tiền và nhờ người thân cùng kiểm tra thông tin."
+    },
+    {
+      "id": "fake_police-3",
+      "group": "fake_police",
+      "slug": "cai-ung-dung",
+      "title": "Yêu cầu cài ứng dụng hỗ trợ điều tra",
+      "summary": "Tin nhắn hướng dẫn cài ứng dụng lạ hoặc cấp quyền điều khiển máy.",
+      "warning_signs": [
+        "Cài tệp ngoài kho chính thức",
+        "Xin quyền trợ năng",
+        "Yêu cầu chia sẻ màn hình"
+      ],
+      "safe_action": "Không cài ứng dụng và gỡ ngay nếu vừa cài từ nguồn lạ."
+    },
+    {
+      "id": "prize-1",
+      "group": "prize",
+      "slug": "trung-bat-ngo",
+      "title": "Thông báo trúng thưởng bất ngờ",
+      "summary": "Bác được báo trúng quà dù không nhớ đã tham gia chương trình.",
+      "warning_signs": [
+        "Giải thưởng giá trị lớn",
+        "Hạn nhận quà rất ngắn",
+        "Nguồn tổ chức không rõ"
+      ],
+      "safe_action": "Tìm chương trình trên kênh chính thức; không phản hồi theo số hoặc link trong tin."
+    },
+    {
+      "id": "prize-2",
+      "group": "prize",
+      "slug": "phi-nhan-thuong",
+      "title": "Thu phí trước khi nhận thưởng",
+      "summary": "Người gửi yêu cầu một khoản phí nhỏ để mở khóa giải thưởng lớn.",
+      "warning_signs": [
+        "Nộp phí trước",
+        "Chuyển vào tài khoản cá nhân",
+        "Hứa hoàn lại sau"
+      ],
+      "safe_action": "Không chuyển bất kỳ khoản phí nào để nhận một giải thưởng chưa xác minh."
+    },
+    {
+      "id": "prize-3",
+      "group": "prize",
+      "slug": "xac-nhan-doi-qua",
+      "title": "Xin giấy tờ để đổi quà",
+      "summary": "Biểu mẫu nhận quà yêu cầu ảnh căn cước, tài khoản hoặc OTP.",
+      "warning_signs": [
+        "Thu thập quá nhiều dữ liệu",
+        "Xin ảnh giấy tờ hai mặt",
+        "Xin mã xác thực"
+      ],
+      "safe_action": "Không gửi giấy tờ hoặc OTP; kiểm tra thể lệ từ trang chính thức."
+    },
+    {
+      "id": "delivery-1",
+      "group": "delivery",
+      "slug": "don-bi-treo",
+      "title": "Đơn hàng bị treo cần xác nhận",
+      "summary": "Tin báo đơn sắp hủy và yêu cầu bấm link cập nhật địa chỉ.",
+      "warning_signs": [
+        "Không nêu đúng mã đơn",
+        "Liên kết lạ",
+        "Thúc xác nhận ngay"
+      ],
+      "safe_action": "Tự mở ứng dụng nơi bác đặt hàng để kiểm tra trạng thái đơn."
+    },
+    {
+      "id": "delivery-2",
+      "group": "delivery",
+      "slug": "phi-giao-lai",
+      "title": "Yêu cầu phí giao lại bất thường",
+      "summary": "Người gửi đòi chuyển thêm phí để giao lại hoặc giao nhanh.",
+      "warning_signs": [
+        "Chuyển khoản ngoài ứng dụng",
+        "Khoản phí không có hóa đơn",
+        "Tài khoản nhận là cá nhân"
+      ],
+      "safe_action": "Chỉ thanh toán theo phương thức hiển thị trong đơn hàng chính thức."
+    },
+    {
+      "id": "delivery-3",
+      "group": "delivery",
+      "slug": "ma-nhan-hang",
+      "title": "Xin mã nhận hàng hoặc OTP",
+      "summary": "Người lạ xin mã nhận hàng, mã xác thực hoặc thông tin thanh toán.",
+      "warning_signs": [
+        "Xin mã trước khi giao",
+        "Không đứng tại địa chỉ giao",
+        "Gọi từ nhiều số lạ"
+      ],
+      "safe_action": "Chỉ cung cấp mã nhận hàng đúng lúc nhận hàng và không bao giờ đưa OTP ngân hàng."
+    }
+  ]
+}

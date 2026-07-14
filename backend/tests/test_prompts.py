@@ -41,8 +41,10 @@ def test_stage1_system_prompt_targets_45plus_audience():
     assert "bình tĩnh" in lowered
 
 
-def test_detective_prompt_alias_keeps_stage1_compatibility():
-    assert DETECTIVE_SYSTEM_PROMPT is STAGE1_SYSTEM_PROMPT
+def test_detective_prompt_extends_stage1_contract_with_terminal_tool_handoff():
+    assert STAGE1_SYSTEM_PROMPT in DETECTIVE_SYSTEM_PROMPT
+    assert "function call" in DETECTIVE_SYSTEM_PROMPT.lower()
+    assert "handoff_to_psychologist" in DETECTIVE_SYSTEM_PROMPT
 
 
 def test_detective_voice_is_dry_rational_and_calm():

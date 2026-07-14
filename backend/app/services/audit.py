@@ -15,7 +15,14 @@ def summarize_result(result: dict[str, Any]) -> str:
     return "Đã nhận kết quả kiểm tra"
 
 
-def append_ai_log(session: Any, input_length: int, result: dict[str, Any]) -> None:
+def append_ai_log(
+    session: Any,
+    input_length: int,
+    result: dict[str, Any],
+    *,
+    actor: str = "detective",
+    status: str = "complete",
+) -> None:
     """Ghi tối đa 10 lần gọi gần nhất vào Flask session."""
     logs = session.get(SESSION_LOG_KEY, [])
     if not isinstance(logs, list):
@@ -25,6 +32,8 @@ def append_ai_log(session: Any, input_length: int, result: dict[str, Any]) -> No
             "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "input_length": input_length,
             "summary": summarize_result(result),
+            "actor": actor if actor in {"detective", "psychologist"} else "unknown",
+            "status": status,
         }
     )
     session[SESSION_LOG_KEY] = logs[-10:]

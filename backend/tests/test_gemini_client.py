@@ -46,6 +46,34 @@ def test_generate_json_sends_json_mode(monkeypatch):
     assert fake.captured["json"]["system_instruction"]["parts"][0]["text"] == "vai"
 
 
+def test_generate_function_call_sends_tools_and_extracts_arguments(monkeypatch):
+    payload = _ok()
+    payload["candidates"][0]["content"]["parts"] = [
+        {"functionCall": {"name": "handoff_to_psychologist", "args": {"risk_level": "nguy_hiem"}}}
+    ]
+    fake = _CapturingPost(payload)
+    monkeypatch.setattr(gemini.requests, "post", fake)
+    name, args = gemini.generate_function_call(
+        api_key="k",
+        model="m",
+        user_prompt="tin",
+        system_prompt="vai",
+        function_declarations=[{"name": "handoff_to_psychologist", "parameters": {"type": "object"}}],
+    )
+    assert name == "handoff_to_psychologist"
+    assert args == {"risk_level": "nguy_hiem"}
+    assert fake.captured["json"]["toolConfig"]["functionCallingConfig"]["mode"] == "ANY"
+    assert fake.captured["json"]["tools"][0]["functionDeclarations"][0]["name"] == "handoff_to_psychologist"
+    assert "generationConfig" not in fake.captured["json"]
+
+
+def test_generate_function_call_returns_empty_for_missing_call(monkeypatch):
+    monkeypatch.setattr(gemini.requests, "post", _CapturingPost(_ok("plain text")))
+    assert gemini.generate_function_call(
+        api_key="k", model="m", user_prompt="tin", system_prompt="vai", function_declarations=[]
+    ) == ("", {})
+
+
 def test_generate_text_raises_when_no_api_key():
     with pytest.raises(GeminiError):
         generate_text(api_key="", model="m", user_prompt="hi")

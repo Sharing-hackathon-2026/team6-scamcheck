@@ -35,3 +35,10 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 6. Kiểm ba thẻ màu bằng công cụ contrast và ảnh xám để bảo đảm nhãn chữ vẫn truyền đạt trạng thái.
 7. Từ chối quyền microphone, không có microphone, và Safari không có Web Speech API: luồng nhập bàn phím vẫn hoàn chỉnh.
 8. Dán chuỗi có HTML/script vào tin nhắn: nội dung phải hiện nguyên văn, không thực thi.
+
+## Stage 3
+
+- Hai phần “Thám tử” và “Cô tâm lý” dùng heading riêng; lỗi Cô tâm lý là text trạng thái, không che verdict.
+- Bộ lọc thư viện là button có `aria-pressed`, dùng được bằng bàn phím và không reload trang.
+- Trạng thái tải/lỗi/số mục thư viện có `role=status`/`role=alert`; card giữ cỡ chữ ≥18px.
+- Grid thư viện về một cột trên mobile; mọi nút lọc giữ touch target tối thiểu 44px.

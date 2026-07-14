@@ -1,5 +1,69 @@
+function renderLibrary(group = 'all') {
+  const groups = libraryData.groups.map((item) => item.key);
+  const activeGroup = groups.includes(group) ? group : 'all';
+  elements.libraryFilters.replaceChildren();
+  [{ key: 'all', label: 'Tất cả' }, ...libraryData.groups].forEach((filter) => {
+    const button = createElement('button', {
+      className: 'library-filter',
+      text: filter.label,
+      attributes: {
+        type: 'button',
+        'data-library-group': filter.key,
+        'aria-pressed': String(filter.key === activeGroup),
+      },
+    });
+    elements.libraryFilters.append(button);
+  });
+
+  const items = filterLibraryItems(libraryData.items, activeGroup);
+  elements.libraryList.replaceChildren();
+  items.forEach((item) => {
+    const article = createElement('details', {
+      className: 'library-item',
+      attributes: { id: item.slug, 'data-library-item': item.id },
+    });
+    const summary = createElement('summary', { className: 'library-item-summary' });
+    const summaryCopy = createElement('span');
+    summaryCopy.append(
+      createElement('span', {
+        className: 'library-group-label',
+        text: libraryData.groups.find((groupItem) => groupItem.key === item.group)?.label || '',
+      }),
+      createElement('span', { className: 'library-item-title', text: item.title }),
+    );
+    summary.append(summaryCopy, createElement('span', {
+      className: 'library-toggle-label', text: 'Xem dấu hiệu', attributes: { 'aria-hidden': 'true' },
+    }));
+    const content = createElement('div', { className: 'library-item-content' });
+    content.append(createElement('p', { text: item.summary }));
+    const signs = createElement('ul', { className: 'library-signs' });
+    item.warning_signs.forEach((sign) => signs.append(createElement('li', { text: sign })));
+    content.append(
+      signs,
+      createElement('p', { className: 'library-safe-action', text: `Nên làm: ${item.safe_action}` }),
+    );
+    article.append(summary, content);
+    elements.libraryList.append(article);
+  });
+  elements.libraryStatus.textContent = `Đang hiển thị ${items.length} kiểu lừa đảo.`;
+}
+
+async function setupLibrary() {
+  try {
+    libraryData = await getScamLibrary();
+    const groups = libraryData.groups.map((item) => item.key);
+    renderLibrary(libraryGroupFromHash(window.location.hash, groups));
+  } catch (error) {
+    elements.libraryStatus.textContent = '';
+    elements.libraryError.textContent = error instanceof ApiError
+      ? error.message
+      : 'Chưa tải được thư viện. Bác vui lòng thử lại sau.';
+    elements.libraryError.hidden = false;
+  }
+}
+
 // Logic giao diện Stage 2. Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, ApiError } from './api.js';
+import { check, ApiError, getScamLibrary } from './api.js';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -9,6 +73,7 @@ import {
   saveHistory,
 } from './history.js';
 import { normalizeDetective, RISK_META } from './result-model.js';
+import { normalizePsychologist, filterLibraryItems, libraryGroupFromHash } from './stage3-model.js';
 import { normalizeNfc } from './unicode.js';
 import {
   appendTranscript,
@@ -39,7 +104,13 @@ const elements = {
   historyList: document.getElementById('historyList'),
   historyEmpty: document.getElementById('historyEmpty'),
   clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+  libraryFilters: document.getElementById('libraryFilters'),
+  libraryList: document.getElementById('libraryList'),
+  libraryStatus: document.getElementById('libraryStatus'),
+  libraryError: document.getElementById('libraryError'),
 };
+
+let libraryData = { groups: [], items: [] };
 
 let historyEntries = loadHistory(window.localStorage);
 let recognition = null;
@@ -98,7 +169,7 @@ function setLoading(on) {
   elements.checkBtn.disabled = on;
   elements.textInput.setAttribute('aria-busy', String(on));
   elements.loadingPanel.hidden = !on;
-  elements.status.textContent = on ? 'Đang kiểm tra, thường mất vài giây.' : '';
+  elements.status.textContent = on ? 'Thám tử đang kiểm tra. Nếu cần, Cô tâm lý sẽ giải thích ngay sau đó.' : '';
   if (on) {
     elements.result.hidden = true;
     elements.error.hidden = true;
@@ -179,7 +250,29 @@ function appendActions(container, detective) {
   container.append(section);
 }
 
-function showResult(text, rawDetective, { focus = true } = {}) {
+function appendPsychologist(container, rawPsychologist, status, error) {
+  const psychologist = normalizePsychologist(rawPsychologist, status, error);
+  if (psychologist.status === 'not_needed') return;
+  const section = createElement('section', {
+    className: 'psychologist-card',
+    attributes: { 'aria-labelledby': 'psychologistTitle' },
+  });
+  section.append(
+    createElement('p', { className: 'section-eyebrow', text: 'Góc nhìn thứ hai' }),
+    createElement('h3', { text: 'Cô tâm lý giải thích', attributes: { id: 'psychologistTitle' } }),
+  );
+  if (psychologist.status === 'complete') {
+    section.append(createElement('p', { className: 'psychologist-message', text: psychologist.message }));
+  } else {
+    section.append(createElement('p', {
+      className: 'psychologist-unavailable',
+      text: psychologist.error || 'Cô tâm lý chưa thể giải thích thêm; kết quả Thám tử vẫn đầy đủ.',
+    }));
+  }
+  container.append(section);
+}
+
+function showResult(text, rawDetective, psychologistOptions = {}, { focus = true } = {}) {
   const detective = normalizeDetective(rawDetective);
   elements.result.replaceChildren();
   elements.result.dataset.risk = detective.risk_level;
@@ -187,6 +280,12 @@ function showResult(text, rawDetective, { focus = true } = {}) {
   appendSourceMessage(elements.result, text, detective);
   appendSignals(elements.result, detective);
   appendActions(elements.result, detective);
+  appendPsychologist(
+    elements.result,
+    psychologistOptions.psychologist,
+    psychologistOptions.status,
+    psychologistOptions.error,
+  );
   elements.result.hidden = false;
   elements.error.hidden = true;
   if (focus) elements.result.focus({ preventScroll: true });
@@ -263,8 +362,20 @@ async function onCheck() {
   setLoading(true);
   try {
     const data = await check(text);
-    const detective = showResult(text, data.detective);
-    historyEntries = addHistoryEntry(historyEntries, { text, detective });
+    const detective = showResult(text, data.detective, {
+      psychologist: data.psychologist,
+      status: data.psychologist_status,
+      error: data.psychologist_error,
+    });
+    historyEntries = addHistoryEntry(historyEntries, {
+      text,
+      detective,
+      psychologist: normalizePsychologist(
+        data.psychologist,
+        data.psychologist_status,
+        data.psychologist_error,
+      ),
+    });
     persistHistory();
     showUsage(data.usage);
   } catch (error) {
@@ -279,7 +390,11 @@ function openHistoryEntry(id) {
   if (!entry) return;
   stopSpeech();
   elements.textInput.value = normalizeNfc(entry.text);
-  showResult(entry.text, entry.detective);
+  showResult(entry.text, entry.detective, {
+    psychologist: entry.psychologist?.message ? { message: entry.psychologist.message } : null,
+    status: entry.psychologist?.status || 'not_needed',
+    error: entry.psychologist?.error || '',
+  });
   elements.status.textContent = 'Đang xem lại kết quả đã lưu trên thiết bị. Không gọi AI.';
   elements.usage.textContent = '';
 }
@@ -382,5 +497,24 @@ elements.clearHistoryBtn.addEventListener('click', () => {
   elements.status.textContent = 'Đã xoá toàn bộ lịch sử.';
 });
 
+elements.libraryFilters.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-library-group]');
+  if (!button) return;
+  const group = button.dataset.libraryGroup;
+  if (group === 'all') {
+    history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  } else {
+    window.location.hash = group;
+  }
+  renderLibrary(group);
+});
+window.addEventListener('hashchange', () => {
+  renderLibrary(libraryGroupFromHash(
+    window.location.hash,
+    libraryData.groups.map((item) => item.key),
+  ));
+});
+
 renderHistory();
 setupSpeech();
+setupLibrary();

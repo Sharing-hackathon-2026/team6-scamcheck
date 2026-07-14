@@ -79,6 +79,9 @@ def _request(
     json_mode: bool,
     timeout: float | None,
     max_retries: int | None,
+    response_schema: dict[str, Any] | None = None,
+    tools: list[dict[str, Any]] | None = None,
+    tool_mode: str | None = None,
 ) -> dict[str, Any]:
     """Thực hiện một request Gemini và trả payload API đã decode."""
     url = _endpoint(api_key, model)
@@ -88,7 +91,12 @@ def _request(
     if json_mode:
         body["generationConfig"] = {
             "response_mime_type": "application/json",
-            "response_schema": GEMINI_DETECTIVE_RESPONSE_SCHEMA,
+            "response_schema": response_schema or GEMINI_DETECTIVE_RESPONSE_SCHEMA,
+        }
+    if tools:
+        body["tools"] = [{"functionDeclarations": tools}]
+        body["toolConfig"] = {
+            "functionCallingConfig": {"mode": tool_mode or "ANY"}
         }
     if system_prompt:
         body["system_instruction"] = {"parts": [{"text": system_prompt}]}
@@ -130,6 +138,9 @@ def generate_text(
             json_mode=False,
             timeout=timeout,
             max_retries=max_retries,
+            response_schema=None,
+            tools=None,
+            tool_mode=None,
         )
     )
 
@@ -142,6 +153,7 @@ def generate_json(
     system_prompt: str = "",
     timeout: float | None = None,
     max_retries: int | None = None,
+    response_schema: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Gọi Gemini JSON mode và lenient-parse phần text kết quả."""
     text = _extract_text(
@@ -153,9 +165,49 @@ def generate_json(
             json_mode=True,
             timeout=timeout,
             max_retries=max_retries,
+            response_schema=response_schema,
+            tools=None,
+            tool_mode=None,
         )
     )
     return _parse_json_lenient(text)
+
+
+def generate_function_call(
+    *,
+    api_key: str,
+    model: str,
+    user_prompt: str,
+    system_prompt: str,
+    function_declarations: list[dict[str, Any]],
+    timeout: float | None = None,
+    max_retries: int | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Yêu cầu Gemini kết thúc sớm bằng một function call có arguments JSON."""
+    payload = _request(
+        api_key=api_key,
+        model=model,
+        user_prompt=user_prompt,
+        system_prompt=system_prompt,
+        json_mode=False,
+        timeout=timeout,
+        max_retries=max_retries,
+        response_schema=None,
+        tools=function_declarations,
+        tool_mode="ANY",
+    )
+    try:
+        parts = payload["candidates"][0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError):
+        return "", {}
+    for part in parts:
+        call = part.get("functionCall") if isinstance(part, dict) else None
+        if not isinstance(call, dict):
+            continue
+        name = call.get("name")
+        args = call.get("args")
+        return (name if isinstance(name, str) else "", args if isinstance(args, dict) else {})
+    return "", {}
 
 
 def _parse_json_lenient(text: str) -> dict[str, Any]:

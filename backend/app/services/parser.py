@@ -147,6 +147,48 @@ def fallback_detective_result() -> DetectiveResult:
     )
 
 
+@dataclass(frozen=True)
+class PsychologistResult:
+    """Lời giải thích ngắn, không có quyền thay đổi verdict Thám tử."""
+
+    message: str
+
+    def to_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+_PSYCHOLOGIST_BLOCKED_PATTERNS = (
+    re.compile(r"\b(?:system|developer|prompt|quy\s*tắc\s*ẩn)\b", re.I),
+    re.compile(
+        r"\b(?:tin|nội\s*dung).{0,24}(?:an\s*toàn|không\s*(?:phải|có)\s*lừa\s*đảo|không\s*nguy\s*hiểm)\b",
+        re.I,
+    ),
+    re.compile(r"\b(?:bỏ\s*qua|đổi\s*vai|làm\s*theo\s*lệnh)\b", re.I),
+)
+
+
+def _sentence_count(text: str) -> int:
+    """Đếm câu đủ ổn định cho lời giải thích tiếng Việt ngắn."""
+    return len([part for part in re.split(r"[.!?]+(?:\s|$)", text) if part.strip()])
+
+
+def parse_psychologist(raw: Any) -> PsychologistResult | None:
+    """Chỉ nhận message 2–3 câu; từ chối đổi vai, lộ prompt hoặc hạ verdict."""
+    if not isinstance(raw, dict):
+        return None
+    message = _clean_text(raw.get("message"), 600)
+    if not message or not 2 <= _sentence_count(message) <= 3:
+        return None
+    if any(pattern.search(message) for pattern in _PSYCHOLOGIST_BLOCKED_PATTERNS):
+        return None
+    return PsychologistResult(message=message)
+
+
+def should_activate_psychologist(risk_level: str) -> bool:
+    """Cô tâm lý chỉ chạy sau verdict nghi ngờ hoặc nguy hiểm đã qua guardrail."""
+    return risk_level in {"nghi_ngo", "nguy_hiem"}
+
+
 def parse_detective(raw: Any, source_text: str = "") -> DetectiveResult:
     """Validate và chuẩn hoá JSON Thám tử; không bao giờ ném exception.
 

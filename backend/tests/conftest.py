@@ -62,7 +62,28 @@ def mock_gemini_text(monkeypatch):
         state["last_body"] = json
         if state["raise"]:
             raise state["raise"]
-        return _FakeResponse(state["payload"])
+        payload = state["payload"]
+        # Route Stage 3 dùng terminal function call. Fixture cũ vẫn có thể cấp JSON text.
+        if json and json.get("tools"):
+            try:
+                import json as json_module
+
+                text = payload["candidates"][0]["content"]["parts"][0]["text"]
+                args = json_module.loads(text)
+            except (KeyError, IndexError, TypeError, json_module.JSONDecodeError):
+                args = {}
+            risk = args.get("risk_level") if isinstance(args, dict) else None
+            name = (
+                "handoff_to_psychologist"
+                if risk in {"nghi_ngo", "nguy_hiem"}
+                else "complete_detective"
+            )
+            payload = {
+                "candidates": [
+                    {"content": {"parts": [{"functionCall": {"name": name, "args": args}}]}}
+                ]
+            }
+        return _FakeResponse(payload)
 
     monkeypatch.setattr(gemini_mod.requests, "post", _fake_post)
     return state

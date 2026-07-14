@@ -1,3 +1,14 @@
+test('history preserves optional psychologist chain result', () => {
+  const psychologist = { status: 'complete', message: 'Cô hiểu bác đang lo.', error: '' };
+  const entries = addHistoryEntry([], {
+    id: 'chain', text: 'Tin đáng ngờ', detective, psychologist, now: 12,
+  });
+  assert.deepEqual(entries[0].psychologist, psychologist);
+  const storage = memoryStorage();
+  saveHistory(storage, entries);
+  assert.deepEqual(loadHistory(storage)[0].psychologist, psychologist);
+});
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {

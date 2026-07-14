@@ -1,3 +1,11 @@
+## `GET /api/scam-library`
+
+Trả thư viện tĩnh ít nhất 12 kiểu lừa đảo thuộc đúng bốn nhóm: giả ngân hàng,
+giả công an, trúng thưởng và giao hàng. Endpoint không gọi AI; frontend lọc theo
+nhóm và URL hash mà không reload.
+
+---
+
 # Hợp đồng API ScamCheck
 
 Backend là REST API thuần JSON, tiền tố `/api/*`. Frontend gọi qua cùng origin (Nginx proxy).
@@ -16,8 +24,9 @@ Health check (cho Nginx / giám sát).
 
 ## `POST /api/check`
 
-Kiểm tra tin nhắn nghi ngờ lừa đảo. Gemini được yêu cầu trả JSON mode; backend
-sau đó chuẩn hoá bằng parser chịu lỗi trước khi trả cho trình duyệt.
+Kiểm tra tin nhắn nghi ngờ lừa đảo. Thám tử kết thúc sớm bằng function call
+`complete_detective` hoặc `handoff_to_psychologist`; backend luôn parse/guardrail
+arguments trước khi quyết định có gọi Cô tâm lý hay không. Cô tâm lý dùng JSON mode.
 
 **Request**
 ```json
@@ -35,10 +44,18 @@ sau đó chuẩn hoá bằng parser chịu lỗi trước khi trả cho trình d
     ],
     "actions": ["...", "...", "..."]
   },
-  "usage": { "calls_used": 1, "call_limit": 10 }
+  "psychologist": {
+    "message": "Cô hiểu vì sao lời thúc giục này dễ làm bác lo..."
+  },
+  "psychologist_status": "complete | not_needed | unavailable | quota_reached",
+  "psychologist_error": null,
+  "usage": { "calls_used": 2, "call_limit": 10 }
 }
 ```
 
+- `psychologist` chỉ có khi verdict sau guardrail là `nghi_ngo`/`nguy_hiem` và lượt thứ hai thành công.
+- Cô tâm lý lỗi/hết quota không che kết quả Thám tử; API vẫn trả 200 với trạng thái độc lập.
+- Quota đếm từng lần gọi AI thực tế: tin an toàn thường tốn 1, tin cần Cô tâm lý tối đa 2.
 - `excerpt` chỉ được giữ nếu xuất hiện nguyên văn trong `text`; parser xoá trích dẫn AI bịa.
 - Gemini nhận `response_schema` theo tập con JSON Schema mà REST API hỗ trợ; hợp đồng nghiêm ngặt
   (không trường thừa) vẫn được nhúng trong system prompt và cưỡng chế lại bởi parser.

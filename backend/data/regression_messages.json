@@ -1,0 +1,122 @@
+[
+  {
+    "id": "bank-otp",
+    "text": "Ngân hàng thông báo tài khoản sắp khóa, hãy gửi mã OTP ngay.",
+    "expected": "nguy_hiem",
+    "reason": "Yêu cầu OTP và gây áp lực."
+  },
+  {
+    "id": "bank-fee",
+    "text": "Chuyển 2 triệu đồng phí xác minh tài khoản trong hôm nay.",
+    "expected": "nguy_hiem",
+    "reason": "Yêu cầu chuyển tiền."
+  },
+  {
+    "id": "police-secret",
+    "text": "Tôi là công an, không được báo người thân và phải làm theo ngay.",
+    "expected": "nguy_hiem",
+    "reason": "Giả danh và cô lập người nhận."
+  },
+  {
+    "id": "police-app",
+    "text": "Cài tệp này để hỗ trợ điều tra và bật quyền trợ năng.",
+    "expected": "nguy_hiem",
+    "reason": "Yêu cầu cài ứng dụng lạ."
+  },
+  {
+    "id": "prize-fee",
+    "text": "Bạn trúng xe máy, chuyển trước 500 nghìn phí nhận giải.",
+    "expected": "nguy_hiem",
+    "reason": "Thu phí trước khi nhận thưởng."
+  },
+  {
+    "id": "prize-data",
+    "text": "Gửi ảnh CCCD hai mặt để xác nhận nhận quà.",
+    "expected": "nguy_hiem",
+    "reason": "Xin dữ liệu nhạy cảm."
+  },
+  {
+    "id": "delivery-link",
+    "text": "Đơn hàng sắp hủy, cập nhật tại https://giao-hang-now.xyz.",
+    "expected": "nguy_hiem",
+    "reason": "Link tên miền đáng ngờ."
+  },
+  {
+    "id": "delivery-otp",
+    "text": "Đọc mã OTP ngân hàng để shipper xác nhận giao hàng.",
+    "expected": "nguy_hiem",
+    "reason": "Xin OTP trái quy trình."
+  },
+  {
+    "id": "invest",
+    "text": "Cam kết lãi 30% mỗi tháng, chuyển tiền để giữ suất.",
+    "expected": "nguy_hiem",
+    "reason": "Lợi nhuận bất thường và yêu cầu tiền."
+  },
+  {
+    "id": "threat",
+    "text": "Làm ngay lập tức nếu không tài khoản sẽ bị khóa và truy tố.",
+    "expected": "nguy_hiem",
+    "reason": "Đe dọa khẩn cấp."
+  },
+  {
+    "id": "odd-prize",
+    "text": "Chúc mừng bác nhận quà, vui lòng liên hệ số trong tin để biết thêm.",
+    "expected": "nghi_ngo",
+    "reason": "Trúng thưởng không rõ nguồn nhưng chưa xin tiền."
+  },
+  {
+    "id": "odd-call",
+    "text": "Có giao dịch bất thường, vui lòng gọi lại số này để kiểm tra.",
+    "expected": "nghi_ngo",
+    "reason": "Kêu liên hệ số trong tin."
+  },
+  {
+    "id": "odd-delivery",
+    "text": "Shipper báo không tìm thấy nhà, nhắn lại địa chỉ giúp em.",
+    "expected": "nghi_ngo",
+    "reason": "Có thể hợp lệ nhưng cần đối chiếu đơn."
+  },
+  {
+    "id": "odd-charity",
+    "text": "Kêu gọi ủng hộ gấp cho một hoàn cảnh nhưng không có nguồn xác minh.",
+    "expected": "nghi_ngo",
+    "reason": "Thiếu nguồn kiểm chứng."
+  },
+  {
+    "id": "safe-delivery",
+    "text": "Đơn 12345 giao từ 14 giờ đến 16 giờ, không cần chuyển khoản trước.",
+    "expected": "an_toan",
+    "reason": "Thông báo giao hàng không xin dữ liệu hay tiền."
+  },
+  {
+    "id": "safe-bank",
+    "text": "Ứng dụng ngân hàng thông báo giao dịch đã thực hiện, nếu không phải bác hãy tự mở ứng dụng kiểm tra.",
+    "expected": "an_toan",
+    "reason": "Khuyên dùng kênh chính thức."
+  },
+  {
+    "id": "safe-warning",
+    "text": "Không cung cấp OTP cho bất kỳ ai, ngân hàng không bao giờ hỏi mã này.",
+    "expected": "an_toan",
+    "reason": "Cảnh báo an toàn, không yêu cầu OTP."
+  },
+  {
+    "id": "safe-order",
+    "text": "Cửa hàng xác nhận đã nhận thanh toán và sẽ gửi hóa đơn trong ứng dụng.",
+    "expected": "an_toan",
+    "reason": "Không yêu cầu thao tác rủi ro."
+  },
+  {
+    "id": "unrelated-family",
+    "text": "Chiều nay cả nhà ăn cơm lúc 6 giờ nhé.",
+    "expected": "khong_lien_quan",
+    "reason": "Tin sinh hoạt thông thường."
+  },
+  {
+    "id": "unrelated-weather",
+    "text": "Ngày mai có thể mưa, nhớ mang áo mưa.",
+    "expected": "khong_lien_quan",
+    "reason": "Không thuộc phạm vi lừa đảo."
+  }
+]

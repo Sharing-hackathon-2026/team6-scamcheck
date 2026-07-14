@@ -351,7 +351,66 @@ class RescueResult:
 - **Hai service độc lập**: sửa frontend = reload Nginx (hoặc thậm chí chỉ cần git pull, vì static);
   sửa backend = restart gunicorn. Không ảnh hưởng lẫn nhau.
 
-> ⚠️ **Lưu ý:** VM deploy `team6-scamcheck.exe.xyz` **khác** VM dev hiện tại.
+## 9. Stage 3 — chuỗi Cô tâm lý và thư viện
+
+### 9.1 Tool-call handoff có guardrail
+
+```text
+validate + NFC
+      │
+      ▼
+Gemini Thám tử --forced function call--> arguments DetectiveResult
+                                      │
+                               parser + guardrail
+                                      │
+                 an_toan/khong_lien_quan ─▶ psychologist_status=not_needed
+                                      │
+                 nghi_ngo/nguy_hiem
+                                      ▼
+                         Gemini Cô tâm lý
+                                      │
+                         parse + role guardrail
+                                      │
+                         ├─ thành công: message 2–3 câu
+                         └─ lỗi/quota: trạng thái độc lập, giữ nguyên Thám tử
+```
+
+- Thám tử phải gọi một trong hai function declaration: `complete_detective` hoặc
+  `handoff_to_psychologist`; cả hai dùng cùng schema DetectiveResult.
+- Backend không tin tên tool: parser/guardrail có quyền đổi verdict và quyết định
+  có gọi Cô tâm lý hay không. Prompt injection không thể tự bật/tắt pipeline.
+- Đây là terminal handoff: không gửi function response về Thám tử, không có lượt
+  tổng hợp cuối vì frontend tự render hai payload có kiểu rõ ràng.
+- Cô tâm lý nhận tin gốc dưới khối dữ liệu không tin cậy và verdict đã parse.
+- Hai model call không chạy song song vì Cô tâm lý phụ thuộc verdict; tin an toàn
+  tốn 1 lượt, tin nghi ngờ/nguy hiểm tối đa 2 lượt.
+- Budget thời gian: Thám tử 6s, một retry; Cô tâm lý 5s, không retry.
+- Quota và audit đếm theo từng persona invocation, không theo số HTTP request.
+
+### 9.2 Contract bổ sung
+
+```json
+{
+  "detective": { "risk_level": "nguy_hiem", "reason": "...", "red_flags": [], "actions": [] },
+  "psychologist": { "message": "Cô hiểu vì sao tin này dễ làm bác lo..." },
+  "psychologist_status": "complete | not_needed | unavailable | quota_reached",
+  "psychologist_error": null,
+  "usage": { "calls_used": 2, "call_limit": 10 }
+}
+```
+
+### 9.3 Thư viện lừa đảo
+
+- JSON tĩnh tại `backend/data/scam_library.json`, đúng bốn nhóm và ít nhất 12 mẫu.
+- `GET /api/scam-library` trả dữ liệu đã validate; không gọi AI.
+- UI lọc theo nhóm và URL hash ở client, không reload; hỗ trợ bàn phím/focus.
+
+### 9.4 Bộ hồi quy
+
+- `backend/data/regression_messages.json`: 20 tin có nhãn và lý do.
+- `backend/scripts/run_regression.py`: runner thật, in bảng đúng/sai và tổng kết.
+- Unit test dùng predictor giả để kiểm tra loader/evaluator/report mà không gọi Gemini.
+
 > Dev/scaffold/test chạy trên VM hiện tại; chỉ ship bản chạy được lên VM target.
 >
 > Cấu hình Nginx mẫu (`deploy/nginx.conf`):

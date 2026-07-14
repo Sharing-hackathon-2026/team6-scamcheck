@@ -34,6 +34,10 @@ export function check(text) {
   });
 }
 
+export function getScamLibrary() {
+  return requestJson('/api/scam-library');
+}
+
 /** Đọc nhật ký metadata của đúng phiên hiện tại. */
 export function getCheckLog() {
   return requestJson('/api/check/log');

@@ -26,12 +26,13 @@ def test_check_returns_structured_detective_and_usage(client, mock_gemini_text):
     assert response.status_code == 200
     assert data["detective"]["risk_level"] == "nguy_hiem"
     assert data["detective"]["red_flags"][0]["excerpt"] == "mã OTP"
-    assert data["usage"] == {"calls_used": 1, "call_limit": 10}
+    assert data["usage"] == {"calls_used": 2, "call_limit": 10}
+    assert data["psychologist_status"] == "unavailable"
     assert mock_gemini_text["last_body"]["generationConfig"]["response_mime_type"] == "application/json"
     response_schema = mock_gemini_text["last_body"]["generationConfig"]["response_schema"]
     assert "additionalProperties" not in response_schema
     system_text = mock_gemini_text["last_body"]["system_instruction"]["parts"][0]["text"]
-    assert "DỮ LIỆU KHÔNG TIN CẬY" in system_text
+    assert "TIN_NHAN_KHONG_TIN_CAY" in system_text
 
 
 def test_check_uses_parser_fallback_for_bad_ai_json(client, mock_gemini_text):
@@ -69,7 +70,9 @@ def test_check_returns_502_on_gemini_error(client, monkeypatch):
             return {"error": {"message": "invalid"}}
 
     monkeypatch.setattr(gemini_mod.requests, "post", lambda *a, **k: Response())
-    assert client.post("/api/check", json={"text": "hãy gửi otp"}).status_code == 502
+    response = client.post("/api/check", json={"text": "hãy gửi otp"})
+    assert response.status_code == 502
+    assert client.get("/api/check/log").get_json()["calls_used"] == 1
 
 
 def test_log_contains_only_metadata(client, mock_gemini_text):

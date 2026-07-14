@@ -43,7 +43,12 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 77 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 99 test, dùng mock (không tốn lượt AI)
+```
+
+Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn quota API):
+```bash
+cd backend && GEMINI_API_KEY=... python scripts/run_regression.py
 ```
 
 ### Frontend
@@ -57,7 +62,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, chuẩn hoá kết quả, giọng nói):
 ```bash
-npm --prefix frontend test       # 21 test Node, không cần dependency ngoài
+npm --prefix frontend test       # 26 test Node, không cần dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -65,6 +70,9 @@ Stage 2 bổ sung thẻ rủi ro, tô vàng excerpt an toàn XSS, lịch sử lo
 3 tin mẫu, loading/error state, Web Speech API và giao diện ≥18px/touch target ≥44px.
 Mọi text đi qua boundary API, textarea, speech và localStorage được chuẩn hoá Unicode NFC
 (precomposed) để tiếng Việt render ổn định trên các trình duyệt cũ.
+Stage 3 bổ sung terminal function-call handoff từ Thám tử sang Cô tâm lý, lỗi hai
+phần độc lập, guardrail prompt injection, bộ hồi quy 20 tin và thư viện 12 kiểu
+lừa đảo thuộc 4 nhóm với bộ lọc không reload.
 Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
 
 (Sửa `config.js` chỉ khi dev tách port. Prod để rỗng vì Nginx cùng origin.)

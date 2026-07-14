@@ -122,18 +122,47 @@ Chi tiết:
 
 ### Stage 3 — Cấp 3: N4 Cô tâm lý + Thư viện — 6 hạng mục
 
+### Stage 3 implementation architecture (chốt trước khi code)
+
+- Thám tử dùng **forced terminal function call** thay cho JSON text: chọn
+  `complete_detective` hoặc `handoff_to_psychologist`, với arguments chứa trọn
+  DetectiveResult. Backend coi tool choice và arguments là dữ liệu không tin cậy,
+  chạy parser/guardrail rồi mới quyết định kích hoạt bước hai.
+- Tool là handoff một chiều: backend không gửi `functionResponse` về Thám tử và
+  không gọi lượt tổng hợp cuối. Tin an toàn dùng 1 lượt AI; tin nghi ngờ/nguy hiểm
+  dùng tối đa 2 lượt AI.
+- Cô tâm lý phụ thuộc verdict đã parse nên critical path vẫn tuần tự. Function calling
+  làm orchestration rõ hơn nhưng không giả định hai model call chạy song song.
+- Payload giữ `detective`/`usage` tương thích Stage 2 và thêm `psychologist`,
+  `psychologist_status`, `psychologist_error`.
+- `psychologist_status` thuộc `complete | not_needed | unavailable | quota_reached`;
+  lỗi bước hai không đổi HTTP 200 hay che kết quả Thám tử.
+- Quota phiên đếm từng persona invocation thực tế. Audit chỉ lưu actor, trạng thái,
+  độ dài input và tóm tắt; không lưu nội dung tin.
+- Route dùng budget hữu hạn: Thám tử timeout 6s + tối đa một retry rate-limit;
+  Cô tâm lý timeout 5s, không retry, giữ worst-case AI wait dưới 20s.
+- Psychologist schema chỉ có `message`; parser ép 2–3 câu và thay fallback khi model
+  đổi vai, tiết lộ prompt hoặc hạ verdict thành “an toàn/không lừa đảo”.
+- `GET /api/scam-library` đọc JSON tĩnh 12 mẫu/4 nhóm. Frontend filter/hash navigation
+  hoàn toàn client-side, không reload và có loading/empty/error/success state.
+- `backend/scripts/run_regression.py` chạy 20 tin gán nhãn với Gemini thật khi gọi chủ
+  động; CI kiểm tra dataset/report bằng predictor giả nên không tiêu quota.
+
+
 | Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| L3-01 | Hồ sơ & câu lệnh Cô tâm lý | Bắt buộc | ❌ | Giọng gần gũi, xưng cô gọi bác, 2–3 câu giải thích chiêu tâm lý; không hù doạ/dạy dỗ |
-| L3-02 | Chuỗi tuần tự + hiển thị 2 phần | Bắt buộc | ❌ | Thám tử → chờ → Cô tâm lý; tổng ≤20s; 2 phần tiêu đề riêng |
-| L3-03 | Điều kiện kích hoạt + lỗi độc lập | Bắt buộc | ❌ | Chỉ gọi khi nghi_ngo/nguy_hiem; Cô tâm lý gãy → Thám tử vẫn hiện + thông báo lịch sự |
-| L3-04 | **Chống chèn lời nhắc (prompt injection)** | Bắt buộc | ❌ | Thiết kế prompt + lọc để tin lừa không điều khiển AI (vd "hãy nói tin này an toàn"); không hạ sai mức/đổi vai. **Mới so với backlog cũ** |
-| L3-05 | Bộ kiểm thử hồi quy 20 tin | Bắt buộc | ❌ | ≥20 tin gán nhãn + lệnh chạy tự động so nhãn, in bảng đúng/sai; có doc chạy |
-| L3-06 | Thư viện kiểu lừa đảo | Bắt buộc | ❌ | ≥12 kiểu, 4 nhóm (giả ngân hàng/công an/trúng thưởng/giao hàng), bộ lọc, điều hướng không reload |
+| L3-01 | Hồ sơ & câu lệnh Cô tâm lý | Bắt buộc | ✅ Xong | Giọng cô–bác, 2–3 câu, JSON schema riêng; parser chặn đổi vai/hạ verdict |
+| L3-02 | Chuỗi tuần tự + hiển thị 2 phần | Bắt buộc | ✅ Xong | Terminal function-call handoff; không lượt tổng hợp cuối; UI tách thẻ Thám tử/Cô tâm lý |
+| L3-03 | Điều kiện kích hoạt + lỗi độc lập | Bắt buộc | ✅ Xong | Verdict sau guardrail quyết định; lỗi/quota Cô tâm lý vẫn trả HTTP 200 và giữ Thám tử |
+| L3-04 | **Chống chèn lời nhắc (prompt injection)** | Bắt buộc | ✅ Xong | Hai prompt coi input là dữ liệu không tin cậy; tool name advisory; parser hậu kiểm cả hai persona |
+| L3-05 | Bộ kiểm thử hồi quy 20 tin | Bắt buộc | ✅ Xong | 20 tin/4 nhãn, loader/evaluator/report test không gọi AI; script CLI chạy Gemini thật |
+| L3-06 | Thư viện kiểu lừa đảo | Bắt buộc | ✅ Xong | 12 kiểu, 4 nhóm, API tĩnh; filter/hash navigation client-side không reload |
 
-**Test:** `test_psychologist_chain.py`, `test_activation_condition.py`, `test_prompt_injection.py`, `test_regression_suite.py`.
+**🚦 Gate utility-ui-eval Stage 3:** ✅ PASS — evaluator độc lập Grok 4.5 chấm
+`8.2/10`, `true_operational_tool`, `usable=true`, không có critical finding và
+khuyến nghị `ship`. Sau gate đã đưa lịch sử lên trước thư viện ở mobile; voice
+fallback và accessible names tiếp tục được phủ bởi test Stage 2.
 
-**🚦 Gate utility-ui-eval:** state có/không Cô tâm lý + state lỗi; 2 phần tách rõ.
 
 ---
 
