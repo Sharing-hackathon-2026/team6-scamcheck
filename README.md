@@ -7,7 +7,7 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 
 | Phần | Thư mục | Công nghệ | Phục vụ bởi |
 |---|---|---|---|
-| **Frontend** | `frontend/` | HTML + Tailwind CSS + JavaScript thuần | **Nginx** (static) |
+| **Frontend** | `frontend/` | HTML + CSS token hoá + JavaScript thuần | **Nginx** (static) |
 | **Backend** | `backend/` | **Python Flask REST API** (JSON, không Jinja2) | **gunicorn** + systemd |
 
 - Trình duyệt gọi `fetch('/api/...')` → Nginx reverse-proxy `/api/*` sang Flask → **cùng origin, không lo CORS**.
@@ -43,7 +43,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 28 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 77 test, dùng mock (không tốn lượt AI)
 ```
 
 ### Frontend
@@ -54,6 +54,17 @@ cd frontend
 python -m http.server 5500
 # → http://localhost:5500
 ```
+
+Kiểm thử helper frontend (highlight, lịch sử, chuẩn hoá kết quả, giọng nói):
+```bash
+npm --prefix frontend test       # 21 test Node, không cần dependency ngoài
+npm --prefix frontend run check  # syntax check toàn bộ JavaScript
+```
+
+Stage 2 bổ sung thẻ rủi ro, tô vàng excerpt an toàn XSS, lịch sử localStorage 10 mục,
+3 tin mẫu, loading/error state, Web Speech API và giao diện ≥18px/touch target ≥44px.
+Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
+
 (Sửa `config.js` chỉ khi dev tách port. Prod để rỗng vì Nginx cùng origin.)
 
 ## Deploy (đang chạy trên VM target)

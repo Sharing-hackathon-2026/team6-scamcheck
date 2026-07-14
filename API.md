@@ -40,6 +40,10 @@ sau đó chuẩn hoá bằng parser chịu lỗi trước khi trả cho trình d
 ```
 
 - `excerpt` chỉ được giữ nếu xuất hiện nguyên văn trong `text`; parser xoá trích dẫn AI bịa.
+- Gemini nhận `response_schema` theo tập con JSON Schema mà REST API hỗ trợ; hợp đồng nghiêm ngặt
+  (không trường thừa) vẫn được nhúng trong system prompt và cưỡng chế lại bởi parser.
+- Guardrail hậu kiểm nâng `an_toan`/`khong_lien_quan` thành `nguy_hiem` khi input có yêu cầu tiền,
+  credential/thông tin nhạy cảm, URL đáng ngờ hoặc đe doạ khẩn cấp rõ ràng.
 - Khi AI trả JSON lỗi, API vẫn trả 200 với fallback `risk_level="nghi_ngo"` và ba hành động an toàn.
 - Mức `khong_lien_quan` có `red_flags` và `actions` rỗng.
 

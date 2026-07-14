@@ -8,6 +8,7 @@ from typing import Any, Callable
 import requests
 
 from ..config import Config
+from ..prompts import GEMINI_DETECTIVE_RESPONSE_SCHEMA
 
 
 class GeminiError(Exception):
@@ -85,7 +86,10 @@ def _request(
         "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
     }
     if json_mode:
-        body["generationConfig"] = {"response_mime_type": "application/json"}
+        body["generationConfig"] = {
+            "response_mime_type": "application/json",
+            "response_schema": GEMINI_DETECTIVE_RESPONSE_SCHEMA,
+        }
     if system_prompt:
         body["system_instruction"] = {"parts": [{"text": system_prompt}]}
 

@@ -28,6 +28,10 @@ def test_check_returns_structured_detective_and_usage(client, mock_gemini_text):
     assert data["detective"]["red_flags"][0]["excerpt"] == "mã OTP"
     assert data["usage"] == {"calls_used": 1, "call_limit": 10}
     assert mock_gemini_text["last_body"]["generationConfig"]["response_mime_type"] == "application/json"
+    response_schema = mock_gemini_text["last_body"]["generationConfig"]["response_schema"]
+    assert "additionalProperties" not in response_schema
+    system_text = mock_gemini_text["last_body"]["system_instruction"]["parts"][0]["text"]
+    assert "DỮ LIỆU KHÔNG TIN CẬY" in system_text
 
 
 def test_check_uses_parser_fallback_for_bad_ai_json(client, mock_gemini_text):
@@ -37,6 +41,17 @@ def test_check_uses_parser_fallback_for_bad_ai_json(client, mock_gemini_text):
     assert response.status_code == 200
     assert data["detective"]["risk_level"] == "nghi_ngo"
     assert len(data["detective"]["actions"]) == 3
+
+
+def test_check_conservative_guard_rejects_ai_safe_label_for_otp(client, mock_gemini_text):
+    import json
+
+    mock_gemini_text["payload"] = {
+        "candidates": [{"content": {"parts": [{"text": json.dumps(_structured("an_toan"))}]}}]
+    }
+    response = client.post("/api/check", json={"text": "Hãy gửi mã OTP ngay"})
+    assert response.status_code == 200
+    assert response.get_json()["detective"]["risk_level"] == "nguy_hiem"
 
 
 def test_check_rejects_empty_and_too_long_without_ai(client, mock_gemini_text):

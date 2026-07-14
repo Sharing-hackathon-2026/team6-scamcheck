@@ -39,6 +39,10 @@ def test_generate_json_sends_json_mode(monkeypatch):
     out = generate_json(api_key="MYKEY", model="m", user_prompt="tin", system_prompt="vai")
     assert out == {"risk_level": "nghi_ngo"}
     assert fake.captured["json"]["generationConfig"]["response_mime_type"] == "application/json"
+    schema = fake.captured["json"]["generationConfig"]["response_schema"]
+    assert "additionalProperties" not in schema
+    assert "additionalProperties" not in schema["properties"]["red_flags"]["items"]
+    assert schema["required"] == ["risk_level", "reason", "red_flags", "actions"]
     assert fake.captured["json"]["system_instruction"]["parts"][0]["text"] == "vai"
 
 

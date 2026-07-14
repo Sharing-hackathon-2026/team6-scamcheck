@@ -4,7 +4,7 @@
 > hàm và luồng dữ liệu.
 >
 > **Kiến trúc tách 2 phần** (monorepo, dễ bảo trì):
-> - **Frontend** (`frontend/`): HTML + Tailwind CSS + JavaScript thuần → phục vụ bởi **Nginx**.
+> - **Frontend** (`frontend/`): HTML + CSS token hoá + JavaScript thuần → phục vụ bởi **Nginx**.
 > - **Backend** (`backend/`): **Python Flask REST API** trả JSON thuần (không Jinja2).
 > - AI là **Google Gemini** qua HTTP (`requests`).
 >
@@ -55,25 +55,29 @@
 
 ```
 scamcheck/
-├── frontend/                      # ⬛ HTML + Tailwind + JS thuần → Nginx
+├── frontend/                      # ⬛ HTML + CSS token hoá + JS thuần → Nginx
 │   ├── index.html                 # trang chính: textarea + 3 tin mẫu + footer
 │   ├── practice.html              # luyện tập 10 câu (Cấp 4-C)
 │   ├── assets/
 │   │   ├── css/
 │   │   │   ├── tokens.css         # ⭐ foundation tokens (anti-ai-design đóng băng)
-│   │   │   └── app.css            # Tailwind (CDN) + override ≥18px, AA contrast
+│   │   │   └── app.css            # component/layout CSS ≥18px, AA contrast
 │   │   └── js/
 │   │       ├── config.js          # API_BASE (rỗng = cùng origin). git-ignored?
 │   │       ├── api.js             # wrapper fetch('/api/...') + xử lý lỗi mạng
 │   │       ├── app.js             # nút Kiểm tra → gọi api.check → render
 │   │       ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt (L2-04)
 │   │       ├── history.js         # localStorage 10 tin gần nhất (L2-09)
-│   │       ├── samples.js         # 3 nút tin mẫu (L2-06)
+│   │       ├── result-model.js    # chuẩn hoá kết quả + đúng 3 hành động
+│   │       ├── speech.js          # Web Speech API + fallback
 │   │       ├── rescue.js          # câu hỏi "đã làm gì" + gọi api.rescue (Cấp 5)
 │   │       └── practice.js        # state máy luyện tập (Cấp 4-C)
 │   └── components/                # (tuỳ chọn) HTML tái dùng qua <template>/JS
 │       ├── footer-legal.html      # dòng pháp lý (dùng ở mọi trang)
-│       └── risk-card.html         # thẻ màu An toàn/Nghi ngờ/Nguy hiểm
+│       └── risk-card.html         # thẻ màu An toàn/Nghi ngờ/Nguy hiểm (tuỳ chọn)
+│   ├── tests/                     # node:test cho helper JS thuần
+│   ├── package.json               # scripts test/check, không dependency ngoài
+│   └── ACCESSIBILITY.md           # bảng tự kiểm WCAG AA/iPhone
 │
 ├── backend/                       # ⬛ Python Flask REST API (JSON)
 │   ├── app/

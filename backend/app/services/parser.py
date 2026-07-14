@@ -5,6 +5,8 @@ hình dạng an toàn trước khi route trả cho trình duyệt.
 """
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -16,6 +18,58 @@ DEFAULT_ACTIONS = [
     "Không cung cấp mã OTP, mật khẩu hay thông tin cá nhân.",
     "Liên hệ kênh chính thức của đơn vị được nhắc đến để kiểm tra.",
 ]
+CONSERVATIVE_REASON = (
+    "Tin nhắn có yêu cầu hoặc dấu hiệu rủi ro cao; không nên làm theo trước khi kiểm tra qua kênh chính thức."
+)
+
+# Đây là guardrail hậu kiểm, không phải bộ phân loại lừa đảo. Nó chỉ nhận diện
+# các tín hiệu rõ ràng mà theo hợp đồng tuyệt đối không được trả ``an_toan`` hay
+# ``khong_lien_quan``. Việc phân tích ngữ cảnh và red flags vẫn do model thực hiện.
+_REQUEST_VERBS = r"(?:gửi|gui|cung\s*cấp|cung\s*cap|nhập|nhap|đọc|doc|cho\s*biết|cho\s*biet|xác\s*nhận|xac\s*nhan)"
+_CREDENTIALS = r"(?:otp|mã\s*pin|ma\s*pin|mật\s*khẩu|mat\s*khau|password|passcode)"
+_SENSITIVE_DATA = r"(?:cccd|cmnd|căn\s*cước|can\s*cuoc|số\s*thẻ|so\s*the|cvv|số\s*tài\s*khoản|so\s*tai\s*khoan)"
+_NEGATED_CREDENTIAL_REQUEST = re.compile(
+    rf"\b(?:không|khong|đừng|dung|chớ)\b.{{0,24}}{_REQUEST_VERBS}.{{0,48}}(?:{_CREDENTIALS}|{_SENSITIVE_DATA})",
+    re.I,
+)
+_CREDENTIAL_REQUEST_PATTERNS = (
+    re.compile(rf"{_REQUEST_VERBS}.{{0,48}}(?:{_CREDENTIALS}|{_SENSITIVE_DATA})", re.I),
+    re.compile(rf"(?:{_CREDENTIALS}|{_SENSITIVE_DATA}).{{0,48}}{_REQUEST_VERBS}", re.I),
+)
+_HIGH_RISK_PATTERNS = (
+    re.compile(
+        r"\b(?:chuyển|chuyen|nộp|nop|gửi|gui|đóng|dong|thanh\s*toán|thanh\s*toan)\b"
+        r".{0,36}\b(?:tiền|tien|phí|phi|cọc|coc|vnđ|vnd|đồng|dong|usd|usdt)\b",
+        re.I,
+    ),
+    # Chỉ hậu kiểm URL có đặc điểm đáng ngờ rõ, không coi mọi URL là độc hại.
+    re.compile(
+        r"(?:https?://)?(?:[^\s/@]+@|(?:\d{1,3}\.){3}\d{1,3}|(?:bit\.ly|tinyurl\.com|t\.co|"
+        r"[a-z0-9-]+\.(?:xyz|top|click|site))(?:[/:?]|\b))",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:khẩn\s*cấp|khan\s*cap|ngay\s*lập\s*tức|ngay\s*lap\s*tuc|trong\s*\d+\s*(?:phút|phut|giờ|gio)|"
+        r"bắt\s*giam|bat\s*giam|khóa\s*tài\s*khoản|khoa\s*tai\s*khoan|truy\s*tố|truy\s*to)\b",
+        re.I,
+    ),
+)
+
+
+def _searchable_text(value: str) -> str:
+    """Chuẩn hoá Unicode vừa đủ để guardrail nhận diện chữ có dấu tổ hợp."""
+    return unicodedata.normalize("NFC", value)
+
+
+def has_explicit_high_risk_signal(source_text: str) -> bool:
+    """Có tín hiệu thuộc nhóm tuyệt đối không được gán an toàn hay không."""
+    if not isinstance(source_text, str) or not source_text:
+        return False
+    searchable = _searchable_text(source_text)
+    credential_request = any(pattern.search(searchable) for pattern in _CREDENTIAL_REQUEST_PATTERNS)
+    if credential_request and not _NEGATED_CREDENTIAL_REQUEST.search(searchable):
+        return True
+    return any(pattern.search(searchable) for pattern in _HIGH_RISK_PATTERNS)
 
 
 @dataclass(frozen=True)
@@ -106,6 +160,14 @@ def parse_detective(raw: Any, source_text: str = "") -> DetectiveResult:
     if risk_level not in RISK_LEVELS:
         return fallback_detective_result()
 
+    # Model không có quyền hạ mức rủi ro khi input chứa một tín hiệu cấm rõ ràng.
+    # Guardrail chỉ nâng hai nhãn lạc quan; không thay thế phân tích của model.
+    forced_high_risk = risk_level in {"an_toan", "khong_lien_quan"} and has_explicit_high_risk_signal(
+        source_text
+    )
+    if forced_high_risk:
+        risk_level = "nguy_hiem"
+
     if risk_level == "khong_lien_quan":
         return DetectiveResult(
             risk_level=risk_level,
@@ -115,7 +177,9 @@ def parse_detective(raw: Any, source_text: str = "") -> DetectiveResult:
         )
 
     reason = _clean_text(raw.get("reason"), 350)
-    if not reason:
+    if forced_high_risk:
+        reason = CONSERVATIVE_REASON
+    elif not reason:
         reason = "Kết quả cần được kiểm tra thận trọng trước khi làm theo."
 
     flags: list[RedFlag] = []

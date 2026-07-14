@@ -2,7 +2,12 @@
 from __future__ import annotations
 
 from app.prompts import STAGE1_REFUSAL
-from app.services.parser import DEFAULT_ACTIONS, parse_detective
+from app.services.parser import (
+    CONSERVATIVE_REASON,
+    DEFAULT_ACTIONS,
+    has_explicit_high_risk_signal,
+    parse_detective,
+)
 
 
 def test_valid_result_keeps_supported_excerpt_and_three_actions():
@@ -50,3 +55,31 @@ def test_unrelated_has_canned_reason_and_empty_lists():
     assert result.reason == STAGE1_REFUSAL
     assert result.red_flags == []
     assert result.actions == []
+
+
+def test_conservative_guard_overrides_safe_otp_result():
+    raw = {"risk_level": "an_toan", "reason": "Hợp lệ.", "red_flags": [], "actions": []}
+    result = parse_detective(raw, "Nhân viên ngân hàng yêu cầu cung cấp mã OTP")
+    assert result.risk_level == "nguy_hiem"
+    assert result.reason == CONSERVATIVE_REASON
+    assert result.actions == DEFAULT_ACTIONS
+
+
+def test_conservative_guard_overrides_unrelated_money_request():
+    raw = {"risk_level": "khong_lien_quan", "reason": "x", "red_flags": [], "actions": []}
+    result = parse_detective(raw, "Chuyển tiền cọc 2 triệu đồng ngay")
+    assert result.risk_level == "nguy_hiem"
+    assert len(result.actions) == 3
+
+
+def test_high_risk_guard_handles_unicode_combining_marks():
+    text = "Cung cấp mật khẩu ngay"  # chữ Việt ở dạng NFD
+    assert has_explicit_high_risk_signal(text) is True
+
+
+def test_high_risk_guard_does_not_mark_plain_conversation():
+    assert has_explicit_high_risk_signal("Chiều nay cả nhà ăn cơm lúc 6 giờ nhé") is False
+
+
+def test_high_risk_guard_does_not_mark_security_advice_as_a_request():
+    assert has_explicit_high_risk_signal("Không bao giờ gửi OTP hoặc mật khẩu cho người lạ") is False

@@ -2,7 +2,7 @@
 
 > Công cụ web giúp người từ 45 tuổi trở lên kiểm tra nhanh tin nhắn nghi ngờ lừa đảo
 > (SMS, Zalo, Messenger, email), biết mức rủi ro, dấu hiệu lừa đảo cụ thể và cách xử lý.
-> Công nghệ: **Python Flask + Jinja2 + Tailwind (CDN)**. AI: **Google Gemini** qua HTTP.
+> Công nghệ: **Python Flask REST + HTML/CSS token hoá + JavaScript thuần**. AI: **Google Gemini** qua HTTP.
 >
 > Nguồn: Đề bài Hackathon FCT: ScamCheck (`.docx`) và Backlog (`.xlsx`).
 
@@ -11,7 +11,7 @@
 ## 0. Nguyên tắc xuyên suốt
 
 1. **Mỗi cấp là một sản phẩm chạy được hoàn chỉnh.** Mở ứng dụng ở bất kỳ cấp nào cũng dùng được.
-2. **Luồng dữ liệu minh bạch:** không dùng framework ẩn — Flask route → service → Gemini HTTP → parse → render Jinja2. Hiểu rõ *tại sao chạy được*.
+2. **Luồng dữ liệu minh bạch:** không dùng framework ẩn — Flask route → service → Gemini HTTP → parse JSON → frontend render DOM. Hiểu rõ *tại sao chạy được*.
 3. **Dòng lưu ý pháp lý hiện ở MỌI màn hình** (footer cố định):
    > *“ScamCheck là công cụ giáo dục do nhóm học viên phát triển và không thay thế cảnh báo chính thức từ ngân hàng hoặc cơ quan chức năng. Khi nghi ngờ, hãy gọi tổng đài chính thức in trên thẻ.”*
 4. **Test cho mọi hàm** (pytest, theo quy định dự án) — đặc biệt hàm parse kết quả AI và các nhánh xử lý lỗi.
@@ -42,7 +42,7 @@
 
 Dự án tách làm **hai phần độc lập**, cùng trong 1 repo (monorepo) để dễ bảo trì:
 
-- **Frontend** (`frontend/`): HTML thuần + **Tailwind CSS** (CDN hoặc build) + **JavaScript thuần**. Giao tiếp với backend qua `fetch`. Triển khai bằng **Nginx** (phục vụ file tĩnh). Không framework SPA.
+- **Frontend** (`frontend/`): HTML thuần + **CSS token hoá** + **JavaScript thuần**. Giao tiếp với backend qua `fetch`. Triển khai bằng **Nginx** (phục vụ file tĩnh). Không framework SPA.
 - **Backend** (`backend/`): **Python Flask** — **REST API trả JSON thuần** (không Jinja2, không render HTML). `requests` gọi Gemini REST (`generativelanguage.googleapis.com`).
 
 Chi tiết:
@@ -103,20 +103,20 @@ Chi tiết:
 
 | Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| L2-01 | Hồ sơ & câu lệnh Thám tử | Bắt buộc | ❌ | Giọng khô khan lý tính + giữ cấu trúc cố định. Đích: đúng ≥27/30 tin ẩn mentor, KHÔNG có tin Nguy hiểm nào bị gán An toàn |
-| L2-02 | Thẻ màu mức rủi ro | Bắt buộc | ❌ | Xanh/Vàng/Đỏ ở đầu màn hình kết quả |
-| L2-03 | Dấu hiệu + tô vàng đoạn trích | Bắt buộc | ❌ | JS `highlight-excerpts.js`: bọc `<mark>` đúng vị trí; không tìm thấy thì bỏ qua |
-| L2-04 | Danh sách hành động khuyến nghị | Bắt buộc | ❌ | Đúng 3 hành động, cỡ chữ ≥18px |
-| L2-05 | Lịch sử 10 tin gần nhất (localStorage) | Bắt buộc | ❌ | Xem lại không gọi AI; tối đa 10, đẩy cũ nhất ra |
-| L2-06 | Nút tin mẫu + màn hình chờ | Nên có | ❌ | 3 nút điền sẵn; loading mượt |
-| L2-07 | Mở rộng lên 12 ca biên | Bắt buộc | ❌ | 2 ca mới: link giả mã độc + tin mâu thuẫn tiêu đề/thân |
-| L2-08 | Chuẩn tiếp cận AA trên iPhone | Bắt buộc | ❌ | Chữ ≥18px, tương phản AA, có bảng tự kiểm AA |
-| L2-09 | Nhập tin bằng giọng nói | Bắt buộc | ❌ | Web Speech API (micro hệ điều hành), nút bật tắt; iOS Safari |
-| L2-10 | Quản lý & xoá lịch sử | Nên có | ❌ | Xoá 1 tin / toàn bộ; hỏi xác nhận |
+| L2-01 | Hồ sơ & câu lệnh Thám tử | Bắt buộc | ✅ Xong | Giọng khô khan, lý tính; input là dữ liệu không tin cậy; schema cố định + guardrail không hạ tín hiệu nguy hiểm thành An toàn |
+| L2-02 | Thẻ màu mức rủi ro | Bắt buộc | ✅ Xong | Thẻ Xanh/Vàng/Đỏ có nhãn chữ, biểu tượng, viền; hỗ trợ Không liên quan |
+| L2-03 | Dấu hiệu + tô vàng đoạn trích | Bắt buộc | ✅ Xong | `highlight-excerpts.js` khớp hoa/thường + khoảng trắng, hợp nhất overlap, render text node chống XSS; không thấy thì bỏ qua |
+| L2-04 | Danh sách hành động khuyến nghị | Bắt buộc | ✅ Xong | Backend + frontend chuẩn hoá đúng 3 hành động, cỡ chữ ≥18px |
+| L2-05 | Lịch sử 10 tin gần nhất (localStorage) | Bắt buộc | ✅ Xong | Tối đa 10, khử trùng, xem lại từ localStorage không gọi AI |
+| L2-06 | Nút tin mẫu + màn hình chờ | Nên có | ✅ Xong | 3 tin mẫu; loading có status, spinner, skeleton và reduced-motion |
+| L2-07 | Mở rộng lên 12 ca biên | Bắt buộc | ✅ Xong | 12 ca gán nhãn chạy ở service + route, gồm link giả và tiêu đề/thân mâu thuẫn; không gọi Gemini thật |
+| L2-08 | Chuẩn tiếp cận AA trên iPhone | Bắt buộc | ✅ Xong | Chữ ≥18px, touch ≥44px, focus-visible, aria-live, reflow 320px; bảng tự kiểm `frontend/ACCESSIBILITY.md` |
+| L2-09 | Nhập tin bằng giọng nói | Bắt buộc | ✅ Xong | Web Speech API + `webkitSpeechRecognition`, bật/tắt, lỗi quyền/micro/mạng thân thiện, fallback khi không hỗ trợ |
+| L2-10 | Quản lý & xoá lịch sử | Nên có | ✅ Xong | Xoá từng mục/toàn bộ, có xác nhận và accessible name |
 
-**Test:** `test_parser_detective.py` (5 case lệch + đúng), `test_validate_input.py`, `test_gemini_structured.py` (verify response_mime_type=application/json).
+**Test Stage 2:** `77` pytest backend + `21` Node tests frontend; compileall, node syntax, `git diff --check` đều đạt. Smoke test Gemini thật xác nhận model `gemini-3.1-flash-lite` chấp nhận schema tương thích và trả đúng contract.
 
-**🚦 Gate utility-ui-eval (cuối Stage 2):** chụp home/loading/result/3 màu/empty/error @ iPhone+desktop; vision subagent chấm 28-dim; phải PASS mới sang Stage 3.
+**🚦 Gate utility-ui-eval (cuối Stage 2):** đã chụp empty/loading/error/success ở desktop và success ở iPhone. Vision evaluator runtime trả response rỗng qua nhiều lần gọi nên gate hiện **BLOCKED: evaluator_no_output**; không tự gán điểm. Chưa mở Stage 3 cho tới khi evaluator hoạt động.
 
 ---
 
@@ -201,7 +201,7 @@ Chi tiết:
 | Quyết định | Lựa chọn | Lý do |
 |---|---|---|
 | Kiến trúc | **Tách frontend/backend** (monorepo) | Bảo trì dễ: sửa UI không đụng API và ngược lại |
-| Frontend | HTML + Tailwind CSS + JS thuần → **Nginx** | Theo option 1 đề bài, hiểu rõ luồng fetch |
+| Frontend | HTML + CSS token hoá + JS thuần → **Nginx** | Theo option 1 đề bài, hiểu rõ luồng fetch |
 | Backend | **Flask REST API** (JSON, không Jinja2) | Phần API trong sáng, test độc lập |
 | Giao tiếp FE→BE | `/api/*` qua reverse-proxy Nginx (cùng origin) | Không lo CORS, URL tương đối |
 | Gọi Gemini | HTTP `requests` (không SDK) | Kiểm soát tuần tự, dễ mock/test, hiểu rõ luồng |
