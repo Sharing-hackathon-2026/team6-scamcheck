@@ -22,18 +22,19 @@
 
 ## 1. Bản đồ cấp ↔ giai đoạn
 
-| Giai đoạn | Cấp | Nhóm tính năng | Mục tiêu | Skill liên quan |
-|---|---|---|---|---|
-| Stage 1 | Cấp 1: Bản thô | N1 | Vòng lặp cơ bản: gọi Gemini → hiện kết quả thô → lên mạng | — |
-| Stage 2 | Cấp 2: Tối giản đầy đủ | N2 + N3 | Thám tử, thẻ rủi ro, tô vàng, tin mẫu, xử lý lỗi, lịch sử, UI iPhone | **anti-ai-design** (thiết lập foundation), **utility-ui-eval** (gate) |
-| Stage 3 | Cấp 3: Cô tâm lý | N4 | Chuỗi 2 nhân vật AI tuần tự, xử lý lỗi độc lập | anti-ai-design, utility-ui-eval (gate) |
-| Stage 4 | Cấp 4: 2 tính năng mở rộng | N5 | Tích hợp **B (Soi đường dẫn)** + **C (Chế độ luyện tập)** *(chốt ở §4)* | anti-ai-design, utility-ui-eval (gate) |
-| Stage 5 | Cấp 5: Người ứng cứu | N6 | Chuỗi 3 nhân vật AI, xử lý khủng hoảng, bảng tổng đài tĩnh | anti-ai-design, utility-ui-eval (gate cuối) |
-| Stage 6 | N7: Sẵn sàng trình diễn | N7 | README, sơ đồ, slide, kịch bản demo, minh chứng AI, video | — |
+> Theo backlog **nâng cấp** (bản 14/07, 50 hạng mục, ~125 giờ).
+
+| Giai đoạn | Cấp | Nhóm tính năng | Số hạng mục | Mục tiêu | Skill liên quan |
+|---|---|---|---|---|---|
+| Stage 1 | Cấp 1: Nền tảng & vận hành | N1 | 8 | Kết quả có cấu trúc + parser chịu lỗi + retry rate-limit + trần tài nguyên + nhật ký gọi AI + lên mạng | — |
+| Stage 2 | Cấp 2: Thám tử & Trải nghiệm | N2 + N3 | 10 | Thám tử schema, thẻ rủi ro, tô vàng, tin mẫu, 12 ca biên, AA iPhone, giọng nói, lịch sử | **anti-ai-design** (foundation), **utility-ui-eval** (gate) |
+| Stage 3 | Cấp 3: Cô tâm lý & Thư viện | N4 | 6 | Chuỗi tuần tự, lỗi độc lập, chống prompt injection, bộ test hồi quy 20 tin, thư viện lừa đảo | anti-ai-design, utility-ui-eval (gate) |
+| Stage 4 | Cấp 4: Chiều sâu kỹ thuật | N5 | 9 | Soi/giải link, tên miền giả (homoglyph), luật dấu hiệu, bộ 60 tin, đo chất lượng + ma trận nhầm lẫn, luyện tập, cache, streaming | anti-ai-design, utility-ui-eval (gate) |
+| Stage 5 | Cấp 5: Người ứng cứu & chia sẻ | N6 | 10 | Bảng tổng đài, 4 tình huống, máy trạng thái 3 nhân vật, chặn số bịa, thẻ QR, tương phản cao | anti-ai-design, utility-ui-eval (gate cuối) |
+| Stage 6 | N7: Sẵn sàng trình diễn | N7 | 7 | README, sơ đồ kiến trúc + FSM, slide, kịch bản demo, minh chứng AI, video, nhật ký kỹ thuật/phân định phần AI | — |
 
 > Luồng Stage 6 chạy **song song** từ Stage 2.
->
-> **Quyết định cặp tính năng Cấp 4** (chốt trong Stage 0, §4 dưới): chọn **B + C** (chiều sâu kỹ thuật — giám khảo cho điểm cao hơn cho tính năng làm *sâu*). A và D nằm trong phần "vượt cấp" nếu còn thời gian.
+> **Cấp 4** không còn "chọn cặp" — làm **đủ 9 hạng mục** (8 bắt buộc + 1 nên có).
 
 ---
 
@@ -61,171 +62,137 @@ Chi tiết:
 
 ## 3. Chi tiết từng Stage
 
-### Stage 0 — Khởi tạo (ngày khởi động)
+### Stage 0 — Khởi tạo (đã xong)
 
-**Mục tiêu:** Nền móng repo, config, CI tối thiểu, chốt lựa chọn Cấp 4.
-
-- [x] ~~Tạo repo~~ Repo `Sharing-hackathon-2026/team6-scamcheck` (remote có sẵn).
+- [x] Repo `Sharing-hackathon-2026/team6-scamcheck` (remote có sẵn).
 - [x] `.gitignore` (loại trừ `.env`, `__pycache__`, `venv`, `*.db`).
 - [x] `.env.example` (không chứa key thật) + hướng dẫn điền key.
-- [x] Cấu trúc thư mục monorepo (frontend/ + backend/) + Flask skeleton.
-- [x] `backend/requirements.txt`, `backend/pytest.ini` (28 test xanh).
-- [x] **Chốt cặp tính năng Cấp 4 = B + C** (ghi trong §4).
+- [x] Cấu trúc monorepo (frontend/ + backend/) + Flask skeleton.
+- [x] `backend/requirements.txt`, `backend/pytest.ini` (34 test xanh).
 - [x] `requests` + verify key thật `gemini-3.1-flash-lite` gọi OK.
+- [x] Harden Stage 1 system prompt (từ chối tin không liên quan → tiết kiệm quota; tiền đề cho L1-07/L1-08).
 
-**Hoàn thành:** Repo chạy `flask run` lên trang trắng với footer pháp lý. Key không lộ trong git history (`git log -p | grep GEMINI_API_KEY` = rỗng).
-
----
-
-### Stage 1 — Cấp 1: Bản thô (N1)
-
-**Mục tiêu kỹ năng:** Chứng minh gọi được Gemini và đưa 1 trang web lên mạng.
-
-Backlog mapping: **L1-01 → L1-05**.
-
-- [x] **L1-01** Khởi tạo kho mã — `.gitignore` + `.env.example` (đã làm ở Stage 0, verify lại).
-- [x] **L1-02** Giao diện nhập liệu cơ bản — `frontend/index.html`: `<textarea>` lớn + nút **Kiểm tra**, footer pháp lý. Chưa cần đẹp.
-- [x] **L1-03** Tích hợp Gemini — `POST /api/check` (Flask) gọi `services/gemini.py:generate_text()`, trả **JSON** `{"result": "..."}`; JS `app.js` fetch rồi hiện văn bản thô.
-- [x] **L1-03b** Harden Stage 1 — `app/prompts.py:STAGE1_SYSTEM_PROMPT` định nghĩa vai ScamCheck + quy tắc **từ chối** tin không liên quan (trả canned `STAGE1_REFUSAL`), giới hạn output ≤120 từ → tránh lãng phí quota khi user dán tin thường. Verify AI thật: 3 tin thường → refusal, 4 tin lừa đảo (gồm giả danh người quen xin tiền) → phân tích đúng.
-- [x] **L1-04** Dòng cảnh báo pháp lý — component footer HTML ở mọi trang frontend.
-- [x] **L1-05** Triển khai lên mạng ✅ — Nginx phục vụ `frontend/` + reverse-proxy `/api/*` sang gunicorn(Flask) trên VM `team6-scamcheck.exe.xyz`. Địa chỉ công khai: **https://team6-scamcheck.exe.xyz:8000/** (đã verify live).
-
-**Test (pytest):**
-- `backend/tests/test_gemini_raw.py` — mock HTTP, verify request payload đúng (key, model, prompt).
-- `backend/tests/test_routes.py::test_api_check_returns_json`.
-- `backend/tests/test_prompts.py` — ràng buộc nội dung system prompt (refusal canned, vai hẹp, giới hạn output).
-- `backend/tests/test_routes.py::test_check_sends_hardened_system_prompt` — verify route gửi `system_prompt` đi.
-
-**Tiêu chí hoàn thành:** Mentor mở URL trên iPhone, dán tin mẫu, thấy kết quả AI trong ≤30s. Git history sạch key.
+> **Lưu ý quan trọng — backlog NÂNG CẤP (bản 14/07):** Backlog mới làm **thay đổi định nghĩa Cấp 1** — L1-03 mới yêu cầu kết quả **có cấu trúc** ngay từ Cấp 1 (không còn "bản thô text"), thêm L1-04 (parser chịu lỗi), L1-05 (retry rate-limit), L1-07 (trần tài nguyên), L1-08 (nhật ký gọi AI). Cấp 4 không còn "chọn cặp B+C" mà là 9 hạng mục nặng đo lường. Cấp 3 thêm chống prompt injection + thư viện lừa đảo. Cấp 5 thêm máy trạng thái + thẻ QR. N7 thêm nhật ký kỹ thuật/phân định phần AI. Bảng dưới đánh giá trạng thái codebase hiện tại theo từng mã backlog mới.
 
 ---
 
-### Stage 2 — Cấp 2: Tối giản đầy đủ (N2 Thám tử + N3 Trải nghiệm)
+### Stage 1 — Cấp 1: Nền tảng và vận hành (N1) — 8 hạng mục
 
-**Mục tiêu kỹ năng:** Sản phẩm cốt lõi hoàn thiện, chạy được trên iPhone của người 45+ mà không cần hướng dẫn.
+> **Định nghĩa mới:** Cấp 1 đã yêu cầu **kết quả có cấu trúc cố định** (mức rủi ro + dấu hiệu kèm đoạn trích + hành động), parser chịu lỗi, retry khi rate-limit, trần tài nguyên và nhật ký gọi AI.
 
-> 🎨 **Gate thiết kế — anti-ai-design (BẮT BUỘC ở đầu Stage 2):** Trước khi viết CSS, kích hoạt skill để chốt:
-> - **Platform:** `mobile` (iPhone Safari là chuẩn chấm điểm) + responsive `desktop`.
-> - **Color direction:** palette tin cậy + 3 màu ngữ nghĩa (An toàn=Xanh, Nghi ngờ=Vàng, Nguy hiểm=Đỏ) ở độ tương phản AA.
-> - **Style:** giao diện thân thiện người lớn tuổi — chữ to, nút to, nhiều khoảng trắng, không hiệu ứng rối.
-> Đóng băng foundation tokens (font ≥18px, spacing, màu) vào `frontend/assets/css/tokens.css`.
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú đánh giá |
+|---|---|---|---|---|
+| L1-01 | Khởi tạo kho mã và bảo mật khoá | Bắt buộc | ✅ Xong | `.gitignore` + `.env.example`; scan git history = 0 key |
+| L1-02 | Giao diện nhập liệu và dòng pháp lý | Bắt buộc | ✅ Xong | `frontend/index.html`: textarea lớn + nút Kiểm tra + footer pháp lý cố định |
+| L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ⚠️ CẦN NÂNG CẤP | Hiện route trả `{"result": <text thô>}`. Backlog mới yêu cầu cấu trúc {risk_level, red_flags[].excerpt, actions[]} + JSON mode. `generate_json()` đã có sẵn trong services/gemini.py nhưng chưa wire vào route. Cần thêm prompt Thám tử schema + parser |
+| L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ❌ Chưa có | Cần `app/services/parser.py:parse_detective()` validate schema + fallback mặc định an toàn, test 5 mẫu lệch cấu trúc |
+| L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ⚠️ Một phần | Đã có validate rỗng/>5000 ký tự + bắt lỗi mạng/AI (502). **Chưa có:** retry khi 429/503 với backoff tăng dần tối đa 2 lần; mở rộng đủ 5 ca biên |
+| L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz:8000/ (nginx + gunicorn, verified end-to-end) |
+| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ❌ Chưa có | Cần giới hạn số lần gọi AI/phiên (vd 10) + timeout max/gọi; hiển thị số lần đã dùng; chạm trần → báo lịch sự. Harden refusal (đã làm) là tiền đề giảm tiêu hao |
+| L1-08 | Nhật ký gọi AI | Nên có | ❌ Chưa có | Ghi {thời điểm, độ dài đầu vào, tóm tắt kết quả} mỗi lần gọi; xem lại trong phiên; phục vụ đo lường Cấp 4 |
 
-Backlog mapping: **L2-01 → L2-10**.
+**Test (pytest):** `test_gemini_client.py`, `test_routes.py`, `test_validation.py`, `test_prompts.py` (34 test xanh). **Cần thêm:** `test_parser_detective.py`, `test_retry_ratelimit.py`.
 
-**N2 — Thám tử (phân tích kỹ thuật):**
-- [ ] **L2-01** Hồ sơ & system prompt Thám tử (giọng khô khan, lý tính) + **cấu trúc JSON cố định**:
-  ```json
-  {
-    "risk_level": "an_toan" | "nghi_ngo" | "nguy_hiem",
-    "reason": "tóm tắt 1 câu",
-    "red_flags": [
-      { "label": "Yêu cầu mã OTP", "excerpt": "gửi mã xác thực", "explanation": "..." }
-    ],
-    "actions": ["việc nên làm 1", "việc nên làm 2", "việc KHÔNG nên làm 3"]
-  }
-  ```
-- [ ] **L2-02** Hàm đọc kết quả **có dự phòng** — `backend/app/services/parser.py:parse_detective()`: validate schema, coerce, fallback mặc định an toàn khi lệch. **Bắt buộc test 5 trường hợp lệch.**
-- [ ] **L2-03** Thẻ màu mức rủi ro (component `_risk_card.html`).
-- [ ] **L2-04** Danh sách dấu hiệu + **tô vàng đoạn trích** trong tin gốc (JS `frontend/assets/js/highlight-excerpts.js`: tìm chuỗi con, bọc `<mark>`; không tìm thấy thì bỏ qua).
-- [ ] **L2-05** Danh sách 3 hành động khuyến nghị.
-
-**N3 — Trải nghiệm người dùng cốt lõi:**
-- [ ] **L2-06** 3 nút tin mẫu (giả ngân hàng, giả công an, trúng thưởng) → điền sẵn textarea.
-- [ ] **L2-07** Màn hình chờ (loading lịch sự).
-- [ ] **L2-08** Xử lý **5 trường hợp biên**: rỗng, >5000 ký tự, mất mạng, AI từ chối, AI trả lệch cấu trúc → thông báo thân thiện, không gãy.
-- [ ] **L2-09** Lịch sử 10 tin gần nhất — **localStorage** (`frontend/assets/js/history.js`), xem lại không gọi AI lại.
-- [ ] **L2-10** Giao diện thân thiện iPhone — font ≥18px, tương phản AA, layout không vỡ.
-
-**Test (pytest):**
-- `backend/tests/test_parser_detective.py` — 5 case lệch cấu trúc + case đúng.
-- `backend/tests/test_validate_input.py` — rỗng, >5000 ký tự.
-- `backend/tests/test_gemini_structured.py` — mock verify `response_mime_type=application/json`.
-
-**🚦 Gate UX — utility-ui-eval (BẮT BUỘC cuối Stage 2):**
-- Chụp screenshot các state (home/loading/result/3 màu rủi ro/empty/error) ở viewport iPhone + desktop.
-- Spawn **vision-capable subagent** chấm 28-dimension rubric. Không tự chấm.
-- Phải PASS §1–§15 (comprehension) và §16–§28 (không null interaction). Sửa cho đến khi PASS mới sang Stage 3.
-
-**Tiêu chí hoàn thành:** 12/15 tin mẫu đúng. Mentor dùng trên iPhone thật trong 30s không hướng dẫn. 5 biên không gãy.
+**Tiêu chí hoàn thành Cấp 1 (mới):** 9/10 lần AI trả đúng cấu trúc; ≤30s; 5 ca biên không gãy; retry 429 đúng cơ chế; có trần + nhật ký.
 
 ---
 
-### Stage 3 — Cấp 3: Cô tâm lý (N4)
+### Stage 2 — Cấp 2: N2 Thám tử + N3 Trải nghiệm — 10 hạng mục
 
-**Mục tiêu kỹ năng:** Chuỗi gọi AI tuần tự, xử lý lỗi độc lập từng tầng.
+> 🎨 **Gate anti-ai-design (đầu Stage 2):** chốt mobile (iPhone Safari chuẩn) + responsive desktop; palette tin cậy + 3 màu ngữ nghĩa (An toàn=Xanh / Nghi ngờ=Vàng / Nguy hiểm=Đỏ) AA; style thân thiện 45+ (chữ ≥18px, nút to). Đóng băng `frontend/assets/css/tokens.css`.
 
-Backlog mapping: **L3-01 → L3-05**.
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| L2-01 | Hồ sơ & câu lệnh Thám tử | Bắt buộc | ❌ | Giọng khô khan lý tính + giữ cấu trúc cố định. Đích: đúng ≥27/30 tin ẩn mentor, KHÔNG có tin Nguy hiểm nào bị gán An toàn |
+| L2-02 | Thẻ màu mức rủi ro | Bắt buộc | ❌ | Xanh/Vàng/Đỏ ở đầu màn hình kết quả |
+| L2-03 | Dấu hiệu + tô vàng đoạn trích | Bắt buộc | ❌ | JS `highlight-excerpts.js`: bọc `<mark>` đúng vị trí; không tìm thấy thì bỏ qua |
+| L2-04 | Danh sách hành động khuyến nghị | Bắt buộc | ❌ | Đúng 3 hành động, cỡ chữ ≥18px |
+| L2-05 | Lịch sử 10 tin gần nhất (localStorage) | Bắt buộc | ❌ | Xem lại không gọi AI; tối đa 10, đẩy cũ nhất ra |
+| L2-06 | Nút tin mẫu + màn hình chờ | Nên có | ❌ | 3 nút điền sẵn; loading mượt |
+| L2-07 | Mở rộng lên 12 ca biên | Bắt buộc | ❌ | 2 ca mới: link giả mã độc + tin mâu thuẫn tiêu đề/thân |
+| L2-08 | Chuẩn tiếp cận AA trên iPhone | Bắt buộc | ❌ | Chữ ≥18px, tương phản AA, có bảng tự kiểm AA |
+| L2-09 | Nhập tin bằng giọng nói | Bắt buộc | ❌ | Web Speech API (micro hệ điều hành), nút bật tắt; iOS Safari |
+| L2-10 | Quản lý & xoá lịch sử | Nên có | ❌ | Xoá 1 tin / toàn bộ; hỏi xác nhận |
 
-- [ ] **L3-01** Hồ sơ Cô tâm lý — giọng gần gũi, xưng "cô", gọi "bác", 2–3 câu giải thích chiêu thức tâm lý. System prompt riêng.
-- [ ] **L3-02** Chuỗi tuần tự: Thám tử → (chờ xong) → Cô tâm lý. Hai kết quả cùng trang. Tổng ≤20s.
-- [ ] **L3-03** **Điều kiện kích hoạt:** chỉ gọi Cô tâm lý khi `risk_level ∈ {nghi_ngo, nguy_hiem}`. Tin `an_toan` không tốn lượt gọi.
-- [ ] **L3-04** Tách 2 phần UI rõ ràng: "Phân tích kỹ thuật" (Thám tử) + "Hiểu vì sao mình suýt tin" (Cô tâm lý).
-- [ ] **L3-05** **Xử lý lỗi độc lập:** bọc try/except riêng cho Cô tâm lý; khi gãy, Thám tử vẫn hiển thị + dòng *“Cô tâm lý đang bận, vui lòng thử lại sau.”*
+**Test:** `test_parser_detective.py` (5 case lệch + đúng), `test_validate_input.py`, `test_gemini_structured.py` (verify response_mime_type=application/json).
 
-**Test (pytest):**
-- `backend/tests/test_psychologist_chain.py` — chuỗi tuần tự đúng thứ tự, mock AI thứ 2 ném lỗi → Thám tử vẫn trả được.
-- `backend/tests/test_activation_condition.py` — `an_toan` không trigger gọi thứ 2 (verify số lần gọi Gemini = 1).
-
-**🚦 Gate UX — utility-ui-eval:** chụp state có/không Cô tâm lý + state lỗi. Xác nhận 2 phần tách rõ, không lẫn giọng.
-
----
-
-### Stage 4 — Cấp 4: 2 tính năng mở rộng (N5)
-
-> Cặp đã chốt: **B (Soi đường dẫn)** + **C (Chế độ luyện tập)**. Lý do: độ khó vừa/trung bình, thể hiện chiều sâu kỹ thuật (regex + quản lý trạng thái), giám khảo điểm cao hơn cho tính năng làm sâu.
-
-**B — Soi đường dẫn và tên miền:**
-- [ ] **L4-B1** Tách đường dẫn (`backend/app/services/links.py:extract_urls()`) — regex, bao gồm link rút gọn (bit.ly, ...). Test không sót, không nhầm text thường.
-- [ ] **L4-B2** Phát hiện tên miền giả mạo — so khớp với whitelist tổ chức chính thống (`data/legit_domains.json`), cảnh báo ký tự thay thế (vd `vietcornbank`). Test ≥5 kiểu giả mạo.
-- [ ] UI: khối "Soi đường dẫn" trong trang kết quả, cảnh báo **trước** khi người dùng bấm.
-
-**C — Chế độ luyện tập:**
-- [ ] **L4-C1** `data/quiz.json` — 10 tin (5 lừa đảo/5 an toàn), mỗi tin có nhãn + giải thích. Không trùng tin mẫu.
-- [ ] **L4-C2** Trang `frontend/practice.html` — hiện từng câu, user đoán, chấm + giải thích ngay (JS local, không cần AI), tổng kết điểm + nhận xét.
-- [ ] Điều hướng giữa trang chính ↔ luyện tập **không reload full app** (fetch/SPA nhẹ hoặc route riêng).
-
-**Test (pytest):**
-- `backend/tests/test_links.py` — extract + detect, ≥5 case giả mạo.
-- `backend/tests/test_quiz.py` — tải data đúng, tính điểm đúng.
-
-**🚦 Gate UX — utility-ui-eval:** 2 tính năng × 3 tình huống (thuận lợi/lỗi/biên) không gãy.
-
-**Vượt cấp (tuỳ chọn, nếu còn giờ):** A (thư viện) + D (thẻ cảnh báo có QR).
+**🚦 Gate utility-ui-eval (cuối Stage 2):** chụp home/loading/result/3 màu/empty/error @ iPhone+desktop; vision subagent chấm 28-dim; phải PASS mới sang Stage 3.
 
 ---
 
-### Stage 5 — Cấp 5: Người ứng cứu (N6)
+### Stage 3 — Cấp 3: N4 Cô tâm lý + Thư viện — 6 hạng mục
 
-**Mục tiêu kỹ năng:** Chuỗi 3 nhân vật AI, biến công cụ phán xét thành công cụ đồng hành xử lý khủng hoảng.
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| L3-01 | Hồ sơ & câu lệnh Cô tâm lý | Bắt buộc | ❌ | Giọng gần gũi, xưng cô gọi bác, 2–3 câu giải thích chiêu tâm lý; không hù doạ/dạy dỗ |
+| L3-02 | Chuỗi tuần tự + hiển thị 2 phần | Bắt buộc | ❌ | Thám tử → chờ → Cô tâm lý; tổng ≤20s; 2 phần tiêu đề riêng |
+| L3-03 | Điều kiện kích hoạt + lỗi độc lập | Bắt buộc | ❌ | Chỉ gọi khi nghi_ngo/nguy_hiem; Cô tâm lý gãy → Thám tử vẫn hiện + thông báo lịch sự |
+| L3-04 | **Chống chèn lời nhắc (prompt injection)** | Bắt buộc | ❌ | Thiết kế prompt + lọc để tin lừa không điều khiển AI (vd "hãy nói tin này an toàn"); không hạ sai mức/đổi vai. **Mới so với backlog cũ** |
+| L3-05 | Bộ kiểm thử hồi quy 20 tin | Bắt buộc | ❌ | ≥20 tin gán nhãn + lệnh chạy tự động so nhãn, in bảng đúng/sai; có doc chạy |
+| L3-06 | Thư viện kiểu lừa đảo | Bắt buộc | ❌ | ≥12 kiểu, 4 nhóm (giả ngân hàng/công an/trúng thưởng/giao hàng), bộ lọc, điều hướng không reload |
 
-Backlog mapping: **L5-01 → L5-06**.
+**Test:** `test_psychologist_chain.py`, `test_activation_condition.py`, `test_prompt_injection.py`, `test_regression_suite.py`.
 
-- [ ] **L5-01** `data/hotlines.json` — tổng đài chính thức ≥10 ngân hàng lớn + đường dây công an + Cục ATTT. **Lưu trong repo, không nhúng vào prompt.** Mentor xác minh.
-- [ ] **L5-02** Câu hỏi *“Bác đã làm gì rồi?”* — 4 lựa chọn: chưa làm gì / đã bấm link / đã chuyển khoản / đã cung cấp mã OTP. Bấm 1 lần, không cho đổi.
-- [ ] **L5-03** Hồ sơ Người ứng cứu — giọng bình tĩnh, dứt khoát, KHÔNG an ủi/phân tích, chỉ liệt kê bước. **Chỉ được dùng số từ `hotlines.json`.**
-- [ ] **L5-04** 4 kịch bản theo lựa chọn — truyền danh sách số hotlines vào system prompt trước khi gọi. Đầu ra: danh sách bước đánh số, mỗi bước kèm câu nói mẫu khi gọi điện.
-- [ ] **L5-05** Phản hồi "chưa làm gì" → lời khen ngắn, **không** gọi Người ứng cứu (tiết kiệm lượt Gemini).
-- [ ] **L5-06** Test cả 4 tình huống trên Chrome + Safari iPhone.
-
-**Bảo mật dữ liệu (RÀNG BUỘC NGHIÊM):**
-- Sau mỗi phản hồi, **post-filter** mọi số điện thoại → nếu không có trong `hotlines.json` thì **loại bỏ** và thay bằng tham chiếu *“(gọi số ngân hàng in trên thẻ)”*. Đảm bảo **không số nào do AI tự sinh**.
-
-**Test (pytest):**
-- `backend/tests/test_rescuer.py` — 4 kịch bản, post-filter số lạ = rỗng.
-- `backend/tests/test_hotlines_filter.py` — số trong whitelist giữ nguyên, số lạ bị strip.
-
-**🚦 Gate UX — utility-ui-eval (CUỐI CÙNG):** chụp 4 kịch bản + state "chưa làm gì". Mentor xác minh hướng dẫn an toàn/dứt khoát/đúng quy trình.
+**🚦 Gate utility-ui-eval:** state có/không Cô tâm lý + state lỗi; 2 phần tách rõ.
 
 ---
 
-### Stage 6 — N7: Sẵn sàng trình diễn (song song từ Stage 2)
+### Stage 4 — Cấp 4: N5 Chiều sâu kỹ thuật — 9 hạng mục
 
-- [ ] **N7-01** `README.md` (mô tả, chạy máy cá nhân, tính năng, thành viên).
-- [ ] **N7-02** Sơ đồ kiến trúc (dựa trên `ARCHITECTURE.md`).
-- [ ] **N7-03** Slide 8–10 trang (bài toán/giải pháp/demo/điểm kỹ thuật/bài học + dòng pháp lý).
-- [ ] **N7-04** Kịch bản demo 3–5 phút.
-- [ ] **N7-05** Minh chứng AI (screenshot prompt+response ≥3 tin).
-- [ ] **N7-06** Video dự phòng <5 phút, offline-ready.
+> **Thay đổi lớn so với backlog cũ:** không còn "chọn cặp B+C" — 9 hạng mục cụ thể, nặng về đo lường chất lượng AI có số liệu.
+
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| L4-01 | Soi và **giải** đường dẫn | Bắt buộc | ❌ | Regex tách mọi link (kể cả rút gọn) + giải redirect rút gọn về thật trước cảnh báo |
+| L4-02 | Phát hiện tên miền giả bằng thuật toán | Bắt buộc | ❌ | Ký tự đồng hình (homoglyph) + khoảng cách chuỗi; ≥10 kiểu giả; nêu lý do nghi |
+| L4-03 | Phát hiện dấu hiệu bằng **luật** | Bắt buộc | ❌ | Lớp luật ngoài AI: yêu cầu OTP/chuyển khoản/STK lạ/cụm từ gấp; kết hợp AI không mâu thuẫn |
+| L4-04 | Bộ dữ liệu đánh giá **60 tin** | Bắt buộc | ❌ | ≥60 tin gán nhãn cân bằng + tập khó ≥15 tin mơ hồ; mỗi tin có lý do nhãn |
+| L4-05 | Đo chất lượng AI có số liệu | Bắt buộc | ❌ | Chạy Thám tử trên 60 tin; accuracy + recall + ma trận nhầm lẫn; nêu ≥3 điểm yếu |
+| L4-06 | Cải thiện dựa trên số liệu | Bắt buộc | ❌ | Đo trước → chỉnh prompt/logic → đo lại; chứng minh accuracy/recall tăng thật |
+| L4-07 | Chế độ luyện tập 10 câu | Bắt buộc | ❌ | Đoán lừa/an toàn, chấm + giải thích từng câu, tổng kết có gợi ý cải thiện |
+| L4-08 | Phản hồi thời gian thực (streaming) | Nên có | ❌ | Stream output AI; chữ hiện dần trong 3s đầu; ngắt giữa không gãy |
+| L4-09 | Bộ nhớ đệm kết quả | Bắt buộc | ❌ | Cache tin đã kiểm tra → trùng không gọi lại; giới hạn hợp lý |
+
+**Test:** `test_links.py`, `test_homoglyph.py`, `test_rule_engine.py`, `test_quiz.py`, `test_eval_report.py`.
+
+**🚦 Gate utility-ui-eval:** 2 tính năng × 3 tình huống (thuận/lỗi/biên) không gãy.
+
+---
+
+### Stage 5 — Cấp 5: N6 Người ứng cứu + chia sẻ — 10 hạng mục
+
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| L5-01 | Bảng tổng đài đã xác minh | Bắt buộc | ❌ | `data/hotlines.json` ≥10 NH + công an + Cục ATTT; lưu repo, không nhúng prompt |
+| L5-02 | Câu hỏi tình huống 4 lựa chọn | Bắt buộc | ❌ | "Bác đã làm gì rồi?" — chưa làm gì / đã bấm link / đã chuyển khoản / đã cấp OTP; bấm 1 lần |
+| L5-03 | Hồ sơ & câu lệnh Người ứng cứu | Bắt buộc | ❌ | Giọng bình tĩnh dứt khoát, chỉ liệt kê bước; **chỉ dùng số từ hotlines.json** |
+| L5-04 | Kịch bản 4 tình huống | Bắt buộc | ❌ | Truyền số hotlines vào prompt trước gọi; bám quy trình thật |
+| L5-05 | Điều phối 3 nhân vật bằng **máy trạng thái** | Bắt buộc | ❌ | FSM rõ ràng; đo lượt gọi AI giảm so với gọi ngây thơ |
+| L5-06 | Chặn ảo giác số điện thoại | Bắt buộc | ❌ | Post-filter cứng mọi số vs hotlines.json; số lạ → chặn hiển thị |
+| L5-07 | Kiểm thử luồng khủng hoảng + tài liệu vận hành | Bắt buộc | ❌ | Test tự động phủ 4 tình huống + tài liệu vận hành + bản tự đánh giá an toàn |
+| L5-08 | Thẻ tóm tắt kết quả chia sẻ + mã QR | Bắt buộc | ❌ | Ảnh: mức rủi ro + dấu hiệu chính + tên sản phẩm + QR dẫn về; kích Zalo |
+| L5-09 | Nút tải ảnh về máy | Nên có | ❌ | Tải được trên Android + iPhone, đúng thư viện ảnh |
+| L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ❌ | High-contrast + phóng chữ; lưu lựa chọn cho lần sau |
+
+**Test:** `test_rescuer.py` (4 kịch bản), `test_hotlines_filter.py`, `test_fsm.py`, `test_crisis_flow.py`.
+
+**🚦 Gate utility-ui-eval (cuối cùng):** 4 kịch bản + state "chưa làm gì"; mentor xác minh an toàn/dứt khoát/đúng quy trình.
+
+---
+
+### Stage 6 — N7: Sẵn sàng trình diễn (song song từ Cấp 2) — 7 hạng mục
+
+| Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
+|---|---|---|---|---|
+| N7-01 | Tệp giới thiệu dự án (README) | Bắt buộc | ⚠️ Có bản nháp | Cần cập nhật theo backlog mới (tính năng, cách chạy, nhóm) |
+| N7-02 | Sơ đồ kiến trúc + sơ đồ trạng thái | Bắt buộc | ❌ | Cần thêm sơ đồ FSM 3 nhân vật (L5-05) |
+| N7-03 | Slide 8–10 trang | Bắt buộc | ❌ | Có số liệu đo chất lượng (từ L4-05) + dòng pháp lý |
+| N7-04 | Kịch bản demo 3–5 phút | Bắt buộc | ❌ | Luồng chính + ca biên + tình huống khủng hoảng |
+| N7-05 | Minh chứng AI + báo cáo đo chất lượng | Nên có | ❌ | Screenshot prompt+response ≥3 tin + báo cáo L4-05 |
+| N7-06 | Video dự phòng <5 phút | Nên có | ❌ | Offline-ready |
+| N7-07 | **Nhật ký kỹ thuật + phân định phần AI** | Bắt buộc | ❌ | Ghi rõ phần nào AI sinh / nhóm tự chỉnh + lý do, quyết định khó, lỗi gặp. **Mới** |
+
+---
 
 ---
 
@@ -239,8 +206,8 @@ Backlog mapping: **L5-01 → L5-06**.
 | Giao tiếp FE→BE | `/api/*` qua reverse-proxy Nginx (cùng origin) | Không lo CORS, URL tương đối |
 | Gọi Gemini | HTTP `requests` (không SDK) | Kiểm soát tuần tự, dễ mock/test, hiểu rõ luồng |
 | Cấu trúc AI | `response_mime_type=application/json` + schema | Parse deterministic, đáp ứng "9/10 lần đúng cấu trúc" |
-| Lịch sử | localStorage trình duyệt | Theo backlog L2-09, không cần backend state |
-| Cấp 4 | **B + C** | Chiều sâu kỹ thuật, điểm giám khảo cao |
+| Lịch sử | localStorage trình duyệt | Theo backlog L2-05, không cần backend state |
+| Cấp 4 | Làm **đủ 9 hạng mục** (không chọn cặp) | Backlog nâng cấp yêu cầu đo lường chất lượng AI có số liệu (L4-04→L4-06) |
 | Triển khai | Nginx (static) + gunicorn (Flask) trên VM target | Hai service độc lập, proxy công khai port 8000 |
 
 ---
