@@ -52,7 +52,11 @@ export function rescue(payload, { signal } = {}) {
 export async function fetchShareQrSvg({ signal } = {}) {
   let response;
   try {
-    response = await fetch(`${API_BASE}/api/share/qr.svg`, { signal });
+    // Bỏ qua SVG QR cũ trong HTTP cache (bản cũ từng chứa cổng Nginx nội bộ).
+    response = await fetch(`${API_BASE}/api/share/qr.svg?v=portless-v1`, {
+      signal,
+      cache: 'no-store',
+    });
   } catch (error) {
     if (error?.name === 'AbortError') {
       throw new ApiError('Đã dừng tạo ảnh chia sẻ.', { code: 'cancelled' });

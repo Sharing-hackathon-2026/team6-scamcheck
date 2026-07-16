@@ -61,8 +61,10 @@ test('buildShareCardModel falls back to risk label when reason is empty', () => 
 test('buildShareCardModel caps over-long signs and reasons', () => {
   const long = 'Dấu hiệu rất dài '.repeat(30);
   const model = buildShareCardModel({ risk_level: 'nguy_hiem', reason: long, red_flags: [{ label: long }] });
-  assert.ok(model.reason.length <= 160);
-  assert.ok(model.signs[0].length <= 72);
+  assert.ok(model.reason.length <= 132);
+  assert.ok(model.signs[0].length <= 56);
+  assert.ok(model.reason.endsWith('…'));
+  assert.ok(model.signs[0].endsWith('…'));
 });
 
 test('wrapLines breaks text to fit maxWidth using the provided measure', () => {

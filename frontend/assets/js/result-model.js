@@ -7,6 +7,21 @@ export const RISK_META = Object.freeze({
   khong_lien_quan: { label: 'Không liên quan', announcement: 'Kết quả: Không liên quan' },
 });
 
+// Stage 5 multi-step flow gating (single source of truth, unit-tested):
+// rescue guidance is only offered when the verdict is risky, and the share
+// card is offered for the three verdicts that carry a useful summary. The
+// rescue question itself is revealed behind the Continue action in app.js.
+const RESCUE_RISK_LEVELS = new Set(['nghi_ngo', 'nguy_hiem']);
+const SHARE_RISK_LEVELS = new Set(['an_toan', 'nghi_ngo', 'nguy_hiem']);
+
+export function offersRescueGuidance(riskLevel) {
+  return RESCUE_RISK_LEVELS.has(riskLevel);
+}
+
+export function offersShareCard(riskLevel) {
+  return SHARE_RISK_LEVELS.has(riskLevel);
+}
+
 export const FALLBACK_ACTIONS = Object.freeze([
   'Không bấm liên kết, không cung cấp mã OTP hoặc mật khẩu.',
   'Liên hệ tổ chức qua số điện thoại chính thức do bác tự tìm.',

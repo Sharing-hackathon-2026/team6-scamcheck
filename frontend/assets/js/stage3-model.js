@@ -14,9 +14,32 @@ export function normalizePsychologist(value, status = 'not_needed', error = '') 
   };
 }
 
-export function filterLibraryItems(items, group = 'all') {
+function searchableText(value) {
+  return normalizeNfc(String(value || ''))
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLocaleLowerCase('vi')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function filterLibraryItems(items, group = 'all', query = '', groups = []) {
   const source = Array.isArray(items) ? items : [];
-  return group === 'all' ? source : source.filter((item) => item?.group === group);
+  const grouped = group === 'all' ? source : source.filter((item) => item?.group === group);
+  const needle = searchableText(query);
+  if (!needle) return grouped;
+  const groupLabels = new Map(
+    (Array.isArray(groups) ? groups : []).map((item) => [item?.key, item?.label]),
+  );
+  return grouped.filter((item) => searchableText([
+    groupLabels.get(item?.group),
+    item?.title,
+    item?.summary,
+    item?.safe_action,
+    ...(Array.isArray(item?.warning_signs) ? item.warning_signs : []),
+  ].join(' ')).includes(needle));
 }
 
 export function libraryGroupFromHash(hash, validGroups) {

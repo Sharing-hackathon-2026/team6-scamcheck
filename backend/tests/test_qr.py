@@ -9,17 +9,22 @@ from app.services.qr import approved_share_url, encode_qr_matrix, qr_svg
 def test_share_origin_allowlist_rejects_host_header_and_bad_config():
     allowed = ("team6-scamcheck.exe.xyz", "localhost")
     assert approved_share_url(
-        "https://team6-scamcheck.exe.xyz:8000", "http://evil.example/", allowed
-    ) == "https://team6-scamcheck.exe.xyz:8000/"
+        "https://team6-scamcheck.exe.xyz", "http://evil.example/", allowed
+    ) == "https://team6-scamcheck.exe.xyz/"
     assert approved_share_url("", "http://localhost:5000/", allowed) == "http://localhost:5000/"
     with pytest.raises(ValueError, match="origin"):
         approved_share_url("", "https://evil.example/", allowed)
     with pytest.raises(ValueError, match="origin"):
         approved_share_url("https://evil.example/", "http://localhost/", allowed)
     with pytest.raises(ValueError, match="origin"):
-        approved_share_url("http://team6-scamcheck.exe.xyz:8000/", "", allowed)
+        approved_share_url("http://team6-scamcheck.exe.xyz/", "", allowed)
+    with pytest.raises(ValueError, match="cổng nội bộ"):
+        approved_share_url("https://team6-scamcheck.exe.xyz:8000/", "", allowed)
+    assert approved_share_url(
+        "https://team6-scamcheck.exe.xyz:443/", "", allowed
+    ) == "https://team6-scamcheck.exe.xyz/"
     with pytest.raises(ValueError, match="origin"):
-        approved_share_url("https://team6-scamcheck.exe.xyz:8000/?next=evil", "", allowed)
+        approved_share_url("https://team6-scamcheck.exe.xyz/?next=evil", "", allowed)
 
 
 def test_qr_matrix_has_version3_size_finders_and_changes_with_url():

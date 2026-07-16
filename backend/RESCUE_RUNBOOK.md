@@ -66,11 +66,11 @@ bắt buộc hướng người dùng gọi số in sau thẻ, không tự chọn
 ## Smoke test sau deploy
 
 ```bash
-curl -fsS https://team6-scamcheck.exe.xyz:8000/api/hotlines
-curl -fsS https://team6-scamcheck.exe.xyz:8000/api/share/qr.svg | head
+curl -fsS https://team6-scamcheck.exe.xyz/api/hotlines
+curl -fsS https://team6-scamcheck.exe.xyz/api/share/qr.svg | head
 curl -fsS -H 'Content-Type: application/json' \
   -d '{"situation":"chua_lam_gi"}' \
-  https://team6-scamcheck.exe.xyz:8000/api/rescue
+  https://team6-scamcheck.exe.xyz/api/rescue
 ```
 
 Xác minh thêm bằng browser: bốn lựa chọn chỉ bấm một lần; hotline là `tel:`; fallback có nhãn;

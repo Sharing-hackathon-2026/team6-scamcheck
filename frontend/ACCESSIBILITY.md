@@ -13,10 +13,10 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 | Bàn phím | Dùng phần tử `button` thật; thứ tự DOM hợp lý; hỗ trợ Ctrl/Cmd+Enter | Đạt |
 | Focus nhìn thấy | `:focus-visible` outline xanh 3px, offset 3px; không chỉ dựa vào màu nền | Đạt |
 | Không phụ thuộc hover | Mọi chức năng chính dùng được bằng chạm/click/focus; hover chỉ tăng phản hồi | Đạt |
-| Tương phản chữ (light) | Chữ chính `#1c211c` trên nền giấy ấm `#f4f1ea`; chữ phụ `#57544a`; semantic text dùng sắc độ đậm | Đạt: `#57544a`/`#f4f1ea` = 6.72:1, vượt AA 4.5:1 |
+| Tương phản chữ (light) | Chữ chính forest `#143840` và chữ phụ `#3c616a` trên mint `#e7fbf4` | Đạt: 11.68:1 và 6.27:1, vượt AA 4.5:1 |
 | Tự động light/dark | `color-scheme: light dark` trên `:root`; dark override nguyên qua `@media (prefers-color-scheme: dark)`; **không có toggle thủ công** | Đạt bằng kiểm tra CSS |
-| Tương phản chữ (dark) | Chữ trắng ấm `#eceadd` trên nền than ấm `#171a16`/`#21241e`; chữ phụ `#b3b0a2` | Đạt: `#b3b0a2`/`#171a16` = 8.07:1, `#b3b0a2`/`#21241e` = 7.22:1 |
-| Giảm chói dark | Dark không phải đảo màu: nền than ấm (không đen thuần), chữ trắng ấm (không trắng thuần), thẻ rủi ro giữ sắc thái nhận diện nhưng giảm bão hòa/độ sáng; bóng tối hơn và viền nhẹ tạo chiều sâu thay vì đổ bóng nặng | Đạt bằng kiểm tra trực quan + đo màu |
+| Tương phản chữ (dark) | Chữ mint-light `#e2f4ee` và chữ phụ `#9ec8c0` trên forest đậm `#0c1e22` | Đạt: 15.03:1 và 9.37:1 |
+| Giảm chói dark | Dark dịch quan hệ mint/forest/violet thay vì đảo màu; nền forest đậm, chữ mint-light, semantic risk giảm bão hòa; native controls nhận `color-scheme: dark` | Đạt bằng kiểm tra trực quan + đo màu |
 | Không chỉ dùng màu | Thẻ rủi ro luôn có nhãn chữ “An toàn/Nghi ngờ/Nguy hiểm/Không liên quan”, biểu tượng và viền | Đạt |
 | Trạng thái động | `role=status`, `role=alert`, `aria-live`, `aria-busy`; kết quả có thể nhận focus | Đạt |
 | Loading | Có câu trạng thái, spinner và skeleton rõ; spinner bị ẩn với AT để tránh nhiễu | Đạt |
@@ -42,7 +42,7 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 ## Stage 3
 
 - Hai phần “Thám tử” và “Cô tâm lý” dùng heading riêng; lỗi Cô tâm lý là text trạng thái, không che verdict.
-- Bộ lọc thư viện là button có `aria-pressed`, dùng được bằng bàn phím và không reload trang.
+- Bộ lọc ở trang riêng `/library.html` là button có `aria-pressed`, dùng được bằng bàn phím và không reload trang; lỗi tải có nút thử lại, dữ liệu rỗng có empty state thật.
 - Trạng thái tải/lỗi/số mục thư viện có `role=status`/`role=alert`; card giữ cỡ chữ ≥18px.
 - Grid thư viện về một cột trên mobile; mọi nút lọc giữ touch target tối thiểu 44px.
 
@@ -145,3 +145,45 @@ Fresh Stage 5 UX gate:
 Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào Ảnh”, quét QR bằng camera
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
+
+## Tabs redesign (stage5-tabs-v5) — IA, font, icon
+
+Kiến trúc thông tin mới: **một tác vụ mỗi trang**, ba đích đến là link thật
+(`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;
+mobile ≤700px dùng nút **Menu** dạng hamburger mở danh sách dọc. Nút đồng bộ
+`aria-expanded`, đóng bằng Escape/click ngoài và trả focus về nút khi nhấn Escape:
+
+1. `/` — chỉ Kiểm tra lừa đảo: ô nhập, kết quả, ứng cứu một chạm, chia sẻ an toàn riêng tư,
+   lịch sử cục bộ gần đây. Trang này **không** render hay fetch thư viện nữa
+   (`app.js` đã tách hẳn, không import `getScamLibrary`/không chạm node thư viện).
+2. `/library.html` — chỉ Thư viện: API `/api/scam-library` (12 mẫu, 4 nhóm), bộ lọc nhóm,
+   trạng thái empty/loading/error/success, module riêng `library.js`.
+3. `/practice.html` — chỉ Luyện tập: đúng 10 câu, retry thật, phím tắt 1/2/Enter, điểm + restart.
+
+Kiểm chứng tự động (headless Chromium thật): không cuộn ngang ở 320/390/768/1024/1440 cho cả
+ba trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; 100/115/130% thật chuyển
+token; tùy chọn lưu qua điều hướng. Khi bấm “Tiếp tục — chọn tình huống”, ba phần giải thích
+được thu gọn thành native `details/summary` nhưng vẫn mở lại bằng bàn phím hoặc chạm. Request
+QR dùng `cache: no-store` để không tái dùng SVG cũ từng chứa cổng nội bộ.
+
+Quyết định font (DESIGN_REFERENCE §3): **Be Vietnam Pro** tự host (Google Fonts, giấy phép
+SIL OFL 1.1 kèm trong `assets/fonts/LICENSE-BeVietnamPro.txt`) với subset vietnamese +
+latin + latin-ext cho đủ dấu Việt, `font-display: swap`. Galano Grotesque là font thương mại
+— KHÔNG scrape/hotlink; chỉ giữ làm token phụ tuỳ chọn nếu sau này có licence. Body vẫn
+≥18px @100%.
+
+Quyết định icon (DESIGN_REFERENCE §9): **một** họ duy nhất — Material Symbols Rounded
+tự host (giấy phép Apache 2.0 kèm `LICENSE-MaterialSymbols.txt`), subset còn đúng các glyph
+ScamCheck dùng, tham chiếu bằng codepoint (PUA) để không phụ thuộc shaping ligature và không
+cần request mạng lúc chạy. Emoji và bộ SVG trộn cũ đã loại. Icon nội tuyến căn đường cơ sở
+`vertical-align: -0.125em`; kích thước theo thang 18/24/32/48; mọi icon-only control vẫn có
+`aria-label`/chữ giải thích.
+
+Bản sắc hình ảnh: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu + hành
+động chính; mốc hero (violet) / footer (forest) cong rộng tự vẽ (các vòng tròn đồng tâm
+tác giả, không phải blob gradient); trang biên tập phẳng với đường phân chia thay vì
+“card soup”; dải số thứ tự (01/02/03 + nét đứt) cho ba việc cần làm. Không dùng logo/copy/
+wave SVG/font của Own Your Online hay Chính phủ New Zealand.
+
+Caveat: đây là tự kiểm CSS/headless. Chưa kiểm thử iPhone Safari / VoiceOver thật;
+cần xác nhận trực quan trọng số/chạm của native share và QR vật lý trước demo.

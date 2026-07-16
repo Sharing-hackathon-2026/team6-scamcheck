@@ -1,69 +1,7 @@
-function renderLibrary(group = 'all') {
-  const groups = libraryData.groups.map((item) => item.key);
-  const activeGroup = groups.includes(group) ? group : 'all';
-  elements.libraryFilters.replaceChildren();
-  [{ key: 'all', label: 'Tất cả' }, ...libraryData.groups].forEach((filter) => {
-    const button = createElement('button', {
-      className: 'library-filter',
-      text: filter.label,
-      attributes: {
-        type: 'button',
-        'data-library-group': filter.key,
-        'aria-pressed': String(filter.key === activeGroup),
-      },
-    });
-    elements.libraryFilters.append(button);
-  });
-
-  const items = filterLibraryItems(libraryData.items, activeGroup);
-  elements.libraryList.replaceChildren();
-  items.forEach((item) => {
-    const article = createElement('details', {
-      className: 'library-item',
-      attributes: { id: item.slug, 'data-library-item': item.id },
-    });
-    const summary = createElement('summary', { className: 'library-item-summary' });
-    const summaryCopy = createElement('span');
-    summaryCopy.append(
-      createElement('span', {
-        className: 'library-group-label',
-        text: libraryData.groups.find((groupItem) => groupItem.key === item.group)?.label || '',
-      }),
-      createElement('span', { className: 'library-item-title', text: item.title }),
-    );
-    summary.append(summaryCopy, createElement('span', {
-      className: 'library-toggle-label', text: 'Xem dấu hiệu', attributes: { 'aria-hidden': 'true' },
-    }));
-    const content = createElement('div', { className: 'library-item-content' });
-    content.append(createElement('p', { text: item.summary }));
-    const signs = createElement('ul', { className: 'library-signs' });
-    item.warning_signs.forEach((sign) => signs.append(createElement('li', { text: sign })));
-    content.append(
-      signs,
-      createElement('p', { className: 'library-safe-action', text: `Nên làm: ${item.safe_action}` }),
-    );
-    article.append(summary, content);
-    elements.libraryList.append(article);
-  });
-  elements.libraryStatus.textContent = `Đang hiển thị ${items.length} kiểu lừa đảo.`;
-}
-
-async function setupLibrary() {
-  try {
-    libraryData = await getScamLibrary();
-    const groups = libraryData.groups.map((item) => item.key);
-    renderLibrary(libraryGroupFromHash(window.location.hash, groups));
-  } catch (error) {
-    elements.libraryStatus.textContent = '';
-    elements.libraryError.textContent = error instanceof ApiError
-      ? error.message
-      : 'Chưa tải được thư viện. Bác vui lòng thử lại sau.';
-    elements.libraryError.hidden = false;
-  }
-}
-
-// Logic giao diện Stage 2. Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, rescue, fetchShareQrSvg, ApiError, getScamLibrary } from './api.js';
+// Logic giao diện trang kiểm tra (/). Thư viện đã tách ra library.js; trang này
+// KHÔNG fetch /api/scam-library và không phụ thuộc DOM thư viện.
+// Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
+import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v5';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -74,16 +12,17 @@ import {
 } from './history.js';
 import { wirePreferences } from './preferences.js';
 import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
-import { normalizeDetective, RISK_META } from './result-model.js';
+import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v5';
 import {
   buildShareCardModel,
   decodeQrModules,
   drawShareCard,
   safeFileName,
-} from './share-card.js';
-import { normalizePsychologist, filterLibraryItems, libraryGroupFromHash } from './stage3-model.js';
+} from './share-card.js?v=stage5-tabs-v5';
+import { normalizePsychologist } from './stage3-model.js';
 import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
+import { materialIcon } from './icons.js';
 import {
   appendTranscript,
   getSpeechRecognitionConstructor,
@@ -96,6 +35,13 @@ const samples = Object.freeze({
   danger: 'THÔNG BÁO KHẨN: Tài khoản ngân hàng của quý khách sẽ bị khoá sau 30 phút. Bấm https://xac-minh-ngay.example và cung cấp mã OTP để duy trì dịch vụ.',
   suspicious: 'Chúc mừng số điện thoại của bạn trúng xe máy trị giá 60 triệu đồng. Vui lòng chuyển trước 500.000 đồng phí nhận thưởng trong hôm nay.',
   safe: 'Đơn hàng 12345 dự kiến giao từ 14:00 đến 16:00 hôm nay. Nhân viên giao hàng sẽ gọi khi đến. Quý khách không cần chuyển khoản trước.',
+});
+
+const RISK_ICON_NAMES = Object.freeze({
+  an_toan: 'gpp_good',
+  nghi_ngo: 'warning',
+  nguy_hiem: 'priority_high',
+  khong_lien_quan: 'info',
 });
 
 const elements = {
@@ -113,16 +59,7 @@ const elements = {
   historyList: document.getElementById('historyList'),
   historyEmpty: document.getElementById('historyEmpty'),
   clearHistoryBtn: document.getElementById('clearHistoryBtn'),
-  libraryPanel: document.getElementById('library'),
-  libraryContent: document.getElementById('libraryContent'),
-  libraryToggleBtn: document.getElementById('libraryToggleBtn'),
-  libraryFilters: document.getElementById('libraryFilters'),
-  libraryList: document.getElementById('libraryList'),
-  libraryStatus: document.getElementById('libraryStatus'),
-  libraryError: document.getElementById('libraryError'),
 };
-
-let libraryData = { groups: [], items: [] };
 
 let historyEntries = loadHistory(window.localStorage);
 let recognition = null;
@@ -143,8 +80,6 @@ const RESCUE_CHOICES = Object.freeze([
   { situation: 'da_chuyen_tien', label: RESCUE_SITUATIONS.da_chuyen_tien },
   { situation: 'da_cung_cap_otp', label: RESCUE_SITUATIONS.da_cung_cap_otp },
 ]);
-const RESCUE_RISKS = new Set(['nghi_ngo', 'nguy_hiem']);
-const SHARE_RISKS = new Set(['an_toan', 'nghi_ngo', 'nguy_hiem']);
 
 function createElement(tag, { className = '', text = '', attributes = {} } = {}) {
   const element = document.createElement(tag);
@@ -154,45 +89,12 @@ function createElement(tag, { className = '', text = '', attributes = {} } = {})
   return element;
 }
 
-function riskIcon() {
-  const svgNamespace = 'http://www.w3.org/2000/svg';
-  const wrapper = createElement('span', { className: 'risk-icon', attributes: { 'aria-hidden': 'true' } });
-  const svg = document.createElementNS(svgNamespace, 'svg');
-  svg.setAttribute('width', '24');
-  svg.setAttribute('height', '24');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  const paths = ['M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z', 'M12 8v5M12 17h.01'];
-  paths.forEach((data) => {
-    const path = document.createElementNS(svgNamespace, 'path');
-    path.setAttribute('d', data);
-    svg.append(path);
-  });
-  wrapper.append(svg);
-  return wrapper;
+function riskIcon(riskLevel) {
+  return materialIcon(RISK_ICON_NAMES[riskLevel] || 'warning', { className: 'risk-icon' });
 }
 
 function deleteIcon() {
-  const svgNamespace = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNamespace, 'svg');
-  svg.setAttribute('width', '24');
-  svg.setAttribute('height', '24');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  svg.setAttribute('aria-hidden', 'true');
-  const paths = ['M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6', 'M10 11v5M14 11v5'];
-  paths.forEach((data) => {
-    const path = document.createElementNS(svgNamespace, 'path');
-    path.setAttribute('d', data);
-    svg.append(path);
-  });
-  return svg;
+  return materialIcon('delete', { className: 'icon-glyph' });
 }
 
 function stopProgress() {
@@ -249,18 +151,32 @@ function appendRiskCard(container, detective) {
       text: 'Đây là kết quả hỗ trợ, không phải xác nhận chính thức.',
     }),
   );
-  card.append(riskIcon(), copy);
+  card.append(riskIcon(detective.risk_level), copy);
   container.append(card);
 }
 
+function createResultDisclosure(title, className = '') {
+  const details = createElement('details', {
+    className: `result-section result-disclosure rescue-collapsible ${className}`.trim(),
+    attributes: { open: '' },
+  });
+  const summary = createElement('summary', { className: 'result-disclosure-summary' });
+  summary.append(
+    createElement('span', { className: 'result-disclosure-title', text: title }),
+    materialIcon('expand_more', { className: 'result-disclosure-arrow' }),
+  );
+  const content = createElement('div', { className: 'result-disclosure-content' });
+  details.append(summary, content);
+  return { details, content };
+}
+
 function appendSourceMessage(container, text, detective) {
-  const section = createElement('section', { className: 'result-section' });
-  section.append(createElement('h3', { text: 'Đoạn đáng chú ý trong tin gốc' }));
+  const { details, content } = createResultDisclosure('Đoạn đáng chú ý trong tin gốc');
   const source = createElement('p', { className: 'source-message' });
   const excerpts = detective.red_flags.map((flag) => flag.excerpt).filter(Boolean);
   renderHighlightedText(source, text, excerpts);
-  section.append(source);
-  container.append(section);
+  content.append(source);
+  container.append(details);
 }
 
 function appendTechnicalAnalysis(container, rawTechnical) {
@@ -269,8 +185,11 @@ function appendTechnicalAnalysis(container, rawTechnical) {
   const section = createElement('details', { className: 'result-section technical-analysis' });
   const summary = createElement('summary', {
     className: 'technical-summary',
-    text: 'Xem kiểm tra kỹ thuật',
   });
+  summary.append(
+    materialIcon('rule', { className: 'technical-summary-icon' }),
+    createElement('span', { text: 'Xem kiểm tra kỹ thuật' }),
+  );
   const content = createElement('div', { className: 'technical-content' });
   content.append(createElement('p', {
     className: 'technical-note',
@@ -310,10 +229,9 @@ function appendTechnicalAnalysis(container, rawTechnical) {
 }
 
 function appendSignals(container, detective) {
-  const section = createElement('section', { className: 'result-section' });
-  section.append(createElement('h3', { text: 'Dấu hiệu cần chú ý' }));
+  const { details, content } = createResultDisclosure('Dấu hiệu cần chú ý');
   if (!detective.red_flags.length) {
-    section.append(createElement('p', {
+    content.append(createElement('p', {
       className: 'no-signals',
       text: detective.risk_level === 'khong_lien_quan'
         ? 'Nội dung này không thuộc nhóm tin cần kiểm tra lừa đảo.'
@@ -327,16 +245,16 @@ function appendSignals(container, detective) {
       if (flag.explanation) item.append(document.createTextNode(` — ${flag.explanation}`));
       list.append(item);
     });
-    section.append(list);
+    content.append(list);
   }
-  container.append(section);
+  container.append(details);
 }
 
 function appendActions(container, detective) {
   if (!detective.actions.length) return;
   const section = createElement('section', { className: 'result-section immediate-actions' });
   section.append(createElement('h3', { text: 'Ba việc bác nên làm ngay' }));
-  const list = createElement('ol', { className: 'action-list' });
+  const list = createElement('ol', { className: 'action-list numbered-steps' });
   detective.actions.forEach((action) => list.append(createElement('li', { text: action })));
   section.append(list);
   container.append(section);
@@ -345,23 +263,19 @@ function appendActions(container, detective) {
 function appendPsychologist(container, rawPsychologist, status, error) {
   const psychologist = normalizePsychologist(rawPsychologist, status, error);
   if (psychologist.status === 'not_needed') return;
-  const section = createElement('section', {
-    className: 'psychologist-card',
-    attributes: { 'aria-labelledby': 'psychologistTitle' },
-  });
-  section.append(
-    createElement('p', { className: 'section-eyebrow', text: 'Góc nhìn thứ hai' }),
-    createElement('h3', { text: 'Cô tâm lý giải thích', attributes: { id: 'psychologistTitle' } }),
-  );
+  const { details, content } = createResultDisclosure('Cô tâm lý giải thích', 'psychologist-card');
+  const summary = details.querySelector('.result-disclosure-summary');
+  summary.prepend(materialIcon('verified', { className: 'eyebrow-icon' }));
+  content.prepend(createElement('p', { className: 'section-eyebrow', text: 'Góc nhìn thứ hai' }));
   if (psychologist.status === 'complete') {
-    section.append(createElement('p', { className: 'psychologist-message', text: psychologist.message }));
+    content.append(createElement('p', { className: 'psychologist-message', text: psychologist.message }));
   } else {
-    section.append(createElement('p', {
+    content.append(createElement('p', {
       className: 'psychologist-unavailable',
       text: psychologist.error || 'Cô tâm lý chưa thể giải thích thêm; kết quả Thám tử vẫn đầy đủ.',
     }));
   }
-  container.append(section);
+  container.append(details);
 }
 
 function showResult(text, rawDetective, psychologistOptions = {}, { focus = true } = {}) {
@@ -380,10 +294,9 @@ function showResult(text, rawDetective, psychologistOptions = {}, { focus = true
     psychologistOptions.status,
     psychologistOptions.error,
   );
-  appendRescueSection(elements.result, currentCheck);
+  appendRescueFlow(elements.result, currentCheck);
   appendTechnicalAnalysis(elements.result, psychologistOptions.technicalAnalysis);
   appendShareSection(elements.result, currentCheck);
-  setLibraryCollapsed(true);
   elements.result.hidden = false;
   elements.error.hidden = true;
   if (focus) elements.result.focus({ preventScroll: true });
@@ -399,14 +312,62 @@ function abortRescueAndShare() {
 
 // ---- Rescue flow (Stage 5) ---------------------------------------------
 
-function appendRescueSection(container, checkContext) {
-  if (!RESCUE_RISKS.has(checkContext.detective.risk_level)) return;
+function appendRescueFlow(container, checkContext) {
+  if (!offersRescueGuidance(checkContext.detective.risk_level)) return;
+
+  // Prominent "Tiếp tục" gate after the Detective/Psychologist explanation (#5):
+  // the rescue question stays hidden until this action, then is revealed,
+  // scrolled into view (sticky-header-safe) and focused.
+  const gate = createElement('section', {
+    className: 'continue-gate',
+    attributes: { 'aria-labelledby': 'continueGateTitle' },
+  });
+  const gateTitle = createElement('h3', {
+    className: 'continue-gate-title',
+    attributes: { id: 'continueGateTitle' },
+  });
+  gateTitle.append(
+    materialIcon('support_agent', { className: 'eyebrow-icon' }),
+    document.createTextNode('Đã đọc xong phần giải thích?'),
+  );
+  gate.append(
+    gateTitle,
+    createElement('p', {
+      className: 'continue-gate-text',
+      text: 'Chọn tiếp tục để nói rõ tình huống hiện tại — kể cả khi bác chưa làm gì — rồi xem hướng dẫn từng bước và số liên hệ đã đối chiếu.',
+    }),
+  );
+  const continueBtn = createElement('button', {
+    className: 'button-primary continue-btn',
+    attributes: { type: 'button', 'data-action': 'reveal-rescue' },
+  });
+  continueBtn.append(
+    document.createTextNode('Tiếp tục — chọn tình huống'),
+    materialIcon('arrow_forward', { className: 'icon-glyph' }),
+  );
+  gate.append(continueBtn);
+  container.append(gate);
+
+  const rescue = buildRescueSection(checkContext);
+  rescue.hidden = true;
+  container.append(rescue);
+
+  continueBtn.addEventListener('click', () => revealRescue(gate, rescue));
+}
+
+function buildRescueSection(checkContext) {
   const section = createElement('section', {
     className: 'result-section rescue-section',
-    attributes: { 'aria-labelledby': 'rescueTitle' },
+    attributes: { 'aria-labelledby': 'rescueTitle', tabindex: '-1', 'data-revealed': 'false' },
   });
-  section.append(
-    createElement('h3', { text: 'Bác đã làm gì rồi?', attributes: { id: 'rescueTitle' } }),
+  // Decision box (#4): question + four equal-track choices in a high-contrast
+  // deep-forest panel inspired by the reference's final yes/no panel.
+  const decision = createElement('div', { className: 'rescue-decision' });
+  decision.append(createElement('p', { className: 'rescue-decision-eyebrow', text: 'Bước ứng cứu' }));
+  const heading = createElement('h3', { attributes: { id: 'rescueTitle' } });
+  heading.append(materialIcon('support_agent', { className: 'eyebrow-icon' }), document.createTextNode('Bác đã làm gì rồi?'));
+  decision.append(
+    heading,
     createElement('p', {
       className: 'rescue-intro',
       text: 'Chọn đúng một tình huống — ScamCheck sẽ đưa ra từng bước tiếp theo và số liên hệ đã đối chiếu. Đây là hướng dẫn giáo dục, không thay thế ngân hàng hay cơ quan chức năng.',
@@ -423,18 +384,36 @@ function appendRescueSection(container, checkContext) {
       attributes: { type: 'button', 'data-rescue': situation, 'aria-pressed': 'false' },
     }));
   });
+  decision.append(choices);
   const status = createElement('p', {
     className: 'rescue-status status',
     attributes: { role: 'status', 'aria-live': 'polite' },
   });
   const output = createElement('div', { className: 'rescue-output' });
-  section.append(choices, status, output);
-  container.append(section);
+  section.append(decision, status, output);
   choices.addEventListener('click', (event) => {
     const button = event.target.closest('[data-rescue]');
     if (!button) return;
     onRescueChoice(button.dataset.rescue, { choices, output, status, context: checkContext });
   });
+  return section;
+}
+
+function revealRescue(gate, rescue) {
+  const resultPanel = gate.parentElement;
+  resultPanel?.querySelectorAll('.rescue-collapsible[open]').forEach((details) => {
+    details.removeAttribute('open');
+  });
+  gate.hidden = true;
+  rescue.hidden = false;
+  rescue.setAttribute('data-revealed', 'true');
+  if (elements.status) {
+    elements.status.textContent = 'Đã thu gọn phần giải thích. Chọn đúng một tình huống ứng cứu bên dưới.';
+  }
+  // scroll-behavior is driven by CSS (auto under prefers-reduced-motion);
+  // scroll-margin-top on the section clears the sticky app bar.
+  rescue.scrollIntoView({ block: 'start' });
+  rescue.focus({ preventScroll: true });
 }
 
 function setRescueBusy(choices, output, status, busy, selectedSituation, locked = false) {
@@ -506,7 +485,7 @@ function renderRescueResult(output, status, rescue, selectedSituation) {
     }));
   }
   if (rescue.rescue.steps.length) {
-    const list = createElement('ol', { className: 'rescue-steps' });
+    const list = createElement('ol', { className: 'rescue-steps numbered-steps' });
     rescue.rescue.steps.forEach((step) => list.append(createRescueStep(step)));
     card.append(list);
   }
@@ -559,19 +538,20 @@ function createRescueStep(step) {
 
 function createRescueHotline(hotline) {
   const item = createElement('li', { className: 'rescue-hotline' });
-  item.append(createElement('span', { className: 'rescue-hotline-name', text: hotline.name }));
+  const lead = createElement('span', { className: 'rescue-hotline-lead' });
+  lead.append(createElement('span', { className: 'rescue-hotline-name', text: hotline.name }));
   if (hotline.contactHref) {
-    item.append(
-      document.createTextNode(' '),
-      createElement('a', {
-        className: 'rescue-hotline-phone',
-        text: hotline.channel === 'sms' ? `Nhắn ${hotline.phone}` : hotline.phone,
-        attributes: { href: hotline.contactHref },
-      }),
-    );
+    const link = createElement('a', {
+      className: 'rescue-hotline-phone',
+      text: hotline.channel === 'sms' ? `Nhắn ${hotline.phone}` : hotline.phone,
+      attributes: { href: hotline.contactHref },
+    });
+    link.prepend(materialIcon(hotline.channel === 'sms' ? 'sms' : 'call', { className: 'hotline-icon' }));
+    lead.append(document.createTextNode(' '), link);
   } else if (hotline.phone) {
-    item.append(document.createTextNode(` ${hotline.phone}`));
+    lead.append(document.createTextNode(` ${hotline.phone}`));
   }
+  item.append(lead);
   const metaParts = [];
   if (hotline.sourceLabel) metaParts.push(hotline.sourceLabel);
   if (hotline.reviewedAt) metaParts.push(`đối chiếu ${hotline.reviewedAt}`);
@@ -592,9 +572,8 @@ function renderRescueError(output, status, error, retry) {
   }));
   const retryButton = createElement('button', {
     className: 'button-secondary',
-    text: 'Thử lại',
-    attributes: { type: 'button' },
   });
+  retryButton.append(materialIcon('refresh', { className: 'icon-glyph' }), document.createTextNode('Thử lại'));
   retryButton.addEventListener('click', retry);
   panel.append(retryButton);
   output.append(panel);
@@ -604,17 +583,21 @@ function renderRescueError(output, status, error, retry) {
 // ---- Share card (Stage 5) -----------------------------------------------
 
 function appendShareSection(container, checkContext) {
-  if (!SHARE_RISKS.has(checkContext.detective.risk_level)) return;
+  if (!offersShareCard(checkContext.detective.risk_level)) return;
   const isSafe = checkContext.detective.risk_level === 'an_toan';
   const section = createElement('section', {
     className: 'result-section share-section',
     attributes: { 'aria-labelledby': 'shareTitle' },
   });
+  const heading = createElement('h3', {
+    attributes: { id: 'shareTitle' },
+  });
+  heading.append(
+    materialIcon(isSafe ? 'share' : 'campaign', { className: 'eyebrow-icon' }),
+    document.createTextNode(isSafe ? 'Gửi kết quả cho người thân' : 'Gửi cảnh báo cho người thân'),
+  );
   section.append(
-    createElement('h3', {
-      text: isSafe ? 'Gửi kết quả cho người thân' : 'Gửi cảnh báo cho người thân',
-      attributes: { id: 'shareTitle' },
-    }),
+    heading,
     createElement('p', {
       className: 'share-intro',
       text: 'Tạo một ảnh nhỏ chỉ có mức rủi ro, vài dấu hiệu chính và mã QR dẫn về ScamCheck — không chứa toàn văn tin nhắn, số tài khoản hay thông tin cá nhân.',
@@ -634,21 +617,18 @@ function appendShareSection(container, checkContext) {
   });
   const errorBox = createElement('div', { className: 'error-panel share-error', attributes: { role: 'alert' } });
   errorBox.hidden = true;
-  const generateBtn = createElement('button', {
-    className: 'button-secondary',
-    text: 'Tạo ảnh cảnh báo',
-    attributes: { type: 'button' },
-  });
+  const generateBtn = createElement('button', { className: 'button-secondary', attributes: { type: 'button' } });
+  generateBtn.append(materialIcon('share', { className: 'icon-glyph' }), document.createTextNode('Tạo ảnh cảnh báo'));
   const shareBtn = createElement('button', {
     className: 'button-secondary',
-    text: 'Chia sẻ ảnh',
     attributes: { type: 'button', disabled: '' },
   });
+  shareBtn.append(materialIcon('share', { className: 'icon-glyph' }), document.createTextNode('Chia sẻ ảnh'));
   const saveBtn = createElement('button', {
     className: 'button-secondary',
-    text: 'Lưu ảnh',
     attributes: { type: 'button', disabled: '' },
   });
+  saveBtn.append(materialIcon('download', { className: 'icon-glyph' }), document.createTextNode('Lưu ảnh'));
   const actions = createElement('div', { className: 'share-actions' });
   actions.hidden = true;
   actions.append(shareBtn, saveBtn);
@@ -716,6 +696,7 @@ function renderShareError(ctx, error) {
   ctx.preview.hidden = true;
   ctx.canvas.hidden = true;
   ctx.actions.hidden = true;
+  ctx.generateBtn.hidden = false;
   ctx.generateBtn.disabled = false;
   ctx.shareBtn.disabled = true;
   ctx.saveBtn.disabled = true;
@@ -723,11 +704,8 @@ function renderShareError(ctx, error) {
   ctx.errorBox.replaceChildren(createElement('p', {
     text: error instanceof ApiError ? error.message : 'Không tạo được ảnh chia sẻ. Vui lòng thử lại.',
   }));
-  const retry = createElement('button', {
-    className: 'button-secondary',
-    text: 'Tạo lại ảnh',
-    attributes: { type: 'button' },
-  });
+  const retry = createElement('button', { className: 'button-secondary', attributes: { type: 'button' } });
+  retry.append(materialIcon('refresh', { className: 'icon-glyph' }), document.createTextNode('Tạo lại ảnh'));
   retry.addEventListener('click', () => mountShareCard(ctx));
   ctx.errorBox.append(retry);
   ctx.errorBox.hidden = false;
@@ -751,9 +729,13 @@ function extractQrUrl(svgText) {
 }
 
 async function onShareImage(ctx, mode) {
-  if (!ctx.state.model) return;
+  if (!ctx.state.model || !ctx.canvas || ctx.canvas.width === 0 || ctx.canvas.height === 0) {
+    ctx.status.textContent = 'Chưa có ảnh. Hãy bấm “Tạo ảnh cảnh báo” trước, rồi mới chia sẻ hoặc lưu.';
+    return;
+  }
   ctx.status.textContent = mode === 'share' ? 'Đang mở chia sẻ…' : 'Đang chuẩn bị ảnh…';
   let objectUrl = null;
+  let link = null;
   try {
     const blob = await canvasToBlob(ctx.canvas);
     const file = typeof File === 'function'
@@ -776,18 +758,25 @@ async function onShareImage(ctx, mode) {
       window.open(objectUrl, '_blank', 'noopener');
       ctx.status.textContent = 'Đã mở ảnh ở tab mới. Chạm giữ ảnh rồi chọn “Lưu vào Ảnh”.';
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      objectUrl = null;
       return;
     }
-    const link = document.createElement('a');
+    link = document.createElement('a');
+    link.rel = 'noopener';
     link.href = objectUrl;
     link.download = ctx.state.fileName;
     document.body.append(link);
     link.click();
-    link.remove();
     ctx.status.textContent = 'Đã tải ảnh về máy.';
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+    // Defer removal + revoke: some engines cancel the download when the anchor
+    // is detached synchronously right after click().
+    window.setTimeout(() => {
+      if (link && link.parentNode) link.remove();
+      if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    }, 1500);
   } catch (error) {
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    if (link && link.parentNode) link.remove();
     ctx.status.textContent = error && error.name === 'AbortError'
       ? 'Đã huỷ chia sẻ.'
       : 'Chưa chia sẻ được ảnh. Vui lòng thử lại.';
@@ -838,7 +827,10 @@ function renderHistory() {
       attributes: { type: 'button', 'data-history-open': entry.id },
     });
     openButton.append(
-      createElement('span', { className: 'history-risk', text: RISK_META[detective.risk_level].label }),
+      createElement('span', {
+        className: `history-risk chip-${detective.risk_level}`,
+        text: RISK_META[detective.risk_level].label,
+      }),
       createElement('span', { className: 'history-preview', text: previewText(normalizedText) }),
     );
     const removeButton = createElement('button', {
@@ -865,13 +857,6 @@ function stopSpeech() {
   if (recognition && isListening) recognition.stop();
 }
 
-function setLibraryCollapsed(collapsed) {
-  elements.libraryPanel.dataset.collapsed = String(collapsed);
-  elements.libraryContent.hidden = collapsed;
-  elements.libraryToggleBtn.setAttribute('aria-expanded', String(!collapsed));
-  elements.libraryToggleBtn.textContent = collapsed ? 'Mở thư viện' : 'Thu gọn thư viện';
-}
-
 function clearCurrent() {
   stopSpeech();
   if (activeController) activeController.abort();
@@ -882,7 +867,6 @@ function clearCurrent() {
   elements.error.hidden = true;
   elements.loadingPanel.hidden = true;
   elements.status.textContent = '';
-  setLibraryCollapsed(false);
   elements.textInput.focus();
 }
 
@@ -1050,31 +1034,8 @@ elements.clearHistoryBtn.addEventListener('click', () => {
   elements.status.textContent = 'Đã xoá toàn bộ lịch sử.';
 });
 
-elements.libraryToggleBtn.addEventListener('click', () => {
-  setLibraryCollapsed(elements.libraryPanel.dataset.collapsed !== 'true');
-});
-
-elements.libraryFilters.addEventListener('click', (event) => {
-  const button = event.target.closest('[data-library-group]');
-  if (!button) return;
-  const group = button.dataset.libraryGroup;
-  if (group === 'all') {
-    history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-  } else {
-    window.location.hash = group;
-  }
-  renderLibrary(group);
-});
-window.addEventListener('hashchange', () => {
-  renderLibrary(libraryGroupFromHash(
-    window.location.hash,
-    libraryData.groups.map((item) => item.key),
-  ));
-});
-
 renderHistory();
 setupSpeech();
-setupLibrary();
 
 const displayPrefs = document.getElementById('displayPrefs');
 if (displayPrefs) wirePreferences({ root: displayPrefs });

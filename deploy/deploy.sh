@@ -42,6 +42,14 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 sudo chown root:"$USER" "$ENV_FILE"
 sudo chmod 640 "$ENV_FILE"
+# Public edge cung cấp full SSL ở origin không port; QR phải trỏ tới URL final-user này,
+# không phải cổng Nginx nội bộ 8000.
+PUBLIC_BASE_URL="https://team6-scamcheck.exe.xyz/"
+if sudo grep -q '^BASE_URL=' "$ENV_FILE"; then
+  sudo sed -i "s|^BASE_URL=.*|BASE_URL=$PUBLIC_BASE_URL|" "$ENV_FILE"
+else
+  printf '\nBASE_URL=%s\n' "$PUBLIC_BASE_URL" | sudo tee -a "$ENV_FILE" >/dev/null
+fi
 
 echo "==> [5/6] Cài systemd backend + nginx"
 sudo cp "$INSTALL_DIR/deploy/scamcheck-backend.service" /etc/systemd/system/
@@ -105,7 +113,15 @@ if [ -z "$health" ] || ! printf '%s' "$health" | "$VENV/bin/python" -c \
   exit 1
 fi
 echo "    backend health: $health"
+qr_svg=$(curl -fsS --max-time 5 http://127.0.0.1:5000/api/share/qr.svg)
+if ! printf '%s' "$qr_svg" | grep -Fq 'Mã QR dẫn tới https://team6-scamcheck.exe.xyz/' \
+  || printf '%s' "$qr_svg" | grep -Fq ':8000'; then
+  echo "    ! QR chưa trỏ tới public origin không port." >&2
+  exit 1
+fi
+echo "    share QR: public origin không port"
 echo "    frontend:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/
+echo "    library:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/library.html
 echo "    practice:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/practice.html
 echo
-echo "✓ Deploy xong. Public: https://team6-scamcheck.exe.xyz:8000/"
+echo "✓ Deploy xong. Public: https://team6-scamcheck.exe.xyz/"

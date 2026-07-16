@@ -3,37 +3,77 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f1ea">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#171a16">
-  <title>ScamCheck — Kiểm tra tin nhắn lừa đảo</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-rescue-v1">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-rescue-v1">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#5838cb">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2350">
+  <meta name="description" content="ScamCheck — kiểm tra nhanh một tin nhắn có dấu hiệu lừa đảo, soi đường dẫn, đề xuất việc nên làm.">
+  <title>ScamCheck — Kiểm tra lừa đảo</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v5">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v5">
   <script>(function(){try{var s=localStorage.getItem('scamcheck.prefs.v1');if(!s)return;var p=JSON.parse(s);var d=document.documentElement;if(p&&p.highContrast===true)d.setAttribute('data-high-contrast','true');if(p&&['1','1.15','1.3'].indexOf(p.fontScale)>=0)d.style.setProperty('--app-font-scale',p.fontScale);}catch(e){}})();</script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Đi đến nội dung chính</a>
 
-  <header class="site-header" aria-label="ScamCheck">
-    <div class="brand-mark" aria-hidden="true">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 3 20 6v5c0 5-3.4 8.3-8 10-4.6-1.7-8-5-8-10V6l8-3Z"/>
-        <path d="m8.5 12 2.2 2.2 4.8-5"/>
-      </svg>
+  <header class="app-bar" aria-label="ScamCheck">
+    <div class="app-bar-row">
+      <a class="brand" href="/" aria-label="ScamCheck — trang chủ">
+        <span class="brand-mark msymbols" aria-hidden="true">&#xe9e0;</span><!-- shield -->
+        <span class="brand-name">ScamCheck</span>
+      </a>
+      <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="primaryNav" aria-label="Mở trình đơn chính">
+        <span class="mobile-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>Menu</span>
+      </button>
+      <nav id="primaryNav" class="tab-rail" aria-label="Trang chính">
+        <a class="tab" href="/" aria-current="page">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xf0c5;</span><!-- fact_check -->
+          <span class="tab-label">Kiểm tra</span>
+        </a>
+        <a class="tab" href="/library.html">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xea19;</span><!-- menu_book -->
+          <span class="tab-label">Thư viện</span>
+        </a>
+        <a class="tab" href="/practice.html">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xf04c;</span><!-- quiz -->
+          <span class="tab-label">Luyện tập</span>
+        </a>
+      </nav>
     </div>
-    <div>
-      <h1 class="brand-name">ScamCheck</h1>
-      <p class="brand-note">Kiểm tra bình tĩnh trước khi bấm, gửi mã hoặc chuyển tiền.</p>
-    </div>
-    <nav class="top-nav" aria-label="Chức năng chính">
-      <a href="/practice.html">Luyện tập 10 câu</a>
-    </nav>
   </header>
 
-  <main id="main-content" class="app-shell" tabindex="-1">
+  <main id="main-content" class="page" tabindex="-1">
+    <section class="hero" aria-labelledby="heroTitle">
+      <svg class="hero-arc" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="600" cy="600" r="200" opacity="0.20"/>
+          <circle cx="600" cy="600" r="300" opacity="0.14"/>
+          <circle cx="600" cy="600" r="400" opacity="0.09"/>
+        </g>
+      </svg>
+      <svg class="hero-illustration" viewBox="0 0 240 200" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="48" cy="166" r="16" opacity="0.35"/>
+          <path d="M60 58 H180 a20 20 0 0 1 20 20 v34 a20 20 0 0 1 -20 20 H100 l-22 22 v-22 H60 a20 20 0 0 1 -20 -20 V78 a20 20 0 0 1 20 -20 Z" opacity="0.5"/>
+          <path d="M120 72 l24 9 v20 c0 15-10 25-24 30-14-5-24-15-24-30 V81 Z" opacity="0.9"/>
+          <path d="M108 99 L117 109 L134 86" opacity="0.98"/>
+        </g>
+        <g fill="currentColor">
+          <circle cx="208" cy="46" r="5" opacity="0.55"/>
+          <circle cx="194" cy="168" r="4" opacity="0.4"/>
+          <circle cx="30" cy="60" r="3.5" opacity="0.4"/>
+        </g>
+      </svg>
+      <div class="hero-inner">
+        <p class="hero-eyebrow">Kiểm tra lừa đảo</p>
+        <h1 id="heroTitle" class="hero-title">Tin nhắn này có đáng tin không?</h1>
+        <p class="hero-lead">Dán nguyên văn tin nhắn. ScamCheck chỉ ra mức rủi ro, soi đường dẫn, đối chiếu luật an toàn và đề xuất ba việc nên làm.</p>
+      </div>
+    </section>
+
     <section class="display-prefs" id="displayPrefs" aria-label="Tuỳ chọn hiển thị">
       <span class="display-prefs-label">Hiển thị</span>
       <button class="pref-toggle" type="button" data-pref="contrast" aria-pressed="false">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor" stroke="none"/></svg>
+        <span class="msymbols" aria-hidden="true">&#xeb37;</span><!-- contrast -->
         <span>Tương phản cao</span>
       </button>
       <div class="font-scale-group" role="group" aria-label="Cỡ chữ">
@@ -44,100 +84,74 @@
       </div>
       <p class="sr-only" data-pref-status aria-live="polite"></p>
     </section>
-    <section class="workspace" aria-labelledby="page-title">
-      <div class="intro">
-        <h2 id="page-title">Tin nhắn này có đáng tin không?</h2>
-        <p>Dán nguyên văn tin nhắn. ScamCheck sẽ chỉ ra mức rủi ro, soi đường dẫn, đối chiếu luật an toàn và đề xuất ba việc nên làm.</p>
-      </div>
 
-      <div class="input-card">
-        <label class="field-label" for="textInput">Nội dung tin nhắn cần kiểm tra</label>
-        <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác. Nội dung sẽ được gửi tới dịch vụ AI để phân tích.</p>
-        <p class="keyboard-hint">Mẹo trên máy tính: nhấn Ctrl hoặc ⌘ cùng Enter để kiểm tra nhanh.</p>
-        <textarea id="textInput" aria-describedby="inputHelp speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
+    <div class="page-grid">
+      <section class="workspace" aria-labelledby="heroTitle">
+        <div class="input-card">
+          <label class="field-label" for="textInput">Nội dung tin nhắn cần kiểm tra</label>
+          <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác. Nội dung sẽ được gửi tới dịch vụ AI để phân tích.</p>
+          <p class="keyboard-hint">Mẹo trên máy tính: nhấn Ctrl hoặc ⌘ cùng Enter để kiểm tra nhanh.</p>
+          <textarea id="textInput" aria-describedby="inputHelp speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
 
-        <div class="sample-area" aria-labelledby="sampleTitle">
-          <p id="sampleTitle" class="sample-title">Thử nhanh với tin mẫu</p>
-          <div class="sample-list">
-            <button class="sample-button" type="button" data-sample="danger">Giả ngân hàng xin OTP</button>
-            <button class="sample-button" type="button" data-sample="suspicious">Trúng thưởng bất ngờ</button>
-            <button class="sample-button" type="button" data-sample="safe">Thông báo giao hàng</button>
+          <div class="sample-area" aria-labelledby="sampleTitle">
+            <p id="sampleTitle" class="sample-title">Thử nhanh với tin mẫu</p>
+            <div class="sample-list">
+              <button class="sample-button" type="button" data-sample="danger">Giả ngân hàng xin OTP</button>
+              <button class="sample-button" type="button" data-sample="suspicious">Trúng thưởng bất ngờ</button>
+              <button class="sample-button" type="button" data-sample="safe">Thông báo giao hàng</button>
+            </div>
           </div>
+
+          <div class="primary-actions">
+            <button id="checkBtn" class="button-primary" type="button">
+              <span class="msymbols" aria-hidden="true">&#xf0c5;</span><!-- fact_check -->
+              <span>Kiểm tra tin nhắn</span>
+            </button>
+            <button id="speechBtn" class="button-secondary" type="button" aria-pressed="false">
+              <span class="msymbols" aria-hidden="true">&#xe31d;</span><!-- mic -->
+              <span id="speechBtnLabel">Nhập bằng giọng nói</span>
+            </button>
+          </div>
+          <p id="speechStatus" class="speech-note" aria-live="polite"></p>
+
+          <div class="secondary-actions">
+            <button id="clearBtn" class="button-secondary" type="button">
+              <span class="msymbols" aria-hidden="true">&#xe92e;</span><!-- delete -->
+              Xoá nội dung đang nhập
+            </button>
+          </div>
+
+          <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
+          <div id="error" class="error-panel" role="alert" tabindex="-1" hidden></div>
         </div>
 
-        <div class="primary-actions">
-          <button id="checkBtn" class="button-primary" type="button">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
-            </svg>
-            <span>Kiểm tra tin nhắn</span>
-          </button>
-          <button id="speechBtn" class="button-secondary" type="button" aria-pressed="false">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5M8 22h8"/>
-            </svg>
-            <span id="speechBtnLabel">Nhập bằng giọng nói</span>
-          </button>
-        </div>
-        <p id="speechStatus" class="speech-note" aria-live="polite"></p>
+        <section id="loadingPanel" class="loading-panel" aria-labelledby="loadingTitle" aria-busy="true" hidden>
+          <h2 id="loadingTitle" class="loading-heading"><span class="spinner" aria-hidden="true"></span>Đang xem xét tin nhắn</h2>
+          <div class="skeleton-stack" aria-hidden="true">
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </div>
+          <button id="cancelCheckBtn" class="button-secondary cancel-check" type="button">Dừng kiểm tra</button>
+        </section>
 
-        <div class="secondary-actions">
-          <button id="clearBtn" class="button-secondary" type="button">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v5M14 11v5"/>
-            </svg>
-            Xoá nội dung đang nhập
-          </button>
-        </div>
-
-        <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
-        <div id="error" class="error-panel" role="alert" tabindex="-1" hidden></div>
-      </div>
-
-      <section id="loadingPanel" class="loading-panel" aria-labelledby="loadingTitle" aria-busy="true" hidden>
-        <h2 id="loadingTitle" class="loading-heading"><span class="spinner" aria-hidden="true"></span>Đang xem xét tin nhắn</h2>
-        <div class="skeleton-stack" aria-hidden="true">
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line"></div>
-        </div>
-        <button id="cancelCheckBtn" class="button-secondary cancel-check" type="button">Dừng kiểm tra</button>
+        <section id="result" class="result-panel" aria-live="polite" aria-atomic="true" tabindex="-1" hidden></section>
       </section>
 
-      <section id="result" class="result-panel" aria-live="polite" aria-atomic="true" tabindex="-1" hidden></section>
-
-      <section id="library" class="library-panel" aria-labelledby="libraryTitle">
-        <div class="library-heading-row">
-          <div>
-            <p class="section-eyebrow">Thư viện nhận diện</p>
-            <h2 id="libraryTitle">12 kiểu lừa đảo thường gặp</h2>
-          </div>
-          <div class="library-heading-actions">
-            <p id="libraryStatus" class="library-status" role="status" aria-live="polite">Đang tải thư viện…</p>
-            <button id="libraryToggleBtn" class="button-secondary library-toggle-button" type="button" aria-expanded="true" aria-controls="libraryContent">Thu gọn thư viện</button>
-          </div>
+      <aside class="history-panel" aria-labelledby="historyTitle">
+        <div class="history-header">
+          <h2 id="historyTitle">
+            <span class="msymbols eyebrow-icon" aria-hidden="true">&#xe8b3;</span><!-- history -->
+            <span>Đã kiểm tra gần đây</span>
+          </h2>
+          <button id="clearHistoryBtn" class="icon-button danger" type="button" aria-label="Xoá toàn bộ lịch sử" title="Xoá toàn bộ lịch sử" hidden>
+            <span class="msymbols" aria-hidden="true">&#xe92e;</span><!-- delete -->
+          </button>
         </div>
-        <div id="libraryContent">
-          <p class="library-intro">Xem dấu hiệu và cách xử lý bình tĩnh theo từng nhóm. Đây là các mẫu thường gặp, không phải danh sách đầy đủ tuyệt đối.</p>
-          <div id="libraryFilters" class="library-filters" aria-label="Lọc thư viện theo nhóm"></div>
-          <div id="libraryError" class="error-panel" role="alert" hidden></div>
-          <div id="libraryList" class="library-list"></div>
-        </div>
-      </section>
-    </section>
-
-    <aside class="history-panel" aria-labelledby="historyTitle">
-      <div class="history-header">
-        <h2 id="historyTitle">Đã kiểm tra gần đây</h2>
-        <button id="clearHistoryBtn" class="icon-button danger" type="button" aria-label="Xoá toàn bộ lịch sử" title="Xoá toàn bộ lịch sử" hidden>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 6h18M8 6V4h8v2M19 6l-1 15H6L5 6M10 11v5M14 11v5"/>
-          </svg>
-        </button>
-      </div>
-      <p id="historyEmpty" class="history-empty">Chưa có mục nào. Kết quả sẽ chỉ được lưu trên thiết bị này.</p>
-      <ol id="historyList" class="history-list"></ol>
-    </aside>
+        <p id="historyEmpty" class="history-empty">Chưa có mục nào. Kết quả sẽ chỉ được lưu trên thiết bị này.</p>
+        <ol id="historyList" class="history-list"></ol>
+      </aside>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -147,7 +161,8 @@
     </div>
   </footer>
 
-  <script type="module" src="/assets/js/app.js?v=stage5-rescue-v1"></script>
+  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v5"></script>
+  <script type="module" src="/assets/js/app.js?v=stage5-tabs-v5"></script>
   <noscript><p class="noscript-warning">ScamCheck cần JavaScript để kiểm tra tin nhắn. Bác vui lòng bật JavaScript hoặc nhờ người thân hỗ trợ.</p></noscript>
 </body>
 </html>

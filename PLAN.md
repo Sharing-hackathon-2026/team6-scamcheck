@@ -52,7 +52,7 @@ Chi tiết:
 - **Biến môi trường (backend):** `GEMINI_API_KEY` (mentor cấp), `GEMINI_MODEL`, `FLASK_SECRET_KEY`, `CORS_ORIGIN` (tuỳ chọn).
 - **Cấu hình frontend:** `assets/js/config.js` (hoặc `config.example.js` + `.env` build) chỉ chứa `API_BASE` (thường để rỗng = cùng origin).
 - **Test:** `pytest` trong `backend/tests/`. Coverage ≥ cho mọi hàm trong `backend/app/services/`.
-- **Triển khai (VM target `team6-scamcheck.exe.xyz`, proxy công khai port `8000`):**
+- **Triển khai:** public SSL `https://team6-scamcheck.exe.xyz/`; edge forward tới Nginx port nội bộ `8000` trên VM target.
   - **Nginx** phục vụ `frontend/` tại `/` VÀ reverse-proxy `/api/*` → Flask.
   - **Flask (gunicorn)** chạy port nội bộ (vd `:5000`) qua systemd.
   - Hai service độc lập → sửa frontend không cần restart backend và ngược lại.
@@ -87,7 +87,7 @@ Chi tiết:
 | L1-03 | Gọi Gemini trả **kết quả có cấu trúc** | Bắt buộc | ✅ Xong | `/api/check` trả `detective` có risk level, dấu hiệu/đoạn trích và đúng 3 hành động |
 | L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ✅ Xong | `parse_detective()` validate/coerce; JSON sai → fallback `nghi_ngo`; xoá excerpt AI bịa; 6 test |
 | L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ✅ Xong | Validate rỗng/>5000; retry 429/503 tối đa 2 lần (0.5s, 1s); exhausted/mạng → lỗi thân thiện 502 |
-| L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz:8000/ (nginx + gunicorn, verified end-to-end) |
+| L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz/ (full SSL edge → nginx + gunicorn, verified end-to-end) |
 | L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | Theo yêu cầu sản phẩm mới: bỏ quota phiên; vẫn giữ timeout ≤8s, retry hữu hạn và log metadata 10 mục |
 | L1-08 | Nhật ký gọi AI | Nên có | ✅ Xong | `GET /api/check/log`; tối đa 10 metadata/lượt trong session (thời điểm, độ dài, tóm tắt), không lưu nội dung tin |
 
@@ -221,7 +221,7 @@ main `8,6/10`, practice `8,0/10`, cả hai `true_operational_tool`, không criti
 | L5-09 | Nút tải ảnh về máy | Nên có | ✅ Xong | Web Share File + Blob download; iOS fallback mở ảnh/chạm giữ; cần smoke iPhone thật |
 | L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ✅ Xong | High contrast light/dark + 100/115/130%, localStorage fail-safe dùng cả hai trang |
 
-**Test:** 193 pytest backend + 54 Node tests frontend; compileall/syntax/NFC/diff check đạt.
+**Test hiện tại:** 193 pytest backend + 75 Node tests frontend; compileall/syntax/NFC/diff check đạt.
 
 **🛡️ Safety mentor gate:** ✅ PASS — fresh `gpt-5.6-terra`, không critical/major,
 `recommendation=ship`. Hai vòng FAIL trước đã buộc sửa AI prose, 113, Host-header QR và
@@ -262,7 +262,7 @@ Evidence: `backend/reports/stage5-ux-gate.json`.
 | Cấu trúc AI | `response_mime_type=application/json` + schema | Parse deterministic, đáp ứng "9/10 lần đúng cấu trúc" |
 | Lịch sử | localStorage trình duyệt | Theo backlog L2-05, không cần backend state |
 | Cấp 4 | Làm **đủ 9 hạng mục** (không chọn cặp) | Backlog nâng cấp yêu cầu đo lường chất lượng AI có số liệu (L4-04→L4-06) |
-| Triển khai | Nginx (static) + gunicorn (Flask) trên VM target | Hai service độc lập, proxy công khai port 8000 |
+| Triển khai | Nginx (static) + gunicorn (Flask) trên VM target | Public SSL không port; edge forward tới Nginx `:8000` |
 
 ---
 

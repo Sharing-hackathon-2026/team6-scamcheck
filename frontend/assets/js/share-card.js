@@ -44,6 +44,14 @@ export function redactPrivateSequences(value) {
     .trim();
 }
 
+function truncateLabel(value, limit) {
+  const text = String(value || '').trim();
+  if (text.length <= limit) return text;
+  const clipped = text.slice(0, Math.max(1, limit - 1)).trimEnd();
+  const wordSafe = clipped.replace(/\s+\S*$/, '').trimEnd();
+  return `${wordSafe || clipped}…`.slice(0, limit);
+}
+
 export function buildShareCardModel(detective, options = {}) {
   const normalized = detective && typeof detective === 'object' ? detective : {};
   const riskKey = Object.hasOwn(RISK_META, normalized.risk_level) ? normalized.risk_level : 'nghi_ngo';
@@ -54,10 +62,10 @@ export function buildShareCardModel(detective, options = {}) {
     })
     .filter(Boolean)
     .slice(0, MAX_SIGNS)
-    .map((label) => label.slice(0, SIGN_LIMIT));
-  const reason = redactPrivateSequences(
+    .map((label) => truncateLabel(label, SIGN_LIMIT));
+  const reason = truncateLabel(redactPrivateSequences(
     typeof normalized.reason === 'string' ? normalized.reason : '',
-  ).slice(0, REASON_LIMIT) || RISK_META[riskKey].label;
+  ), REASON_LIMIT) || RISK_META[riskKey].label;
   return {
     productName: SHARE_CARD_DEFAULTS.productName,
     riskKey,

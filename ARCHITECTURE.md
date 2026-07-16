@@ -17,7 +17,7 @@
 
 ```
 ┌───────────────┐  1. fetch('/api/check', {text})      ┌───────────────────────┐
-│   Trình duyệt │ ──────────────────────────────────▶ │   Nginx (port 8000)   │
+│   Trình duyệt │ ──────────────────────────────────▶ │ Edge SSL → Nginx:8000 │
 │  (iPhone 45+) │                                       │  • static frontend/   │
 │               │  6. render DOM (JS)                   │  • /api/* → proxy     │
 │  localStorage │ ◀────────────── JSON ────────────────┤    tới Flask          │
@@ -56,21 +56,26 @@
 ```
 scamcheck/
 ├── frontend/                      # ⬛ HTML + CSS token hoá + JS thuần → Nginx
-│   ├── index.html                 # trang chính: textarea + 3 tin mẫu + footer
-│   ├── practice.html              # luyện tập 10 câu (Cấp 4-C)
+│   ├── index.html                 # tab Kiểm tra: input/result/rescue/share/history
+│   ├── library.html               # tab Thư viện: 12 mẫu và bộ lọc riêng
+│   ├── practice.html              # tab Luyện tập: 10 câu (Cấp 4-C)
 │   ├── assets/
+│   │   ├── fonts/                 # Be Vietnam Pro + Material Symbols tự host và licence
 │   │   ├── css/
-│   │   │   ├── tokens.css         # ⭐ foundation tokens (anti-ai-design đóng băng)
+│   │   │   ├── tokens.css         # ⭐ foundation mint/forest/violet + light/dark/HC
 │   │   │   └── app.css            # component/layout CSS ≥18px, AA contrast
 │   │   └── js/
-│   │       ├── config.js          # API_BASE (rỗng = cùng origin). git-ignored?
+│   │       ├── config.js          # API_BASE (rỗng = cùng origin)
 │   │       ├── api.js             # wrapper fetch('/api/...') + xử lý lỗi mạng
-│   │       ├── app.js             # nút Kiểm tra → gọi api.check → render
+│   │       ├── app.js             # tab Kiểm tra; không import/fetch thư viện
+│   │       ├── library.js         # tab Thư viện; loading/empty/error/success + retry
+│   │       ├── navigation.js      # giữ aria-current tab trong vùng nhìn mobile
+│   │       ├── icons.js           # map Material Symbols subset → DOM an toàn
 │   │       ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt (L2-04)
 │   │       ├── history.js         # localStorage 10 tin gần nhất (L2-09)
 │   │       ├── result-model.js    # chuẩn hoá kết quả + đúng 3 hành động
+│   │       ├── rescue-model.js    # chuẩn hoá payload/response Người ứng cứu
 │   │       ├── speech.js          # Web Speech API + fallback
-│   │       ├── rescue.js          # câu hỏi "đã làm gì" + gọi api.rescue (Cấp 5)
 │   │       └── practice.js        # state máy luyện tập (Cấp 4-C)
 │   └── components/                # (tuỳ chọn) HTML tái dùng qua <template>/JS
 │       ├── footer-legal.html      # dòng pháp lý (dùng ở mọi trang)
@@ -131,6 +136,7 @@ scamcheck/
 ├── .gitignore
 ├── README.md
 ├── PLAN.md
+├── DESIGN_REFERENCE.md            # số đo/palette/type/layout từ site tham khảo + giới hạn licence
 └── ARCHITECTURE.md                # file này
 ```
 
@@ -323,13 +329,18 @@ class RescueResult:
 - Output: đóng băng **foundation tokens** → `frontend/assets/css/tokens.css`
   (font-size ≥18px, spacing, màu risk, bo góc, shadow...).
 - Bất kỳ CSS nào đều tham chiếu tokens, không hardcode → giữ nhất quán xuyên suốt.
-- Visual refinement sau Stage 4 dùng direction **community notice**: nền giấy ấm, xanh tin cậy,
-  hierarchy bình tĩnh và copy gần gũi; không thêm font/asset/dependency mạng.
-- `:root { color-scheme: light dark; }` cùng `@media (prefers-color-scheme: dark)` tự theo
-  hệ điều hành, không lưu preference/toggle. Dark dùng nền than ấm + chữ trắng ấm để giảm chói,
-  vẫn giữ token semantic safe/warning/danger và contrast AA.
-- Result ưu tiên verdict → ba hành động ngay → bằng chứng; technical analysis và thư viện là
-  disclosure thật để giảm mobile density. Quiz có semantic progress, retry counted và completion.
+- Redesign hiện tại dùng direction **official editorial utility** đo từ Own Your Online:
+  mint canvas, forest ink, violet brand/action và broad curved landmarks; số đo và giới hạn
+  sao chép/licence nằm ở `DESIGN_REFERENCE.md`.
+- IA một tác vụ mỗi URL: `/` check/rescue/share, `/library.html` thư viện, `/practice.html`
+  quiz. Đây là real links với `aria-current`, không phải tab giả hoặc SPA state.
+- Galano Grotesque là font thương mại nên không scrape/hotlink. Frontend self-host Be Vietnam
+  Pro (OFL) và một subset Material Symbols Rounded (Apache 2.0), không request font/icon runtime.
+- `color-scheme` cùng `@media (prefers-color-scheme: dark)` tự theo hệ điều hành; high contrast
+  và chữ 100/115/130% là preference đọc riêng. Semantic safe/warning/danger giữ contrast AA.
+- Result ưu tiên verdict → ba hành động ngay → bằng chứng; technical analysis là disclosure.
+  Thư viện có URL/module/loading/empty/error/retry riêng; quiz có semantic progress, retry
+  counted và completion.
 
 ### 7.2 utility-ui-eval (gate UX)
 - Gate **chặn** ở **cuối mỗi Stage 2–5**.
@@ -350,7 +361,7 @@ class RescueResult:
 
 ### Prod (VM deploy target)
 - **VM:** `team6-scamcheck.exe.xyz`.
-- **Public proxy:** `https://team6-scamcheck.exe.xyz:8000/` (proxy xác thực user).
+- **Public URL:** `https://team6-scamcheck.exe.xyz/` (full SSL; edge tự forward tới Nginx port `8000`).
 - **Nginx** (trong VM, hoặc do proxy exe.dev đảm nhiệm) phục vụ `frontend/` tại `/`
   VÀ reverse-proxy `/api/*` → `127.0.0.1:5000` (Flask/gunicorn).
 - **Flask** chạy gunicorn port nội bộ `:5000`, systemd unit `backend/scamcheck-backend.service`.

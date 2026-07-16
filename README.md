@@ -16,7 +16,7 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 ## Deploy target
 
 - **VM:** `team6-scamcheck.exe.xyz` (**khác** VM dev).
-- **Public proxy:** `https://team6-scamcheck.exe.xyz:8000/` (proxy xác thực user, forward vào Nginx trong VM).
+- **Public URL (SSL):** `https://team6-scamcheck.exe.xyz/`; lớp edge tự forward tới Nginx nội bộ ở port `8000`.
 - Nginx phục vụ `frontend/` tại `/` + proxy `/api/*` → `127.0.0.1:5000` (Flask/gunicorn).
 - Source: `https://hackathon-project.int.exe.xyz/Sharing-hackathon-2026/team6-scamcheck`
 
@@ -75,7 +75,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 54 test Node, không cần dependency ngoài
+npm --prefix frontend test       # 75 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -99,8 +99,12 @@ cứng mọi số điện thoại. Kết quả có thể xuất ảnh PNG 1080×
 Web Share/download fallback; high contrast và chữ 100%/115%/130% được lưu trên thiết bị.
 Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
 
-Frontend dùng visual direction “community notice” ấm và gần gũi, tự chuyển light/dark
-bằng `prefers-color-scheme` của hệ điều hành; không có toggle thủ công. Fresh UX gate
+Frontend hiện dùng kiến trúc một tác vụ mỗi trang: `/` kiểm tra, `/library.html` thư viện,
+`/practice.html` luyện tập. Visual direction mint/forest/violet được đo từ Own Your Online
+Scam Check và ghi tại `DESIGN_REFERENCE.md`, nhưng không sao chép logo/copy/asset độc quyền.
+Be Vietnam Pro và Material Symbols Rounded được self-host kèm giấy phép; Galano Grotesque
+không bị scrape/hotlink vì là font thương mại. Giao diện tự chuyển light/dark bằng
+`prefers-color-scheme` của hệ điều hành; không có toggle theme thủ công. Fresh UX gate
 `gpt-5.6-terra` + Browse CLI: main `8,6/10`, practice `8,0/10`, đều
 `true_operational_tool`, không critical/major và khuyến nghị ship.
 Stage 5 fresh safety mentor gate: PASS, không critical/major. Fresh UX gate 28 chiều:
@@ -112,7 +116,7 @@ FAIL trước được giữ trong báo cáo để chứng minh các lỗi AI pr
 
 ## Deploy (đang chạy trên VM target)
 
-- **🟢 LIVE:** https://team6-scamcheck.exe.xyz:8000/
+- **🟢 LIVE:** https://team6-scamcheck.exe.xyz/
 - `GET /api/health` → `{"ok":true,"ready":true}`
 - `POST /api/check` → function-call Thám tử, chain Cô tâm lý khi cần, retry rate-limit; không giới hạn lượt theo phiên.
 - `POST /api/rescue` → 4 situation enum, hotline whitelist + guarded fallback; `GET /api/share/qr.svg` không nhận URL tùy ý.
@@ -132,5 +136,6 @@ Script tự: clone vào `/opt/scamcheck` → tạo venv → chạy pytest (phả
 
 - Kế hoạch triển khai theo cấp: [`PLAN.md`](PLAN.md)
 - Cấu trúc thư mục + sơ đồ luồng dữ liệu: [`ARCHITECTURE.md`](ARCHITECTURE.md)
+- Visual reference, số đo và quyết định licence: [`DESIGN_REFERENCE.md`](DESIGN_REFERENCE.md)
 - Hợp đồng API: [`API.md`](API.md)
 

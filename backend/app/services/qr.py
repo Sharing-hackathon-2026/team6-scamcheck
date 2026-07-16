@@ -44,7 +44,11 @@ def approved_share_url(
         raise ValueError("Địa chỉ chia sẻ không thuộc origin ScamCheck đã phê duyệt.")
     if port is not None and not 1 <= port <= 65535:
         raise ValueError("Cổng chia sẻ không hợp lệ.")
-    netloc = parsed.netloc
+    # Origin public không được lộ cổng dịch vụ nội bộ. HTTPS :443 được
+    # canonicalize về URL không port; localhost vẫn giữ port phục vụ dev.
+    if not is_local and port not in {None, 443}:
+        raise ValueError("Địa chỉ chia sẻ public không được chứa cổng nội bộ.")
+    netloc = parsed.netloc if is_local else host
     return f"{parsed.scheme}://{netloc}/"
 
 
