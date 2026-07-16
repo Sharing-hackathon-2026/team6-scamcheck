@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v6).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v7).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -280,8 +280,8 @@ summary:focus:not(:focus-visible),
 .hero-illustration {
   position: absolute;
   right: clamp(12px, 4vw, 56px);
-  top: clamp(20px, 6vw, 56px);
-  width: clamp(118px, 19vw, 184px);
+  top: clamp(12px, 4vw, 36px);
+  width: clamp(104px, 16vw, 160px);
   height: auto;
   color: var(--color-hero-soft);
   opacity: 0.92;
@@ -815,8 +815,8 @@ mark {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 48px;
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  min-height: 36px;
+  padding: var(--space-1) var(--space-4) 6px;
   cursor: pointer;
   list-style: none;
   /* Match the parent's top corners so the hover wash never paints a square
@@ -862,12 +862,16 @@ mark {
   overflow: clip;
 }
 .psychologist-card .result-disclosure-summary {
-  min-height: 60px;
+  min-height: 0;
   margin: 0;
-  padding: var(--space-3) var(--space-5) var(--space-4);
+  padding: var(--space-1) var(--space-3) var(--space-2);
   border-radius: var(--radius-surface) var(--radius-surface) 0 0;
 }
 .psychologist-card:not([open]) .result-disclosure-summary { border-radius: var(--radius-surface); }
+/* The generic adjacent-section rule adds 24px top padding. These two elements
+   already own an outer border, so that padding created a visible empty strip. */
+.result-section + .psychologist-card,
+.result-section + .technical-analysis { padding-top: 0; }
 .psychologist-card .result-disclosure-content {
   margin: 0;
   padding: 0 var(--space-5) var(--space-5);

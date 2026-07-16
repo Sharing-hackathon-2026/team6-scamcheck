@@ -1,7 +1,7 @@
 // Logic giao diện trang kiểm tra (/). Thư viện đã tách ra library.js; trang này
 // KHÔNG fetch /api/scam-library và không phụ thuộc DOM thư viện.
 // Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v6';
+import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v7';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -12,13 +12,13 @@ import {
 } from './history.js';
 import { wirePreferences } from './preferences.js';
 import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
-import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v6';
+import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v7';
 import {
   buildShareCardModel,
   decodeQrModules,
   drawShareCard,
   safeFileName,
-} from './share-card.js?v=stage5-tabs-v6';
+} from './share-card.js?v=stage5-tabs-v7';
 import { normalizePsychologist } from './stage3-model.js';
 import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
