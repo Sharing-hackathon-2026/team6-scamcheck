@@ -12,6 +12,7 @@ from ..prompts import (
 )
 from ..services.audit import append_ai_log, get_ai_log
 from ..services.cache import build_cache_key
+from ..services.fsm import after_check
 from ..services.gemini import GeminiError, generate_function_call, generate_json
 from ..services.links import analyze_links
 from ..services.parser import parse_detective, parse_psychologist, should_activate_psychologist
@@ -42,6 +43,11 @@ def check():
             "hit": True,
             "ttl_seconds": current_app.config["CHECK_CACHE_TTL"],
         }
+        cached["orchestration"] = after_check(
+            cached.get("detective", {}).get("risk_level", "nghi_ngo"),
+            cached.get("psychologist_status", "unavailable"),
+            cache_hit=True,
+        ).to_dict()
         return jsonify(cached)
 
     links = analyze_links(text)
@@ -115,6 +121,10 @@ def check():
             )
             _record_call("psychologist", text, detective_payload, status="error")
 
+    response["orchestration"] = after_check(
+        detective.risk_level,
+        response["psychologist_status"],
+    ).to_dict()
     if response["psychologist_status"] != "unavailable":
         cache.put(cache_key, response)
     return jsonify(response)

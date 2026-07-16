@@ -43,7 +43,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 150 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 193 test, dùng mock (không tốn lượt AI)
 ```
 
 Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn API):
@@ -73,9 +73,9 @@ python -m http.server 5500
 # → http://localhost:5500
 ```
 
-Kiểm thử helper frontend (highlight, lịch sử, chuẩn hoá kết quả, giọng nói):
+Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 29 test Node, không cần dependency ngoài
+npm --prefix frontend test       # 54 test Node, không cần dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -93,11 +93,20 @@ và chế độ luyện tập 10 câu tại `/practice.html`. Báo cáo thật g
 `51,7% → 66,7%`, hard-case accuracy `53,6% → 71,4%`, danger recall giữ `100%`;
 điểm yếu chính còn lại là phân biệt `nghi_ngo` với `nguy_hiem`.
 
+Stage 5 bổ sung câu hỏi tình huống một chạm, FSM ba persona, Người ứng cứu có deterministic
+fallback/kill switch, bảng 10 ngân hàng + Công an + kênh 156 có bằng chứng theo từng số và post-filter
+cứng mọi số điện thoại. Kết quả có thể xuất ảnh PNG 1080×1350 với QR same-origin chuẩn,
+Web Share/download fallback; high contrast và chữ 100%/115%/130% được lưu trên thiết bị.
+Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
+
 Frontend dùng visual direction “community notice” ấm và gần gũi, tự chuyển light/dark
 bằng `prefers-color-scheme` của hệ điều hành; không có toggle thủ công. Fresh UX gate
 `gpt-5.6-terra` + Browse CLI: main `8,6/10`, practice `8,0/10`, đều
 `true_operational_tool`, không critical/major và khuyến nghị ship.
-Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
+Stage 5 fresh safety mentor gate: PASS, không critical/major. Fresh UX gate 28 chiều:
+`7,7/10`, `true_operational_tool`, không critical/major, khuyến nghị ship. Hai vòng safety
+FAIL trước được giữ trong báo cáo để chứng minh các lỗi AI prose/113/QR Host/hotline source
+đã được sửa. Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
 
 (Sửa `config.js` chỉ khi dev tách port. Prod để rỗng vì Nginx cùng origin.)
 
@@ -106,6 +115,7 @@ Bảng tự kiểm tiếp cận nằm tại `frontend/ACCESSIBILITY.md`.
 - **🟢 LIVE:** https://team6-scamcheck.exe.xyz:8000/
 - `GET /api/health` → `{"ok":true,"ready":true}`
 - `POST /api/check` → function-call Thám tử, chain Cô tâm lý khi cần, retry rate-limit; không giới hạn lượt theo phiên.
+- `POST /api/rescue` → 4 situation enum, hotline whitelist + guarded fallback; `GET /api/share/qr.svg` không nhận URL tùy ý.
 
 Deploy idempotent qua `deploy/deploy.sh` (chạy **trên VM target**, cần sudo):
 ```bash

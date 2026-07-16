@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "reviewed_at": "2026-07-16",
+  "notice": "Chỉ gọi số xuất hiện trên trang liên hệ chính thức đã dẫn nguồn. Với ngân hàng, vẫn nên đối chiếu thêm số in trên mặt sau thẻ trước khi gọi.",
+  "entries": [
+    {
+      "id": "vietcombank",
+      "name": "Vietcombank",
+      "phone": "1900 54 54 13",
+      "type": "bank",
+      "aliases": ["vietcombank", "vcb", "ngoại thương"],
+      "source_url": "https://portal.vietcombank.com.vn/content/personal/KhoTaiLieu/Nganhangdientu/HD%20su%20dung%20cac%20to%20hop%20phim%20thong%20dung_Phone%20Banking.pdf",
+      "source_label": "Hướng dẫn Hotline Phone Banking chính thức Vietcombank",
+      "source_evidence": "Tài liệu chính thức ghi Hotline 1900 54 54 13.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "bidv",
+      "name": "BIDV",
+      "phone": "1900 9247",
+      "type": "bank",
+      "aliases": ["bidv", "đầu tư và phát triển"],
+      "source_url": "https://bidv.com.vn/vn/ca-nhan/lien-he",
+      "source_label": "Trang Liên hệ cá nhân chính thức BIDV",
+      "source_evidence": "Trang liên hệ ghi Hotline: 19009247/02422200588, hỗ trợ 24 giờ/7 ngày.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "agribank",
+      "name": "Agribank",
+      "phone": "1900 558 818",
+      "type": "bank",
+      "aliases": ["agribank", "nông nghiệp", "nông nghiệp và phát triển nông thôn"],
+      "source_url": "https://www.agribank.com.vn/vn/lien-he",
+      "source_label": "Trang Liên hệ chính thức Agribank",
+      "source_evidence": "Trang liên hệ hiển thị số 1900558818.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "techcombank",
+      "name": "Techcombank",
+      "phone": "1800 588 822",
+      "type": "bank",
+      "aliases": ["techcombank", "tcb", "kỹ thương"],
+      "source_url": "https://techcombank.com/lien-he",
+      "source_label": "Trang Liên hệ chính thức Techcombank",
+      "source_evidence": "Trang liên hệ hiển thị Hotline 1800 588 822.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "mbbank",
+      "name": "MB Bank",
+      "phone": "1900 545 426",
+      "type": "bank",
+      "aliases": ["mb bank", "mbbank", "mb", "quân đội"],
+      "source_url": "https://www.mbbank.com.vn/contact",
+      "source_label": "Trang Contact chính thức MB Bank",
+      "source_evidence": "Trang contact hiển thị 1900 545426/1900545426.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "acb",
+      "name": "ACB",
+      "phone": "1900 54 54 86",
+      "type": "bank",
+      "aliases": ["acb", "á châu"],
+      "source_url": "https://acb.com.vn/lien-he",
+      "source_label": "Trang Liên hệ chính thức ACB",
+      "source_evidence": "Trang liên hệ hiển thị 1900 54 54 86/1900545486.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "tpbank",
+      "name": "TPBank",
+      "phone": "1900 58 58 85",
+      "type": "bank",
+      "aliases": ["tpbank", "tp bank", "tiên phong"],
+      "source_url": "https://tpb.vn/lien-he-thong-tin",
+      "source_label": "Trang Liên hệ thông tin chính thức TPBank",
+      "source_evidence": "Trang liên hệ hiển thị Hotline 1900 58 58 85.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "sacombank",
+      "name": "Sacombank",
+      "phone": "1800 5858 88",
+      "type": "bank",
+      "aliases": ["sacombank", "stb", "sài gòn thương tín"],
+      "source_url": "https://www.sacombank.com.vn/trang-chu/lien-he.html",
+      "source_label": "Trang Liên hệ chính thức Sacombank",
+      "source_evidence": "Trang liên hệ hiển thị 1800 5858 88.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "vib",
+      "name": "VIB",
+      "phone": "1800 8180",
+      "type": "bank",
+      "aliases": ["vib", "quốc tế việt nam"],
+      "source_url": "https://www.vib.com.vn/vn/lien-he",
+      "source_label": "Trang Liên hệ chính thức VIB",
+      "source_evidence": "Trang liên hệ đặt liên kết tel:18008180 và hiển thị 1800 8180.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "msb",
+      "name": "MSB",
+      "phone": "1800 599 999",
+      "type": "bank",
+      "aliases": ["msb", "hàng hải"],
+      "source_url": "https://www.msb.com.vn/lien-he-ho-tro/",
+      "source_label": "Trang Liên hệ & hỗ trợ chính thức MSB",
+      "source_evidence": "Trang liên hệ hiện hành hiển thị Hotline 1800.599999.",
+      "source_checked_at": "2026-07-16"
+    },
+    {
+      "id": "police_113",
+      "name": "Công an — số khẩn cấp",
+      "phone": "113",
+      "type": "police",
+      "aliases": ["công an", "cảnh sát", "113"],
+      "source_url": "https://mst.gov.vn/mien-phi-cac-cuoc-goi-den-so-113-114-115-197140697.htm",
+      "source_label": "Bộ TT&TT: các số dịch vụ khẩn cấp 113, 114, 115",
+      "source_evidence": "Bài chính thức xác nhận 113 là số dịch vụ khẩn cấp và cuộc gọi tới 113 được miễn phí.",
+      "source_checked_at": "2026-07-16",
+      "emergency_only": true
+    },
+    {
+      "id": "ais_156",
+      "name": "Hệ thống phản ánh cuộc gọi, tin nhắn rác và lừa đảo",
+      "phone": "156",
+      "type": "cybersecurity",
+      "aliases": ["cục an toàn thông tin", "an toàn thông tin", "156"],
+      "source_url": "https://mst.gov.vn/trien-khai-tong-dai-156-tiep-nhan-phan-anh-tin-nhan-rac-cuoc-goi-rac-cuoc-goi-co-dau-hieu-lua-dao-19700002017.htm",
+      "source_label": "Bộ TT&TT: triển khai tổng đài 156",
+      "source_evidence": "Bài chính thức xác nhận đầu số 156 tiếp nhận phản ánh cuộc gọi và tin nhắn có dấu hiệu lừa đảo qua thoại và tin nhắn.",
+      "source_checked_at": "2026-07-16"
+    }
+  ]
+}

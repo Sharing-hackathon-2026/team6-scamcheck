@@ -519,3 +519,71 @@ normalize + validate
 - Luồng kiểm tra giữ contract JSON deterministic. UI phát các trạng thái tiến trình hữu ích
   ngay từ lúc gửi (soi link → đối chiếu dấu hiệu → chờ persona), có timeout/cancel bằng
   `AbortController`; không giả token streaming làm hỏng function-call parsing.
+
+## 11. Stage 5 — FSM Người ứng cứu, hotline và ảnh chia sẻ
+
+### 11.1 Máy trạng thái ba persona
+
+```text
+POST /api/check
+  START
+    └─ Detective (1 call)
+         ├─ an_toan/khong_lien_quan ──▶ assessment_complete
+         └─ nghi_ngo/nguy_hiem
+              └─ Psychologist (1 call, lỗi không đổi verdict)
+                   └─ awaiting_situation
+                        ├─ chua_lam_gi ──▶ prevention_complete (0 Rescuer call)
+                        ├─ da_bam_link ─┐
+                        ├─ da_chuyen_tien ─┼─▶ Rescuer tối đa 1 call ─▶ rescue_complete
+                        └─ da_cung_cap_otp ─┘         │
+                                                     └─ lỗi/invalid/kill switch
+                                                        └─ guarded deterministic playbook
+```
+
+Transition do `services/fsm.py` quyết định từ verdict/situation enum; function name hay text
+Gemini không được chuyển state. Mỗi response có metrics so với baseline ngây thơ luôn gọi
+persona kế tiếp. Với bốn situation, FSM bỏ 1/4 Rescuer call (`25%`) nhờ nhánh `chua_lam_gi`.
+Cache hit ở check có `actual_ai_calls=0`.
+
+### 11.2 Boundary dữ liệu ứng cứu
+
+- `message_text` được NFC/length validate rồi chỉ dùng trong `match_bank_hotlines()`; toàn văn
+  không đi vào prompt Rescuer. Client `red_flags` cũng bị bỏ vì có thể giả dạng dữ liệu
+  riêng tư; AI chỉ nhận risk level, situation, step keys và bảng hotline public.
+- `data/hotlines.json` có 10 ngân hàng, Công an và tổng đài 156; mỗi entry có URL official
+  theo từng số, evidence quote và ngày kiểm tra. Loader còn đối chiếu chính số trong evidence,
+  fail closed nếu duplicate/thiếu nhóm/bằng chứng không khớp.
+- Prompt nhận bảng hotline runtime + `HOTLINE_IDS_ALLOWED_BY_STEP`; không hardcode số trong
+  prompt. Parser đòi đủ ordered `REQUIRED_STEP_KEYS`, từ chối URL/email/số lạ và instruction
+  bấm link/gửi OTP/cài remote/chuyển thêm tiền/trả phí thu hồi. Toàn bộ action/headline/
+  reassurance/closing hiển thị lấy từ deterministic playbook; không render crisis prose AI.
+- Số điện thoại được post-filter cả trong action/detail. Mảng `hotlines` public được server
+  dựng lại từ dataclass trusted; frontend chỉ tạo `tel:` từ mảng này. ID hotline đúng case
+  nhưng gắn sai step cũng bị loại.
+- `113` có trong bảng public nhưng không tự gắn vào bốn situation vì chưa có bằng chứng nguy
+  hiểm tức thời; flow chuyển tiền hướng tới cơ quan Công an gần nhất thay vì biến 113 thành
+  số trình báo chung.
+- `RESCUE_AI_ENABLED=false` là kill switch: ba crisis flow vẫn trả deterministic playbook,
+  `guarded_fallback` và không gọi AI.
+
+### 11.3 Share card và QR
+
+Frontend dựng Canvas PNG 1080×1350 theo yêu cầu người dùng, không tự kéo dài result. Model
+ảnh chỉ giữ risk/reason đã redact URL, email và dãy số; tối đa ba label, không giữ text gốc
+hay excerpt. Web Share `File` được ưu tiên; fallback download Blob, riêng iOS cũ mở ảnh để
+chạm giữ/Lưu vào Ảnh.
+
+`GET /api/share/qr.svg` không nhận URL tùy ý; base URL/Host phải thuộc
+`SHARE_ALLOWED_HOSTS`, production phải HTTPS. Encoder standard-library tạo QR Version 3-L,
+byte mode, Reed–Solomon 15 codewords, mask 0, quiet zone 4 module; SVG same-origin được
+frontend decode module và vẽ trực tiếp vào PNG. Matrix đã được test byte-for-byte với
+implementation QR độc lập trong bước verification, không thêm dependency runtime/CDN.
+
+### 11.4 Preference accessibility
+
+`preferences.js` dùng một schema localStorage fail-safe cho high contrast và font scale
+100%/115%/130% trên cả main/practice. Inline head bootstrap chỉ áp giá trị allowlist để giảm
+flash; module vẫn normalize lần nữa. System `prefers-color-scheme` tiếp tục quyết định
+light/dark, hoàn toàn không có theme toggle.
+
+Runbook vận hành và quy trình rà hotline: `backend/RESCUE_RUNBOOK.md`.

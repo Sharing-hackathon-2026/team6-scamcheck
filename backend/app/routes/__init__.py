@@ -10,8 +10,10 @@ def register_blueprints(app: Flask) -> None:
 
     from .scam_library import bp as scam_library_bp
     from .quiz_api import bp as quiz_bp
+    from .rescue import bp as rescue_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(check_bp)
     app.register_blueprint(scam_library_bp)
     app.register_blueprint(quiz_bp)
+    app.register_blueprint(rescue_bp)

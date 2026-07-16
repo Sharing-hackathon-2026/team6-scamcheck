@@ -24,8 +24,11 @@ def create_app(cfg: Config | None = None) -> Flask:
     app.config["SECRET_KEY"] = config.FLASK_SECRET_KEY
     app.config["MAX_INPUT_LENGTH"] = config.MAX_INPUT_LENGTH
     app.config["BASE_URL"] = config.BASE_URL
+    app.config["SHARE_ALLOWED_HOSTS"] = config.SHARE_ALLOWED_HOSTS
     app.config["CHECK_CACHE_CAPACITY"] = config.CHECK_CACHE_CAPACITY
     app.config["CHECK_CACHE_TTL"] = config.CHECK_CACHE_TTL
+    app.config["HOTLINES_PATH"] = config.HOTLINES_PATH
+    app.config["RESCUE_AI_ENABLED"] = config.RESCUE_AI_ENABLED
 
     from .services.cache import TTLHashCache
 

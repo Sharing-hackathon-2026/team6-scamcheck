@@ -1,0 +1,101 @@
+{
+  "evaluated_at": "2026-07-16T14:15:00Z",
+  "scope": "Stage 5 crisis response, hotline filtering, FSM and share QR",
+  "status": "pass",
+  "automated_evidence": {
+    "backend_tests": "all passing",
+    "frontend_tests": "54/54 passing",
+    "crisis_scenarios": {
+      "chua_lam_gi": {
+        "rescue_status": "not_needed",
+        "ai_calls": 0,
+        "required_steps": ["stop", "verify", "report"]
+      },
+      "da_bam_link": {
+        "rescue_status": "complete",
+        "ai_calls": 1,
+        "required_steps": ["disconnect", "secure_accounts", "check_device", "report"]
+      },
+      "da_chuyen_tien": {
+        "rescue_status": "complete",
+        "ai_calls": 1,
+        "required_steps": ["call_bank", "preserve_evidence", "report_police", "avoid_recovery_scam"]
+      },
+      "da_cung_cap_otp": {
+        "rescue_status": "complete",
+        "ai_calls": 1,
+        "required_steps": ["lock_bank_access", "change_credentials", "preserve_evidence", "report"]
+      }
+    },
+    "fsm_baseline": {
+      "flows": 4,
+      "naive_rescuer_calls": 4,
+      "fsm_rescuer_calls": 3,
+      "calls_saved": 1,
+      "reduction_percent": 25.0
+    },
+    "qr_reference_check": "Version 3-L/mask 0 matrices matched qrcode 8.2 byte-for-byte for two URLs; qrcode was installed only under /tmp for verification and is not a project/runtime dependency.",
+    "hotline_live_verification": "12/12 number-specific official URLs returned HTTP 200 and contained the exact normalized number in visible HTML/PDF text; hashes and final URLs are in stage5-hotline-verification.json."
+  },
+  "safety_controls": [
+    "Full user message is used only for local bank-alias matching; client red_flags are discarded, so neither field is inserted into the Rescuer prompt.",
+    "Every displayed action, headline, reassurance and closing is deterministic reviewed copy; no AI-generated crisis prose is rendered.",
+    "AI output with URL, email, unknown short/long phone-like sequence, unsafe OTP/link/remote-app/payment instruction, missing step key or wrong shape is rejected wholesale.",
+    "Hotline IDs are allowlisted per safety step and rendered from static dataclasses, not copied from AI text.",
+    "Police 113 remains in the public verified table but is never automatically attached to the four standard situations because immediate danger was not established.",
+    "The current official Ministry article identifies 156 for both voice and message reports; the older unverified 5656 record was removed rather than retained by assumption.",
+    "Gemini network/parse/guardrail failure and RESCUE_AI_ENABLED=false retain useful deterministic playbooks.",
+    "QR target must be HTTPS in production and its hostname must be in SHARE_ALLOWED_HOSTS; attacker query URLs and Host headers are rejected/ignored."
+  ],
+  "adversarial_regressions": [
+    "Unknown 0909 phone and known number on the wrong step",
+    "Unknown emergency shortcode 911",
+    "Arbitrary https URL and email contact",
+    "Instruction to read/share OTP",
+    "Instruction to click link, install remote control, transfer more money or pay recovery fee",
+    "Generic use of 113 without immediate-danger evidence",
+    "Host-header and BASE_URL QR origin injection",
+    "Malformed/duplicate/undersized hotline table"
+  ],
+  "hotline_review": {
+    "reviewed_at": "2026-07-14",
+    "bank_count": 10,
+    "required_groups_present": ["bank", "police", "cybersecurity"],
+    "source_policy": "Each entry requires an official number-specific URL, exact evidence quote containing the normalized number, and checked date; remove rather than guess.",
+    "residual_risk": "A second human should still re-check all official pages/cards before the live demo and every 90 days because organizations can change numbers."
+  },
+  "final_independent_review": {
+    "model": "openai-codex/gpt-5.6-terra",
+    "verdict": "PASS",
+    "critical_count": 0,
+    "major_count": 0,
+    "recommendation": "ship",
+    "follow_up": "Reviewer noted client red_flag labels could carry private text; the route now discards them before prompt construction and a regression test proves neither message text nor labels reach Gemini."
+  },
+  "second_independent_review": {
+    "model": "openai-codex/gpt-5.6-terra",
+    "verdict": "FAIL",
+    "findings_remediated": [
+      "No model-generated reassurance or other crisis prose is rendered; all visible copy is deterministic.",
+      "Generic homepage references were replaced by ten bank contact pages/documents and number-specific government articles for 113/156.",
+      "A reproducible live verifier now records HTTP status, exact number match and content SHA-256; 12/12 passed.",
+      "The older 5656 assumption and four unproven/outdated bank records were removed; MSB was corrected from an old number to the current contact-page number."
+    ]
+  },
+  "initial_independent_review": {
+    "model": "openai-codex/gpt-5.6-terra",
+    "verdict": "FAIL",
+    "findings_remediated": [
+      "Free-form AI actions could pass structural step-key checks.",
+      "URLs, email, 911 and broader phone-like values were not fail-closed.",
+      "113 was attached to a generic police-reporting step.",
+      "QR could derive an attacker-controlled Host when BASE_URL was empty.",
+      "No recorded Stage 5 safety self-assessment existed."
+    ]
+  },
+  "residual_risks": [
+    "Browser cannot save directly into iOS Photos without the native share sheet/user gesture.",
+    "Hotline freshness still requires human operational review.",
+    "AI reassurance is non-authoritative and falls back entirely if any guardrail check fails."
+  ]
+}

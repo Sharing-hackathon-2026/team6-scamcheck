@@ -41,6 +41,8 @@ def test_duplicate_check_returns_cache_without_second_ai_call(client, monkeypatc
     second = client.post("/api/check", json={"text": "Thông báo lịch hẹn lúc 9 giờ."}).get_json()
     assert first["cache"]["hit"] is False
     assert second["cache"]["hit"] is True
+    assert first["orchestration"]["metrics"]["actual_ai_calls"] == 1
+    assert second["orchestration"]["metrics"]["actual_ai_calls"] == 0
     assert len(calls) == 1
 
 

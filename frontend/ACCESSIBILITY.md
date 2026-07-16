@@ -113,5 +113,35 @@ Fresh UX gate theo `utility-ui-eval`:
   **8,0/10**, `true_operational_tool`, không critical/major, `recommend=ship`.
 - Evidence tóm tắt nằm ở `backend/reports/human-dark-ux-gate.json`.
 
-Caveat còn lại: cần kiểm tra iPhone Safari thật và VoiceOver cho dark mode trước demo chính thức;
-headless Chromium không mô phỏng hoàn toàn cách iOS render native controls.
+## Stage 5 — Người ứng cứu, chia sẻ và tùy chọn đọc
+
+- Cụm “Hiển thị” có native buttons ≥44px, `aria-pressed`, live announcement và dùng chung
+  localStorage giữa `/` với `/practice.html`. Ba mức chữ thật là 100%/115%/130%; storage
+  hỏng/bị chặn rơi về mặc định, không khóa UI.
+- Tương phản cao là lớp token riêng cho cả system light/dark, tăng border/focus/muted text;
+  không thay dark mode tự động bằng toggle và không dùng màu làm tín hiệu duy nhất.
+- Câu “Bác đã làm gì rồi?” chỉ xuất hiện cho `nghi_ngo`/`nguy_hiem`, gồm đúng bốn native
+  button. Một click gọi API ngay; có busy/live status, error + retry, chống race và khóa lựa
+  chọn sau thành công để không gọi ứng cứu lặp.
+- Kế hoạch ứng cứu dùng ordered list; liên hệ là `tel:` hoặc `sms:` đúng channel, có tên,
+  nguồn và ngày đối chiếu. Số `113` luôn kèm chữ “Chỉ gọi khi khẩn cấp”, không chỉ bằng màu.
+- Share card được tạo theo yêu cầu thay vì tự mở rộng result. Canvas có accessible label;
+  model ảnh loại toàn văn/excerpt, che URL/email/dãy số dài và chỉ giữ tối đa ba nhãn dấu hiệu.
+- QR lấy từ endpoint same-origin chuẩn; PNG hỗ trợ Web Share file, download fallback và hướng
+  dẫn chạm giữ/Lưu vào Ảnh trên iOS không có file-share.
+- Browse Chromium thật đã xác nhận ở 390×844 và 1440×900: không cuộn ngang; minimum button
+  nhìn thấy 47,9px; 130% tương ứng body 23,4px; setting giữ qua điều hướng; share canvas
+  1080×1350 xuất PNG không rỗng.
+
+Fresh Stage 5 UX gate:
+
+- Builder frontend: Pi session riêng `zai/glm-5.2` + `anti-ai-design`; không commit/deploy.
+- Evaluator: fresh Pi `gpt-5.6-terra` + `utility-ui-eval`, 28 chiều, screenshot + Browse probes.
+- Kết quả **7,7/10**, `true_operational_tool`, usable, không critical/major,
+  `recommend=ship`. Minor chính: crisis plan đầy đủ nên vẫn dài trên mobile; bước gọi ngân
+  hàng đã nằm đầu tiên và không collapse để tránh giấu bước an toàn.
+- Evidence machine-readable: `backend/reports/stage5-ux-gate.json`.
+
+Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào Ảnh”, quét QR bằng camera
+vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
+share sheet hay cách iOS lưu ảnh.

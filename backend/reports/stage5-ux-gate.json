@@ -1,0 +1,56 @@
+{
+  "evaluated_at": "2026-07-16T14:40:00Z",
+  "stage": 5,
+  "builder": {
+    "model": "zai/glm-5.2",
+    "harness": "fresh Pi frontend session",
+    "skill": "anti-ai-design",
+    "note": "Builder edited frontend only and did not commit, push or deploy; orchestrator reviewed and hardened functionality."
+  },
+  "evaluator": {
+    "model": "openai-codex/gpt-5.6-terra",
+    "harness": "fresh no-context Pi session",
+    "skill": "utility-ui-eval",
+    "method": "interactive_browser",
+    "dimensions": 28
+  },
+  "result": {
+    "aggregate_score": 7.7,
+    "tool_authenticity_class": "true_operational_tool",
+    "usable": true,
+    "critical_count": 0,
+    "major_count": 0,
+    "recommend": "ship",
+    "residual_issue": "Crisis guidance is intentionally complete but scroll-heavy on mobile; the call-first instruction remains at the top."
+  },
+  "selected_scores": {
+    "first_time_clarity": 8,
+    "action_clarity": 8,
+    "status_feedback": 8,
+    "error_recovery": 7,
+    "accessibility": 7,
+    "trust_transparency": 8,
+    "action_outcome_integrity": 8,
+    "workflow_completion": 8,
+    "tool_authenticity": 8,
+    "overall_ux": 8
+  },
+  "evidence": [
+    "/tmp/stage5-browse/desktop-light-empty.png",
+    "/tmp/stage5-browse/desktop-light-danger.png",
+    "/tmp/stage5-evidence/mobile-light-not-acted-clean.png",
+    "/tmp/stage5-evidence/mobile-light-transfer-top-ship.png",
+    "/tmp/stage5-evidence/mobile-light-transfer-hotline-ship.png",
+    "/tmp/stage5-evidence/mobile-light-share-ship.png",
+    "/tmp/stage5-evidence/mobile-dark-hc130-not-acted-clean.png",
+    "/tmp/stage5-browse/practice-mobile-highcontrast-130.png"
+  ],
+  "measured_browser_evidence": {
+    "mobile_horizontal_overflow_px": 0,
+    "dark_high_contrast_font_size_px": 23.4,
+    "minimum_visible_button_height_px": 47.90625,
+    "share_canvas": "1080x1350 PNG, 192396 bytes in final evidence run",
+    "preferences_persist_across_pages": true,
+    "crisis_choice_locks_after_success": true
+  }
+}

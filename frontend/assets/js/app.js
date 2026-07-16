@@ -63,7 +63,7 @@ async function setupLibrary() {
 }
 
 // Logic giao diện Stage 2. Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, ApiError, getScamLibrary } from './api.js';
+import { check, rescue, fetchShareQrSvg, ApiError, getScamLibrary } from './api.js';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -72,7 +72,15 @@ import {
   loadHistory,
   saveHistory,
 } from './history.js';
+import { wirePreferences } from './preferences.js';
+import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
 import { normalizeDetective, RISK_META } from './result-model.js';
+import {
+  buildShareCardModel,
+  decodeQrModules,
+  drawShareCard,
+  safeFileName,
+} from './share-card.js';
 import { normalizePsychologist, filterLibraryItems, libraryGroupFromHash } from './stage3-model.js';
 import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
@@ -121,6 +129,22 @@ let recognition = null;
 let isListening = false;
 let activeController = null;
 let progressTimers = [];
+
+// Stage 5: luồng ứng cứu một chạm + ảnh chia sẻ.
+let currentCheck = null;
+let rescueController = null;
+let rescueToken = 0;
+let shareController = null;
+let shareToken = 0;
+
+const RESCUE_CHOICES = Object.freeze([
+  { situation: 'chua_lam_gi', label: RESCUE_SITUATIONS.chua_lam_gi },
+  { situation: 'da_bam_link', label: RESCUE_SITUATIONS.da_bam_link },
+  { situation: 'da_chuyen_tien', label: RESCUE_SITUATIONS.da_chuyen_tien },
+  { situation: 'da_cung_cap_otp', label: RESCUE_SITUATIONS.da_cung_cap_otp },
+]);
+const RESCUE_RISKS = new Set(['nghi_ngo', 'nguy_hiem']);
+const SHARE_RISKS = new Set(['an_toan', 'nghi_ngo', 'nguy_hiem']);
 
 function createElement(tag, { className = '', text = '', attributes = {} } = {}) {
   const element = document.createElement(tag);
@@ -342,6 +366,8 @@ function appendPsychologist(container, rawPsychologist, status, error) {
 
 function showResult(text, rawDetective, psychologistOptions = {}, { focus = true } = {}) {
   const detective = normalizeDetective(rawDetective);
+  abortRescueAndShare();
+  currentCheck = { text, detective };
   elements.result.replaceChildren();
   elements.result.dataset.risk = detective.risk_level;
   appendRiskCard(elements.result, detective);
@@ -354,12 +380,442 @@ function showResult(text, rawDetective, psychologistOptions = {}, { focus = true
     psychologistOptions.status,
     psychologistOptions.error,
   );
+  appendRescueSection(elements.result, currentCheck);
   appendTechnicalAnalysis(elements.result, psychologistOptions.technicalAnalysis);
+  appendShareSection(elements.result, currentCheck);
   setLibraryCollapsed(true);
   elements.result.hidden = false;
   elements.error.hidden = true;
   if (focus) elements.result.focus({ preventScroll: true });
   return detective;
+}
+
+function abortRescueAndShare() {
+  if (rescueController) { rescueController.abort(); rescueController = null; }
+  if (shareController) { shareController.abort(); shareController = null; }
+  rescueToken += 1;
+  shareToken += 1;
+}
+
+// ---- Rescue flow (Stage 5) ---------------------------------------------
+
+function appendRescueSection(container, checkContext) {
+  if (!RESCUE_RISKS.has(checkContext.detective.risk_level)) return;
+  const section = createElement('section', {
+    className: 'result-section rescue-section',
+    attributes: { 'aria-labelledby': 'rescueTitle' },
+  });
+  section.append(
+    createElement('h3', { text: 'Bác đã làm gì rồi?', attributes: { id: 'rescueTitle' } }),
+    createElement('p', {
+      className: 'rescue-intro',
+      text: 'Chọn đúng một tình huống — ScamCheck sẽ đưa ra từng bước tiếp theo và số liên hệ đã đối chiếu. Đây là hướng dẫn giáo dục, không thay thế ngân hàng hay cơ quan chức năng.',
+    }),
+  );
+  const choices = createElement('div', {
+    className: 'rescue-choices',
+    attributes: { role: 'group', 'aria-label': 'Chọn tình huống bác đã gặp' },
+  });
+  RESCUE_CHOICES.forEach(({ situation, label }) => {
+    choices.append(createElement('button', {
+      className: 'rescue-choice',
+      text: label,
+      attributes: { type: 'button', 'data-rescue': situation, 'aria-pressed': 'false' },
+    }));
+  });
+  const status = createElement('p', {
+    className: 'rescue-status status',
+    attributes: { role: 'status', 'aria-live': 'polite' },
+  });
+  const output = createElement('div', { className: 'rescue-output' });
+  section.append(choices, status, output);
+  container.append(section);
+  choices.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-rescue]');
+    if (!button) return;
+    onRescueChoice(button.dataset.rescue, { choices, output, status, context: checkContext });
+  });
+}
+
+function setRescueBusy(choices, output, status, busy, selectedSituation, locked = false) {
+  choices.dataset.state = busy ? 'busy' : (locked ? 'locked' : 'idle');
+  choices.querySelectorAll('[data-rescue]').forEach((button) => {
+    button.disabled = busy || locked;
+    button.setAttribute('aria-pressed', String(!busy && button.dataset.rescue === selectedSituation));
+  });
+  if (busy) {
+    const loading = createElement('span', { className: 'rescue-loading' });
+    loading.append(
+      createElement('span', { className: 'spinner', attributes: { 'aria-hidden': 'true' } }),
+      createElement('span', { text: 'Đang soạn từng bước ứng cứu…' }),
+    );
+    output.replaceChildren(loading);
+    status.textContent = 'Đang chuẩn bị từng bước ứng cứu…';
+  }
+}
+
+async function onRescueChoice(situation, scope) {
+  rescueToken += 1;
+  const token = rescueToken;
+  if (rescueController) rescueController.abort();
+  rescueController = new AbortController();
+  const payload = buildRescuePayload(situation, {
+    messageText: scope.context.text,
+    riskLevel: scope.context.detective.risk_level,
+    redFlags: scope.context.detective.red_flags,
+  });
+  if (!payload) return;
+  setRescueBusy(scope.choices, scope.output, scope.status, true, situation);
+  try {
+    const data = await rescue(payload, { signal: rescueController.signal });
+    if (token !== rescueToken) return;
+    renderRescueResult(scope.output, scope.status, normalizeRescue(data), situation);
+    setRescueBusy(scope.choices, scope.output, scope.status, false, situation, true);
+  } catch (error) {
+    if (token !== rescueToken) return;
+    if (error?.code === 'cancelled' || error?.name === 'AbortError') return;
+    renderRescueError(scope.output, scope.status, error, () => onRescueChoice(situation, scope));
+    setRescueBusy(scope.choices, scope.output, scope.status, false, situation);
+  } finally {
+    if (token === rescueToken) rescueController = null;
+  }
+}
+
+function renderRescueResult(output, status, rescue, selectedSituation) {
+  output.replaceChildren();
+  const card = createElement('div', {
+    className: 'rescue-card',
+    attributes: { tabindex: '-1', role: 'group', 'aria-label': 'Các bước ứng cứu' },
+  });
+  if (rescue.situationLabel) {
+    card.append(createElement('p', { className: 'rescue-situation', text: `Tình huống: ${rescue.situationLabel}` }));
+  }
+  if (rescue.praise) {
+    card.append(createElement('p', { className: 'rescue-praise', text: rescue.praise }));
+  }
+  if (rescue.rescue.headline) {
+    card.append(createElement('h4', { className: 'rescue-headline', text: rescue.rescue.headline }));
+  }
+  if (rescue.rescue.reassurance) {
+    card.append(createElement('p', { className: 'rescue-reassurance', text: rescue.rescue.reassurance }));
+  }
+  if (rescue.rescueStatus === 'guarded_fallback') {
+    card.append(createElement('p', {
+      className: 'rescue-fallback-note',
+      text: rescue.rescueError || 'Người ứng cứu tự động đang dùng quy trình an toàn có sẵn.',
+    }));
+  }
+  if (rescue.rescue.steps.length) {
+    const list = createElement('ol', { className: 'rescue-steps' });
+    rescue.rescue.steps.forEach((step) => list.append(createRescueStep(step)));
+    card.append(list);
+  }
+  if (rescue.rescue.closing) {
+    card.append(createElement('p', { className: 'rescue-closing', text: rescue.rescue.closing }));
+  }
+  if (rescue.matchedInstitutions.length) {
+    const wrap = createElement('p', { className: 'rescue-matched' });
+    wrap.append(document.createTextNode('Có vẻ nhắc đến '));
+    rescue.matchedInstitutions.forEach((name, index) => {
+      if (index > 0) wrap.append(document.createTextNode(', '));
+      wrap.append(createElement('strong', { text: name }));
+    });
+    wrap.append(document.createTextNode('.'));
+    card.append(wrap);
+  }
+  if (rescue.safetyNotice) {
+    card.append(createElement('p', { className: 'rescue-safety', text: rescue.safetyNotice }));
+  }
+  output.append(card);
+  status.textContent = rescue.rescueStatus === 'not_needed'
+    ? 'Đã có kế hoạch phòng ngừa.'
+    : 'Đã sẵn sàng từng bước ứng cứu.';
+  void selectedSituation;
+  card.focus({ preventScroll: true });
+}
+
+function createRescueStep(step) {
+  const item = createElement('li', { className: 'rescue-step' });
+  const head = createElement('p', { className: 'rescue-step-head' });
+  head.append(
+    createElement('span', {
+      className: 'rescue-step-number',
+      attributes: { 'aria-hidden': 'true' },
+      text: String(step.step),
+    }),
+    createElement('span', { className: 'rescue-step-action', text: step.action }),
+  );
+  item.append(head);
+  if (step.detail) {
+    item.append(createElement('p', { className: 'rescue-step-detail', text: step.detail }));
+  }
+  if (step.hotlines.length) {
+    const contacts = createElement('ul', { className: 'rescue-hotlines' });
+    step.hotlines.forEach((hotline) => contacts.append(createRescueHotline(hotline)));
+    item.append(contacts);
+  }
+  return item;
+}
+
+function createRescueHotline(hotline) {
+  const item = createElement('li', { className: 'rescue-hotline' });
+  item.append(createElement('span', { className: 'rescue-hotline-name', text: hotline.name }));
+  if (hotline.contactHref) {
+    item.append(
+      document.createTextNode(' '),
+      createElement('a', {
+        className: 'rescue-hotline-phone',
+        text: hotline.channel === 'sms' ? `Nhắn ${hotline.phone}` : hotline.phone,
+        attributes: { href: hotline.contactHref },
+      }),
+    );
+  } else if (hotline.phone) {
+    item.append(document.createTextNode(` ${hotline.phone}`));
+  }
+  const metaParts = [];
+  if (hotline.sourceLabel) metaParts.push(hotline.sourceLabel);
+  if (hotline.reviewedAt) metaParts.push(`đối chiếu ${hotline.reviewedAt}`);
+  if (metaParts.length) {
+    item.append(document.createTextNode(' — '), createElement('span', { className: 'rescue-hotline-meta', text: metaParts.join(' · ') }));
+  }
+  if (hotline.emergencyOnly) {
+    item.append(createElement('span', { className: 'rescue-emergency', text: 'Chỉ gọi khi khẩn cấp.' }));
+  }
+  return item;
+}
+
+function renderRescueError(output, status, error, retry) {
+  output.replaceChildren();
+  const panel = createElement('div', { className: 'error-panel', attributes: { role: 'alert' } });
+  panel.append(createElement('p', {
+    text: error instanceof ApiError ? error.message : 'Chưa tải được quy trình ứng cứu. Vui lòng thử lại.',
+  }));
+  const retryButton = createElement('button', {
+    className: 'button-secondary',
+    text: 'Thử lại',
+    attributes: { type: 'button' },
+  });
+  retryButton.addEventListener('click', retry);
+  panel.append(retryButton);
+  output.append(panel);
+  status.textContent = 'Quy trình ứng cứu chưa tải được.';
+}
+
+// ---- Share card (Stage 5) -----------------------------------------------
+
+function appendShareSection(container, checkContext) {
+  if (!SHARE_RISKS.has(checkContext.detective.risk_level)) return;
+  const isSafe = checkContext.detective.risk_level === 'an_toan';
+  const section = createElement('section', {
+    className: 'result-section share-section',
+    attributes: { 'aria-labelledby': 'shareTitle' },
+  });
+  section.append(
+    createElement('h3', {
+      text: isSafe ? 'Gửi kết quả cho người thân' : 'Gửi cảnh báo cho người thân',
+      attributes: { id: 'shareTitle' },
+    }),
+    createElement('p', {
+      className: 'share-intro',
+      text: 'Tạo một ảnh nhỏ chỉ có mức rủi ro, vài dấu hiệu chính và mã QR dẫn về ScamCheck — không chứa toàn văn tin nhắn, số tài khoản hay thông tin cá nhân.',
+    }),
+  );
+  const canvas = createElement('canvas', {
+    className: 'share-canvas',
+    attributes: { role: 'img', 'aria-label': 'Ảnh cảnh báo đang chuẩn bị.' },
+  });
+  const preview = createElement('div', { className: 'share-preview' });
+  preview.hidden = true;
+  preview.append(canvas);
+  const status = createElement('p', {
+    className: 'share-status status',
+    attributes: { role: 'status', 'aria-live': 'polite' },
+    text: 'Ảnh chưa được tạo; toàn văn tin nhắn sẽ không xuất hiện trong ảnh.',
+  });
+  const errorBox = createElement('div', { className: 'error-panel share-error', attributes: { role: 'alert' } });
+  errorBox.hidden = true;
+  const generateBtn = createElement('button', {
+    className: 'button-secondary',
+    text: 'Tạo ảnh cảnh báo',
+    attributes: { type: 'button' },
+  });
+  const shareBtn = createElement('button', {
+    className: 'button-secondary',
+    text: 'Chia sẻ ảnh',
+    attributes: { type: 'button', disabled: '' },
+  });
+  const saveBtn = createElement('button', {
+    className: 'button-secondary',
+    text: 'Lưu ảnh',
+    attributes: { type: 'button', disabled: '' },
+  });
+  const actions = createElement('div', { className: 'share-actions' });
+  actions.hidden = true;
+  actions.append(shareBtn, saveBtn);
+  section.append(generateBtn, preview, actions, status, errorBox);
+  container.append(section);
+
+  const ctx = {
+    canvas,
+    preview,
+    actions,
+    generateBtn,
+    status,
+    errorBox,
+    shareBtn,
+    saveBtn,
+    checkContext,
+    state: {
+      wired: false,
+      model: null,
+      fileName: safeFileName(`scamcheck-${checkContext.detective.risk_level}`),
+    },
+  };
+  generateBtn.addEventListener('click', () => mountShareCard(ctx));
+  shareBtn.addEventListener('click', () => onShareImage(ctx, 'share'));
+  saveBtn.addEventListener('click', () => onShareImage(ctx, 'save'));
+}
+
+async function mountShareCard(ctx) {
+  shareToken += 1;
+  const token = shareToken;
+  if (shareController) shareController.abort();
+  shareController = new AbortController();
+  ctx.errorBox.hidden = true;
+  ctx.generateBtn.disabled = true;
+  ctx.preview.hidden = false;
+  ctx.canvas.hidden = false;
+  ctx.actions.hidden = true;
+  ctx.shareBtn.disabled = true;
+  ctx.saveBtn.disabled = true;
+  ctx.status.textContent = 'Đang tải mã QR và vẽ ảnh cảnh báo…';
+  try {
+    const svgText = await fetchShareQrSvg({ signal: shareController.signal });
+    if (token !== shareToken) return;
+    const qrData = decodeQrModules(svgText);
+    const url = extractQrUrl(svgText);
+    const model = buildShareCardModel(ctx.checkContext.detective, { url });
+    ctx.state.model = model;
+    drawShareCard(ctx.canvas, model, qrData);
+    ctx.canvas.setAttribute('aria-label', shareCanvasLabel(model));
+    ctx.status.textContent = 'Ảnh đã sẵn sàng. Chọn “Chia sẻ ảnh” hoặc “Lưu ảnh”.';
+    ctx.generateBtn.hidden = true;
+    ctx.actions.hidden = false;
+    ctx.shareBtn.disabled = false;
+    ctx.saveBtn.disabled = false;
+  } catch (error) {
+    if (token !== shareToken) return;
+    if (error?.code === 'cancelled' || error?.name === 'AbortError') return;
+    renderShareError(ctx, error);
+  } finally {
+    if (token === shareToken) shareController = null;
+  }
+}
+
+function renderShareError(ctx, error) {
+  ctx.preview.hidden = true;
+  ctx.canvas.hidden = true;
+  ctx.actions.hidden = true;
+  ctx.generateBtn.disabled = false;
+  ctx.shareBtn.disabled = true;
+  ctx.saveBtn.disabled = true;
+  ctx.status.textContent = 'Chưa tạo được ảnh cảnh báo.';
+  ctx.errorBox.replaceChildren(createElement('p', {
+    text: error instanceof ApiError ? error.message : 'Không tạo được ảnh chia sẻ. Vui lòng thử lại.',
+  }));
+  const retry = createElement('button', {
+    className: 'button-secondary',
+    text: 'Tạo lại ảnh',
+    attributes: { type: 'button' },
+  });
+  retry.addEventListener('click', () => mountShareCard(ctx));
+  ctx.errorBox.append(retry);
+  ctx.errorBox.hidden = false;
+}
+
+function shareCanvasLabel(model) {
+  const signsText = model.signs.length ? `${model.signs.length} dấu hiệu chính.` : '';
+  return `Ảnh cảnh báo ScamCheck: mức ${model.riskLabel.toLowerCase()}. ${signsText} Có mã QR dẫn về ScamCheck để tự kiểm tra.`.replace(/\s+/g, ' ').trim();
+}
+
+function extractQrUrl(svgText) {
+  try {
+    const doc = new DOMParser().parseFromString(String(svgText || ''), 'image/svg+xml');
+    const label = doc.documentElement.getAttribute('aria-label') || '';
+    const match = /https?:\/\/\S+/.exec(label);
+    if (match) return match[0].replace(/[.,)]+$/, '');
+  } catch {
+    /* bỏ qua */
+  }
+  return typeof window !== 'undefined' && window.location ? window.location.origin : '';
+}
+
+async function onShareImage(ctx, mode) {
+  if (!ctx.state.model) return;
+  ctx.status.textContent = mode === 'share' ? 'Đang mở chia sẻ…' : 'Đang chuẩn bị ảnh…';
+  let objectUrl = null;
+  try {
+    const blob = await canvasToBlob(ctx.canvas);
+    const file = typeof File === 'function'
+      ? new File([blob], ctx.state.fileName, { type: 'image/png' })
+      : null;
+    let canShareFile = false;
+    if (mode === 'share' && file && typeof navigator.share === 'function'
+      && typeof navigator.canShare === 'function') {
+      try { canShareFile = navigator.canShare({ files: [file] }); } catch { canShareFile = false; }
+    }
+    if (canShareFile) {
+      await navigator.share({ files: [file], title: 'ScamCheck', text: ctx.state.model.riskLabel });
+      ctx.status.textContent = 'Đã chia sẻ ảnh.';
+      return;
+    }
+    objectUrl = URL.createObjectURL(blob);
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (mode === 'share' && isIos) {
+      window.open(objectUrl, '_blank', 'noopener');
+      ctx.status.textContent = 'Đã mở ảnh ở tab mới. Chạm giữ ảnh rồi chọn “Lưu vào Ảnh”.';
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = ctx.state.fileName;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    ctx.status.textContent = 'Đã tải ảnh về máy.';
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
+  } catch (error) {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    ctx.status.textContent = error && error.name === 'AbortError'
+      ? 'Đã huỷ chia sẻ.'
+      : 'Chưa chia sẻ được ảnh. Vui lòng thử lại.';
+  }
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    if (typeof canvas.toBlob === 'function') {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('blob-empty'))), 'image/png');
+      return;
+    }
+    if (typeof canvas.toDataURL === 'function') {
+      try { resolve(dataUrlToBlob(canvas.toDataURL('image/png'))); }
+      catch (error) { reject(error); }
+      return;
+    }
+    reject(new Error('canvas-unsupported'));
+  });
+}
+
+function dataUrlToBlob(dataUrl) {
+  const [head, body] = String(dataUrl).split(',');
+  const mime = /:(.*?);/.exec(head)?.[1] || 'image/png';
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 function previewText(text) {
@@ -419,6 +875,8 @@ function setLibraryCollapsed(collapsed) {
 function clearCurrent() {
   stopSpeech();
   if (activeController) activeController.abort();
+  abortRescueAndShare();
+  currentCheck = null;
   elements.textInput.value = '';
   elements.result.hidden = true;
   elements.error.hidden = true;
@@ -429,6 +887,12 @@ function clearCurrent() {
 }
 
 async function onCheck() {
+  if (activeController) {
+    elements.status.textContent = 'Lượt kiểm tra hiện tại vẫn đang chạy.';
+    return;
+  }
+  abortRescueAndShare();
+  currentCheck = null;
   elements.textInput.value = normalizeNfc(elements.textInput.value);
   const text = elements.textInput.value.trim();
   if (!text) {
@@ -611,3 +1075,6 @@ window.addEventListener('hashchange', () => {
 renderHistory();
 setupSpeech();
 setupLibrary();
+
+const displayPrefs = document.getElementById('displayPrefs');
+if (displayPrefs) wirePreferences({ root: displayPrefs });

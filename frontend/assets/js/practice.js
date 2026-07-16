@@ -1,4 +1,5 @@
 import { ApiError, getQuiz } from './api.js';
+import { wirePreferences } from './preferences.js';
 import { normalizeQuiz, quizGuidance, scoreQuiz } from './stage4-model.js';
 
 const elements = {
@@ -194,3 +195,6 @@ document.addEventListener('keydown', (event) => {
 });
 
 setup();
+
+const displayPrefs = document.getElementById('displayPrefs');
+if (displayPrefs) wirePreferences({ root: displayPrefs });

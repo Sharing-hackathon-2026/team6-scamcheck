@@ -32,7 +32,7 @@ def append_ai_log(
             "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "input_length": input_length,
             "summary": summarize_result(result),
-            "actor": actor if actor in {"detective", "psychologist"} else "unknown",
+            "actor": actor if actor in {"detective", "psychologist", "rescuer"} else "unknown",
             "status": status,
         }
     )

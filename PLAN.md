@@ -210,20 +210,27 @@ main `8,6/10`, practice `8,0/10`, cả hai `true_operational_tool`, không criti
 
 | Mã | Hạng mục | Ưu tiên | Trạng thái | Ghi chú |
 |---|---|---|---|---|
-| L5-01 | Bảng tổng đài đã xác minh | Bắt buộc | ❌ | `data/hotlines.json` ≥10 NH + công an + Cục ATTT; lưu repo, không nhúng prompt |
-| L5-02 | Câu hỏi tình huống 4 lựa chọn | Bắt buộc | ❌ | "Bác đã làm gì rồi?" — chưa làm gì / đã bấm link / đã chuyển khoản / đã cấp OTP; bấm 1 lần |
-| L5-03 | Hồ sơ & câu lệnh Người ứng cứu | Bắt buộc | ❌ | Giọng bình tĩnh dứt khoát, chỉ liệt kê bước; **chỉ dùng số từ hotlines.json** |
-| L5-04 | Kịch bản 4 tình huống | Bắt buộc | ❌ | Truyền số hotlines vào prompt trước gọi; bám quy trình thật |
-| L5-05 | Điều phối 3 nhân vật bằng **máy trạng thái** | Bắt buộc | ❌ | FSM rõ ràng; đo lượt gọi AI giảm so với gọi ngây thơ |
-| L5-06 | Chặn ảo giác số điện thoại | Bắt buộc | ❌ | Post-filter cứng mọi số vs hotlines.json; số lạ → chặn hiển thị |
-| L5-07 | Kiểm thử luồng khủng hoảng + tài liệu vận hành | Bắt buộc | ❌ | Test tự động phủ 4 tình huống + tài liệu vận hành + bản tự đánh giá an toàn |
-| L5-08 | Thẻ tóm tắt kết quả chia sẻ + mã QR | Bắt buộc | ❌ | Ảnh: mức rủi ro + dấu hiệu chính + tên sản phẩm + QR dẫn về; kích Zalo |
-| L5-09 | Nút tải ảnh về máy | Nên có | ❌ | Tải được trên Android + iPhone, đúng thư viện ảnh |
-| L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ❌ | High-contrast + phóng chữ; lưu lựa chọn cho lần sau |
+| L5-01 | Bảng tổng đài đã xác minh | Bắt buộc | ✅ Xong | 10 NH + 113 + 156; URL/evidence/date theo từng số; live verifier 12/12 exact match |
+| L5-02 | Câu hỏi tình huống 4 lựa chọn | Bắt buộc | ✅ Xong | Bốn native button một chạm; lock sau thành công, error/retry thật |
+| L5-03 | Hồ sơ & câu lệnh Người ứng cứu | Bắt buộc | ✅ Xong | Prompt runtime whitelist; copy hiển thị deterministic, bình tĩnh/dứt khoát; không render AI prose |
+| L5-04 | Kịch bản 4 tình huống | Bắt buộc | ✅ Xong | 4 playbook riêng; đủ step keys; AI/network/off đều có guarded fallback |
+| L5-05 | Điều phối 3 nhân vật bằng **máy trạng thái** | Bắt buộc | ✅ Xong | FSM verdict/situation; `chua_lam_gi` 0 Rescuer call; baseline giảm 25% |
+| L5-06 | Chặn ảo giác số điện thoại | Bắt buộc | ✅ Xong | URL/email/số lạ fail closed; hotline ID allowlist từng step; 113 không auto-attach |
+| L5-07 | Kiểm thử luồng khủng hoảng + tài liệu vận hành | Bắt buộc | ✅ Xong | 193 pytest; runbook + kill switch + safety report; fresh safety mentor PASS |
+| L5-08 | Thẻ tóm tắt kết quả chia sẻ + mã QR | Bắt buộc | ✅ Xong | Canvas PNG 1080×1350, privacy redaction, QR Version 3-L same-origin allowlisted |
+| L5-09 | Nút tải ảnh về máy | Nên có | ✅ Xong | Web Share File + Blob download; iOS fallback mở ảnh/chạm giữ; cần smoke iPhone thật |
+| L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ✅ Xong | High contrast light/dark + 100/115/130%, localStorage fail-safe dùng cả hai trang |
 
-**Test:** `test_rescuer.py` (4 kịch bản), `test_hotlines_filter.py`, `test_fsm.py`, `test_crisis_flow.py`.
+**Test:** 193 pytest backend + 54 Node tests frontend; compileall/syntax/NFC/diff check đạt.
 
-**🚦 Gate utility-ui-eval (cuối cùng):** 4 kịch bản + state "chưa làm gì"; mentor xác minh an toàn/dứt khoát/đúng quy trình.
+**🛡️ Safety mentor gate:** ✅ PASS — fresh `gpt-5.6-terra`, không critical/major,
+`recommendation=ship`. Hai vòng FAIL trước đã buộc sửa AI prose, 113, Host-header QR và
+nguồn hotline. Evidence: `backend/reports/stage5-safety-evaluation.json` +
+`stage5-hotline-verification.json`.
+
+**🚦 Gate utility-ui-eval Stage 5:** ✅ PASS — fresh vision `gpt-5.6-terra`, `7,7/10`,
+`true_operational_tool`, usable, không critical/major, `recommend=ship`.
+Evidence: `backend/reports/stage5-ux-gate.json`.
 
 ---
 

@@ -38,6 +38,37 @@ export function check(text, { signal } = {}) {
   });
 }
 
+/** Gọi POST /api/rescue (Stage 5): một lần chọn tình huống là gửi ngay. */
+export function rescue(payload, { signal } = {}) {
+  return requestJson('/api/rescue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  });
+}
+
+/** Lấy SVG QR chuẩn dẫn về ScamCheck (same-origin, không gọi dịch vụ QR ngoài). */
+export async function fetchShareQrSvg({ signal } = {}) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/api/share/qr.svg`, { signal });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ApiError('Đã dừng tạo ảnh chia sẻ.', { code: 'cancelled' });
+    }
+    throw new ApiError('Không tải được mã QR chia sẻ. Vui lòng kiểm tra mạng rồi thử lại.');
+  }
+  if (!response.ok) {
+    throw new ApiError('Mã QR chia sẻ chưa sẵn sàng. Vui lòng thử lại sau.', { status: response.status });
+  }
+  const text = await response.text();
+  if (!text.includes('<svg') || !text.includes('</svg>')) {
+    throw new ApiError('Mã QR chia sẻ không đúng định dạng.');
+  }
+  return text;
+}
+
 export function getScamLibrary() {
   return requestJson('/api/scam-library');
 }
