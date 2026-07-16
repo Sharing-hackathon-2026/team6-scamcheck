@@ -146,7 +146,7 @@ Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
 
-## Tabs redesign (stage5-tabs-v8) — IA, font, icon
+## Tabs redesign (stage5-tabs-v9) — IA, font, icon
 
 Kiến trúc thông tin mới: **một tác vụ mỗi trang**, ba đích đến là link thật
 (`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;
