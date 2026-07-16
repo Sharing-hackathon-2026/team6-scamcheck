@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v7).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v8).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -816,7 +816,7 @@ mark {
   align-items: center;
   gap: var(--space-2);
   min-height: 36px;
-  padding: var(--space-1) var(--space-4) 6px;
+  padding: 6px var(--space-4);
   cursor: pointer;
   list-style: none;
   /* Match the parent's top corners so the hover wash never paints a square
@@ -864,7 +864,7 @@ mark {
 .psychologist-card .result-disclosure-summary {
   min-height: 0;
   margin: 0;
-  padding: var(--space-1) var(--space-3) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-surface) var(--radius-surface) 0 0;
 }
 .psychologist-card:not([open]) .result-disclosure-summary { border-radius: var(--radius-surface); }
