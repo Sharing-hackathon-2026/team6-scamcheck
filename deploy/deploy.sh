@@ -102,9 +102,19 @@ server {
         proxy_read_timeout 45s;
     }
 
+    # Shared CSS/JS/self-hosted fonts/icons are reused from browser cache.
     location /assets/ {
-        expires 1h;
-        add_header Cache-Control "public";
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    gzip on;
+    gzip_vary on;
+    gzip_types text/css application/javascript application/json image/svg+xml font/woff2;
+
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
     }
 
     location / {

@@ -16,6 +16,8 @@ const tokens = read('../assets/css/tokens.css');
 const app = read('../assets/js/app.js');
 const navigation = read('../assets/js/navigation.js');
 const api = read('../assets/js/api.js');
+const historyPage = read('../assets/js/history-page.js');
+const nginx = read('../../deploy/nginx.conf');
 
 // #5 multi-step flow: rescue guidance only for risky verdicts; the question is
 // revealed behind the Continue action. Share card offered for the three verdicts
@@ -133,8 +135,19 @@ test('AI history page exposes session stats and a dedicated exe.dev admin gate',
   assert.match(html, /id="adminLogin"[^>]*:8001\/__exe\.dev\/login/);
   assert.match(html, /id="adminExports"[^>]*hidden/);
   assert.ok(historyJs.includes("location.hostname}:8001"));
+  assert.ok(historyJs.includes("isAdmin ? personalHistoryUrl() : adminLoginUrl()"));
   assert.ok(historyJs.includes("cache: 'no-store'"));
   assert.ok(!historyJs.includes('innerHTML'));
+});
+
+test('shared assets use immutable browser cache and tab documents warm on intent', () => {
+  assert.match(nginx, /location \/assets\/[\s\S]*?expires\s+1y/);
+  assert.match(nginx, /Cache-Control\s+"public, immutable"/);
+  assert.match(tokens, /url\("\/assets\/fonts\/material-symbols-rounded\.woff2"\)/);
+  assert.match(navigation, /link\.rel\s*=\s*'prefetch'/);
+  assert.match(navigation, /link\.as\s*=\s*'document'/);
+  assert.match(navigation, /wireTabPrefetch\(rail\)/);
+  assert.match(historyPage, /personalHistoryUrl/);
 });
 
 test('decision-box tokens are defined for light, dark and high-contrast', () => {

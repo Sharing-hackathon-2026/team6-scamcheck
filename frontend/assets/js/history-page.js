@@ -50,6 +50,13 @@ function adminLoginUrl() {
   return `${origin}/__exe.dev/login?redirect=${encodeURIComponent('/history.html?scope=all')}`;
 }
 
+function personalHistoryUrl() {
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    return `${location.origin}/history.html`;
+  }
+  return `https://${location.hostname}/history.html`;
+}
+
 function requestedScope() {
   const query = new URLSearchParams(location.search);
   return query.get('scope') === 'all' ? 'all' : 'self';
@@ -151,9 +158,13 @@ function render(data) {
   renderLogs(Array.isArray(data.logs) ? data.logs : [], isAdmin);
   elements.adminExports.hidden = !isAdmin;
   elements.adminLogin.classList.toggle('is-authorized', isAdmin);
+  elements.adminLogin.href = isAdmin ? personalHistoryUrl() : adminLoginUrl();
+  elements.adminLogin.title = isAdmin ? 'Quay lại lịch sử cá nhân' : 'Đăng nhập quản trị';
   elements.adminLogin.setAttribute(
     'aria-label',
-    isAdmin ? `Đã đăng nhập quản trị: ${data.admin_email}` : 'Đăng nhập quản trị bằng exe.dev',
+    isAdmin
+      ? `Quay lại lịch sử cá nhân; đang đăng nhập quản trị bằng ${data.admin_email}`
+      : 'Đăng nhập quản trị bằng exe.dev',
   );
   elements.content.hidden = false;
   elements.error.hidden = true;

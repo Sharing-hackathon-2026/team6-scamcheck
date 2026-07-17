@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Iterable
 
 from ..prompts import STAGE1_REFUSAL
-from .rule_engine import RuleSignal, evaluate_rules
+from .rule_engine import RuleSignal, evaluate_rules, is_otp_delivery_notification
 
 RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"}
 DEFAULT_ACTIONS = [
@@ -21,6 +21,15 @@ DEFAULT_ACTIONS = [
 CONSERVATIVE_REASON = (
     "Tin nhắn có yêu cầu hoặc dấu hiệu rủi ro cao; không nên làm theo trước khi kiểm tra qua kênh chính thức."
 )
+OTP_NOTICE_REASON = (
+    "Đây là thông báo cấp mã OTP và thời hạn sử dụng; tin không yêu cầu gửi mã, "
+    "bấm đường dẫn hay chuyển tiền. Nhãn này chỉ đánh giá nội dung, không xác nhận người gửi."
+)
+OTP_NOTICE_ACTIONS = [
+    "Chỉ dùng mã cho giao dịch do chính bác vừa khởi tạo.",
+    "Không đọc hoặc gửi mã OTP này cho bất kỳ ai.",
+    "Nếu bác không yêu cầu mã, hãy tự mở ứng dụng ngân hàng để kiểm tra.",
+]
 
 def has_explicit_high_risk_signal(source_text: str) -> bool:
     """Tương thích API cũ: dùng rule engine theo mệnh đề để tránh bypass phủ định."""
@@ -165,10 +174,16 @@ def parse_detective(
     source_text: str = "",
     rule_signals: Iterable[RuleSignal] | None = None,
 ) -> DetectiveResult:
-    """Validate model output rồi merge rule signals theo chính sách chỉ nâng rủi ro."""
+    """Validate model output, merge rule signals và sửa ngoại lệ OTP notice hẹp."""
     signals = list(rule_signals) if rule_signals is not None else evaluate_rules(source_text)
     danger = any(signal.severity == "danger" for signal in signals)
     warning = any(signal.severity == "warning" for signal in signals)
+
+    # Ngoại lệ hẹp, deterministic: thông báo ngân hàng chỉ *cấp* OTP không phải
+    # lời xin người nhận giao OTP. Full-match ở rule engine ngăn hạ verdict nếu
+    # tin còn có link, yêu cầu thao tác, chuyển tiền hoặc nội dung khác.
+    if not danger and is_otp_delivery_notification(source_text):
+        return DetectiveResult("an_toan", OTP_NOTICE_REASON, [], OTP_NOTICE_ACTIONS.copy())
 
     if not isinstance(raw, dict) or raw.get("risk_level") not in RISK_LEVELS:
         fallback = fallback_detective_result()

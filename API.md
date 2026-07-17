@@ -67,7 +67,10 @@ Mọi text người dùng được chuẩn hóa Unicode NFC. Không endpoint nà
 Quy tắc contract:
 
 - Function name từ Gemini chỉ là advisory. Verdict sau parser + rule engine mới quyết định chain.
-- Rule `danger` có thể nâng verdict thành `nguy_hiem`; rule `warning` chỉ nâng nhãn lạc quan lên `nghi_ngo`. Rule không hạ verdict AI.
+- Rule `danger` có thể nâng verdict thành `nguy_hiem`; rule `warning` chỉ nâng nhãn lạc quan lên `nghi_ngo`.
+- Ngoại lệ hạ verdict duy nhất là full-match hẹp cho thông báo chỉ *cấp* OTP (`Mã OTP ... là
+  123456, có hiệu lực ...`): mẫu này là `an_toan`. Thêm link, yêu cầu thao tác, tiền, đe doạ
+  hoặc nội dung khác sẽ không khớp ngoại lệ và guardrail bảo thủ vẫn áp dụng.
 - `excerpt` chỉ được giữ khi là lát cắt thật trong input.
 - Relevant result luôn có đúng ba hành động; `khong_lien_quan` có danh sách rỗng.
 - Cô tâm lý chỉ chạy cho `nghi_ngo`/`nguy_hiem`. Lỗi bước này vẫn trả HTTP 200 và giữ kết quả Thám tử.

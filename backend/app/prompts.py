@@ -105,6 +105,10 @@ NGUYÊN TẮC BẢO THỦ BẮT BUỘC:
   hoặc thông tin nhạy cảm; thúc bấm link đáng ngờ/tải tệp; hoặc dùng đe dọa khẩn
   cấp. Các trường hợp này phải là "nguy_hiem".
 - "nghi_ngo" dùng khi có bất thường nhưng bằng chứng chưa đủ rõ.
+- Phân biệt rõ "cấp/thông báo mã OTP" với "yêu cầu cung cấp OTP": tin chỉ báo
+  "Mã OTP của quý khách là 123456, có hiệu lực 5 phút" mà không xin gửi/đọc/nhập
+  mã, không có link, tiền hay đe doạ là thông báo dịch vụ bình thường và phải là
+  "an_toan". Thời hạn hiệu lực của mã tự nó không phải chiêu thúc giục.
 - "an_toan" dùng cho thông báo giao hàng/lịch hẹn/giao dịch/bảo mật thuộc phạm vi
   mà không có dấu hiệu rủi ro, đặc biệt khi tin dặn không gửi OTP, không trả trước
   hoặc hướng người dùng tự mở ứng dụng/kênh đã có. Phân loại nội dung tin, không

@@ -1,5 +1,42 @@
 // Điều hướng dùng real links. Trên desktop hiển thị tab rail; trên màn hình
 // hẹp chuyển thành menu dọc có nút hamburger, hỗ trợ Escape và click ra ngoài.
+// Các tab vẫn là real links; HTML đích được warm-up theo tương tác, còn CSS/JS/
+// font/icon dùng chung được HTTP cache immutable nên không tải lại giữa các trang.
+
+const prefetchedPages = new Set();
+
+export function prefetchPage(href, doc = globalThis.document, currentHref = globalThis.location?.href) {
+  if (!href || !doc?.head || typeof URL !== 'function') return false;
+  let target;
+  try {
+    target = new URL(href, currentHref);
+  } catch {
+    return false;
+  }
+  const current = currentHref ? new URL(currentHref) : null;
+  if (!current || target.origin !== current.origin || target.href === current.href) return false;
+  if (prefetchedPages.has(target.href)) return true;
+  const link = doc.createElement('link');
+  link.rel = 'prefetch';
+  link.as = 'document';
+  link.href = target.href;
+  doc.head.append(link);
+  prefetchedPages.add(target.href);
+  return true;
+}
+
+export function wireTabPrefetch(rail, doc = globalThis.document) {
+  if (!rail || typeof rail.addEventListener !== 'function') return false;
+  const warm = (event) => {
+    const anchor = event.target?.closest?.('a[href]');
+    if (anchor) prefetchPage(anchor.href, doc);
+  };
+  rail.addEventListener('pointerenter', warm, true);
+  rail.addEventListener('focusin', warm);
+  rail.addEventListener('touchstart', warm, { passive: true });
+  rail.setAttribute?.('data-prefetch-ready', 'true');
+  return true;
+}
 
 export function revealCurrentTab(rail) {
   if (!rail || typeof rail.querySelector !== 'function') return false;
@@ -64,4 +101,5 @@ if (typeof document !== 'undefined') {
     if (document.fonts?.ready) document.fonts.ready.then(reveal).catch(() => {});
   }
   wireMobileMenu(header);
+  wireTabPrefetch(rail);
 }

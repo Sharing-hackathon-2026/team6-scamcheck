@@ -57,6 +57,22 @@ def test_check_conservative_guard_rejects_ai_safe_label_for_otp(client, mock_gem
     assert response.get_json()["detective"]["risk_level"] == "nguy_hiem"
 
 
+def test_check_corrects_ai_false_positive_for_plain_otp_delivery(client, mock_gemini_text):
+    import json
+
+    mock_gemini_text["payload"] = {
+        "candidates": [{"content": {"parts": [{"text": json.dumps(_structured("nguy_hiem"))}]}}]
+    }
+    text = "Ngân hàng Vietcombank thông báo: Mã OTP của quý khách là 183667, có hiệu lực trong vòng 5 phút."
+    response = client.post("/api/check", json={"text": text})
+    data = response.get_json()
+    assert response.status_code == 200
+    assert data["detective"]["risk_level"] == "an_toan"
+    assert data["detective"]["red_flags"] == []
+    assert data["psychologist_status"] == "not_needed"
+    assert data["technical_analysis"]["rule_signals"] == []
+
+
 def test_check_rejects_empty_and_too_long_without_ai(client, mock_gemini_text):
     assert client.post("/api/check", json={"text": ""}).status_code == 400
     assert client.post("/api/check", json={"text": "a" * 5001}).status_code == 400

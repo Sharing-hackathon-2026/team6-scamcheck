@@ -502,6 +502,9 @@ normalize + validate
   yêu cầu tiền, số tài khoản, thúc giục/đe doạ và URL đáng ngờ.
 - Phủ định được xét trong cùng câu/mệnh đề, không dùng một câu “không gửi OTP” để
   vô hiệu hoá yêu cầu “hãy gửi OTP” ở câu sau.
+- Ngoại lệ full-match phân biệt thông báo ngân hàng *cấp* OTP thuần tuý với yêu cầu
+  gửi/đọc/nhập OTP; thời hạn hiệu lực của mã không tự bị xem là thúc giục. Chỉ cần có
+  thêm link, thao tác, chuyển tiền hay đe doạ thì ngoại lệ không áp dụng.
 - Rule signal có `code`, `severity`, `label`, `excerpt`, `explanation`; excerpt luôn là
   lát cắt thật từ input.
 - Rule nguy hiểm có quyền nâng verdict nhưng không hạ verdict AI. Signal cảnh báo chỉ
@@ -510,6 +513,9 @@ normalize + validate
 
 ### 10.4 Cache và quyền riêng tư
 
+- Static CSS/JS/font/icon tự host có `Cache-Control: public, immutable` một năm; mọi thay đổi
+  CSS/JS bump query version. Điều hướng tab warm-up HTML đích theo pointer/focus/touch nhưng
+  vẫn giữ real links; HTML dùng `no-cache` để revalidate.
 - Cache backend nằm trong SQLite WAL, bounded mặc định 256 mục/1 giờ và dùng chung giữa hai
   gunicorn worker; restart/deploy không làm mất cache còn TTL.
 - Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload typed.

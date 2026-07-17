@@ -9,7 +9,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Callable
 
-STAGE4_PIPELINE_VERSION = "stage4-v1-prompt3"
+STAGE4_PIPELINE_VERSION = "stage4-v1-prompt4-otp-notice"
 
 
 @dataclass

@@ -48,6 +48,30 @@ _EDUCATIONAL_CONTEXT_RE = re.compile(
     re.I,
 )
 _IMPERATIVE_RE = re.compile(r"\b(?:hãy|vui\s*lòng|cần\s+bác|bác\s+phải|làm\s+ngay)\b", re.I)
+_OTP_DELIVERY_NOTICE_RE = re.compile(
+    r"^\s*(?:(?:ngân\s+hàng\s+)?[\wÀ-ỹ .-]{2,60}\s+thông\s+báo\s*:\s*)?"
+    r"mã\s+(?:xác\s+thực\s+)?otp(?:\s+của\s+quý\s+khách)?\s*(?:là|:)\s*\d{4,8}"
+    r"(?:\s*,?\s*(?:có\s+hiệu\s+lực(?:\s+trong(?:\s+vòng)?)?|hết\s+hạn\s+sau)"
+    r"\s+\d+\s*(?:phút|giờ))?\s*[.!]?\s*$",
+    re.I,
+)
+_OTP_VALIDITY_WINDOW_RE = re.compile(
+    r"\bmã\s+(?:xác\s+thực\s+)?otp\b.{0,55}"
+    r"\b(?:có\s+hiệu\s+lực(?:\s+trong(?:\s+vòng)?)?|hết\s+hạn\s+sau)\s+\d+\s*(?:phút|giờ)\b",
+    re.I,
+)
+
+
+def is_otp_delivery_notification(text: str) -> bool:
+    """Nhận diện hẹp thông báo *cấp* OTP, không nhầm thành yêu cầu giao OTP.
+
+    Full-match có chủ ý: chỉ hạ verdict cho mẫu cấp mã thuần tuý. Chỉ cần có
+    thêm link, lời yêu cầu thao tác, chuyển tiền hay đe doạ là không khớp và
+    các guardrail bình thường vẫn áp dụng.
+    """
+    if not isinstance(text, str) or not text:
+        return False
+    return bool(_OTP_DELIVERY_NOTICE_RE.fullmatch(unicodedata.normalize("NFC", text)))
 
 
 @dataclass(frozen=True)
@@ -140,7 +164,8 @@ def _pattern_signals(text: str) -> list[RuleSignal]:
                 clause=clause, clause_offset=offset, match=threat_match, source=text,
             ))
         urgency_match = _URGENCY_RE.search(clause)
-        if urgency_match and not _is_negated(clause, urgency_match.start()):
+        validity_window = _OTP_VALIDITY_WINDOW_RE.search(clause)
+        if urgency_match and not validity_window and not _is_negated(clause, urgency_match.start()):
             signals.append(_signal_from_match(
                 code="urgency", severity="warning", label="Thúc giục gấp",
                 explanation="Áp lực thời gian làm người nhận khó bình tĩnh xác minh thông tin.",

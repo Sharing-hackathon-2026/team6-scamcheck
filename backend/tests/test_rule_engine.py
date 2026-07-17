@@ -2,7 +2,7 @@ import pytest
 
 from app.services.links import analyze_links
 from app.services.parser import parse_detective
-from app.services.rule_engine import evaluate_rules
+from app.services.rule_engine import evaluate_rules, is_otp_delivery_notification
 
 
 def codes(text):
@@ -31,6 +31,34 @@ def test_negation_is_clause_local_and_cannot_hide_later_credential_request():
 def test_safe_negations_do_not_trigger_hard_rules():
     assert "credential_request" not in codes("Ngân hàng không bao giờ yêu cầu gửi mã OTP.")
     assert "money_request" not in codes("Bác không cần chuyển tiền trước.")
+
+
+def test_plain_otp_delivery_is_safe_context_not_a_request_or_urgency_signal():
+    text = "Ngân hàng Vietcombank thông báo: Mã OTP của quý khách là 183667, có hiệu lực trong vòng 5 phút."
+    assert is_otp_delivery_notification(text) is True
+    assert evaluate_rules(text) == []
+    raw_danger = {
+        "risk_level": "nguy_hiem",
+        "reason": "Nhầm thông báo mã thành yêu cầu mã.",
+        "red_flags": [{"label": "OTP", "excerpt": "Mã OTP", "explanation": "Nhầm."}],
+        "actions": [],
+    }
+    result = parse_detective(raw_danger, text)
+    assert result.risk_level == "an_toan"
+    assert result.red_flags == []
+    assert "không yêu cầu gửi mã" in result.reason
+
+
+@pytest.mark.parametrize("suffix", [
+    " Hãy gửi mã OTP cho tôi.",
+    " Bấm https://evil.example để xác nhận.",
+    " Tài khoản sẽ bị khóa trong 5 phút.",
+])
+def test_otp_notice_exception_fails_closed_when_extra_risky_content_exists(suffix):
+    text = "Mã OTP của quý khách là 183667, có hiệu lực trong vòng 5 phút." + suffix
+    assert is_otp_delivery_notification(text) is False
+    raw_danger = {"risk_level": "nguy_hiem", "reason": "Có rủi ro.", "red_flags": [], "actions": []}
+    assert parse_detective(raw_danger, text).risk_level == "nguy_hiem"
 
 
 def test_educational_and_quoted_context_reduce_false_positive():
