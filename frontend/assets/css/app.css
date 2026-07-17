@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v9).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v10).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -261,6 +261,7 @@ summary:focus:not(:focus-visible),
   background: var(--color-hero-bg);
   color: var(--color-hero-text);
   border-radius: 0 0 var(--radius-hero) var(--radius-hero);
+  touch-action: manipulation;
 }
 
 .hero-arc {
@@ -440,6 +441,7 @@ summary:focus:not(:focus-visible),
 }
 
 .input-card {
+  scroll-margin-top: 96px;
   padding: clamp(18px, 4vw, 30px);
   border-radius: var(--radius-shell);
 }
@@ -643,6 +645,7 @@ textarea:focus-visible { border-color: var(--color-action); }
 }
 
 .risk-card {
+  scroll-margin-top: 96px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-4);
@@ -994,6 +997,7 @@ mark {
 .rescue-loading { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--color-text-muted); font-weight: 700; }
 
 .rescue-card {
+  scroll-margin-top: 96px;
   padding: var(--space-5);
   border: 1px solid var(--color-border);
   border-left: 6px solid var(--color-action);

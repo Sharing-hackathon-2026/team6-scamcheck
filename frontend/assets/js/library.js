@@ -4,7 +4,7 @@
 // Thiết lập chỉ chạy khi các node thư viện tồn tại; không ném nếu thiếu.
 
 import { ApiError, getScamLibrary } from "./api.js";
-import { filterLibraryItems, libraryGroupFromHash } from "./stage3-model.js?v=stage5-tabs-v9";
+import { filterLibraryItems, libraryGroupFromHash } from "./stage3-model.js?v=stage5-tabs-v10";
 import { wirePreferences } from "./preferences.js";
 
 function createElement(tag, { className = "", text = "", attributes = {} } = {}) {

@@ -112,6 +112,18 @@ test('share QR request bypasses stale cached internal-port SVG', () => {
   assert.match(api, /cache:\s*'no-store'/);
 });
 
+test('check workflow auto-scrolls at the three requested transitions', () => {
+  assert.match(app, /hero\.addEventListener\('dblclick',\s*goToInput\)/);
+  assert.match(app, /hero\.addEventListener\('pointerup'/);
+  assert.match(app, /if \(verdictCard\) scrollToBlock\(verdictCard\)/);
+  assert.match(app, /scrollToBlock\(rescueCard, \{ focus: true \}\)/);
+  for (const selector of ['.input-card', '.risk-card', '.rescue-card']) {
+    const escaped = selector.replace('.', '\\.');
+    assert.match(css, new RegExp(`${escaped}\\s*\\{[^}]*scroll-margin-top:\\s*96px`));
+  }
+  assert.match(css, /\.hero\s*\{[^}]*touch-action:\s*manipulation/);
+});
+
 // #4 decision tokens exist across light/dark/high-contrast.
 test('decision-box tokens are defined for light, dark and high-contrast', () => {
   for (const t of ['--color-decision-bg', '--color-decision-text', '--color-decision-choice-text']) {

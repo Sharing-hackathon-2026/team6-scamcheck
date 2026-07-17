@@ -1,7 +1,7 @@
 // Logic giao diện trang kiểm tra (/). Thư viện đã tách ra library.js; trang này
 // KHÔNG fetch /api/scam-library và không phụ thuộc DOM thư viện.
 // Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v9';
+import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v10';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -12,13 +12,13 @@ import {
 } from './history.js';
 import { wirePreferences } from './preferences.js';
 import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
-import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v9';
+import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v10';
 import {
   buildShareCardModel,
   decodeQrModules,
   drawShareCard,
   safeFileName,
-} from './share-card.js?v=stage5-tabs-v9';
+} from './share-card.js?v=stage5-tabs-v10';
 import { normalizePsychologist } from './stage3-model.js';
 import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
@@ -87,6 +87,56 @@ function createElement(tag, { className = '', text = '', attributes = {} } = {})
   if (text) element.textContent = text;
   Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
   return element;
+}
+
+function scrollToBlock(element, { focus = false } = {}) {
+  if (!element) return false;
+  window.requestAnimationFrame(() => {
+    if (!element.isConnected) return;
+    element.scrollIntoView({ block: 'start' });
+    if (focus && typeof element.focus === 'function') element.focus({ preventScroll: true });
+  });
+  return true;
+}
+
+function setupHeroDoubleTap() {
+  const hero = document.querySelector('.hero');
+  const inputCard = document.querySelector('.input-card');
+  if (!hero || !inputCard) return;
+
+  let pointerStart = null;
+  let previousTap = null;
+  let lastShortcutAt = 0;
+  const goToInput = () => {
+    const now = Date.now();
+    if (now - lastShortcutAt < 500) return;
+    lastShortcutAt = now;
+    scrollToBlock(inputCard);
+    window.requestAnimationFrame(() => elements.textInput.focus({ preventScroll: true }));
+    elements.status.textContent = 'Đã đưa bác tới ô nhập tin nhắn.';
+  };
+
+  hero.addEventListener('dblclick', goToInput);
+  hero.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'touch') return;
+    pointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  });
+  hero.addEventListener('pointercancel', () => { pointerStart = null; });
+  hero.addEventListener('pointerup', (event) => {
+    if (event.pointerType !== 'touch' || !pointerStart || pointerStart.id !== event.pointerId) return;
+    const moved = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
+    pointerStart = null;
+    if (moved > 16) { previousTap = null; return; }
+    const tap = { at: Date.now(), x: event.clientX, y: event.clientY };
+    if (previousTap
+      && tap.at - previousTap.at <= 360
+      && Math.hypot(tap.x - previousTap.x, tap.y - previousTap.y) <= 32) {
+      previousTap = null;
+      goToInput();
+      return;
+    }
+    previousTap = tap;
+  });
 }
 
 function riskIcon(riskLevel) {
@@ -448,8 +498,9 @@ async function onRescueChoice(situation, scope) {
   try {
     const data = await rescue(payload, { signal: rescueController.signal });
     if (token !== rescueToken) return;
-    renderRescueResult(scope.output, scope.status, normalizeRescue(data), situation);
+    const rescueCard = renderRescueResult(scope.output, scope.status, normalizeRescue(data), situation);
     setRescueBusy(scope.choices, scope.output, scope.status, false, situation, true);
+    scrollToBlock(rescueCard, { focus: true });
   } catch (error) {
     if (token !== rescueToken) return;
     if (error?.code === 'cancelled' || error?.name === 'AbortError') return;
@@ -510,7 +561,7 @@ function renderRescueResult(output, status, rescue, selectedSituation) {
     ? 'Đã có kế hoạch phòng ngừa.'
     : 'Đã sẵn sàng từng bước ứng cứu.';
   void selectedSituation;
-  card.focus({ preventScroll: true });
+  return card;
 }
 
 function createRescueStep(step) {
@@ -871,6 +922,7 @@ function clearCurrent() {
 }
 
 async function onCheck() {
+  let verdictCard = null;
   if (activeController) {
     elements.status.textContent = 'Lượt kiểm tra hiện tại vẫn đang chạy.';
     return;
@@ -896,6 +948,7 @@ async function onCheck() {
       error: data.psychologist_error,
       technicalAnalysis: data.technical_analysis,
     });
+    verdictCard = elements.result.querySelector('.risk-card');
     historyEntries = addHistoryEntry(historyEntries, {
       text,
       detective,
@@ -916,6 +969,7 @@ async function onCheck() {
   } finally {
     activeController = null;
     setLoading(false);
+    if (verdictCard) scrollToBlock(verdictCard);
   }
 }
 
@@ -1036,6 +1090,7 @@ elements.clearHistoryBtn.addEventListener('click', () => {
 
 renderHistory();
 setupSpeech();
+setupHeroDoubleTap();
 
 const displayPrefs = document.getElementById('displayPrefs');
 if (displayPrefs) wirePreferences({ root: displayPrefs });
