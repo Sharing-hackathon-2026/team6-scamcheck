@@ -88,7 +88,7 @@ def test_log_contains_only_metadata(client, mock_gemini_text):
     assert "Nội dung nhạy cảm" not in str(data["logs"])
 
 
-def test_existing_ten_log_entries_do_not_block_new_analysis(client, mock_gemini_text):
+def test_legacy_cookie_logs_do_not_block_new_sqlite_analysis(client, mock_gemini_text):
     import json
 
     with client.session_transaction() as session:
@@ -99,16 +99,17 @@ def test_existing_ten_log_entries_do_not_block_new_analysis(client, mock_gemini_
     response = client.post("/api/check", json={"text": "Thông báo không yêu cầu thao tác."})
     assert response.status_code == 200
     assert mock_gemini_text["calls"] == 1
-    assert len(client.get("/api/check/log").get_json()["logs"]) == 10
+    assert len(client.get("/api/check/log").get_json()["logs"]) == 1
 
 
-def test_health_reports_not_ready_without_key(monkeypatch):
+def test_health_reports_not_ready_without_key(monkeypatch, tmp_path):
     from app import create_app
     from app.config import Config
 
     class NoKeyConfig(Config):
         GEMINI_API_KEY = ""
         CORS_ORIGINS = []
+        SQLITE_PATH = str(tmp_path / "no-key.sqlite3")
 
     app = create_app(NoKeyConfig)
     app.config["TESTING"] = True

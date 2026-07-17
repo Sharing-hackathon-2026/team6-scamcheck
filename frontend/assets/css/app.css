@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v10).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v11).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -1285,6 +1285,126 @@ mark {
   font-weight: 800;
 }
 
+/* ---- AI history dashboard -------------------------------------------- */
+
+.history-dashboard {
+  width: min(calc(100% - 32px), var(--content-width));
+  max-width: var(--content-width);
+  min-width: 0;
+  margin: var(--space-6) auto var(--space-8);
+  padding: clamp(18px, 4vw, 32px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-shell);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-surface);
+}
+.history-dashboard-head,
+.history-table-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.history-dashboard h2,
+.history-dashboard h3 { margin: 0; font-family: var(--font-heading); font-weight: 800; }
+.history-dashboard h2 { font-size: clamp(1.55rem, 4vw, 2rem); }
+.history-dashboard h3 { font-size: clamp(1.2rem, 3vw, 1.45rem); }
+.history-dashboard-notice { margin: var(--space-2) 0 0; color: var(--color-text-muted); }
+.admin-shield {
+  display: grid;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border: 2px solid var(--color-action);
+  border-radius: var(--radius-control);
+  background: var(--color-violet-soft);
+  color: var(--color-action-strong);
+  text-decoration: none;
+  font-size: 25px;
+}
+.admin-shield:hover { background: var(--color-action); color: var(--color-on-action); }
+.admin-shield.is-authorized { border-color: var(--color-safe-border); background: var(--color-safe-bg); color: var(--color-safe-text); }
+.history-dashboard .error-panel { margin-top: var(--space-5); }
+.history-dashboard .error-panel .button-secondary { margin-top: var(--space-3); }
+.history-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.history-metric {
+  min-width: 0;
+  padding: var(--space-4);
+  border-left: 5px solid var(--color-action);
+  background: var(--color-card-tint);
+}
+.history-metric strong,
+.history-metric span { display: block; }
+.history-metric strong { font-family: var(--font-heading); font-size: clamp(1.55rem, 4vw, 2.1rem); line-height: 1.1; }
+.history-metric span { margin-top: var(--space-1); color: var(--color-text-muted); font-weight: 700; }
+.history-chart-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(250px, 0.65fr);
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-divider);
+}
+.risk-pie-card { margin: 0; display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: var(--space-5); align-items: center; }
+.risk-pie-card figcaption { grid-column: 1 / -1; }
+.risk-pie-card figcaption p { margin: var(--space-1) 0 0; color: var(--color-text-muted); }
+.risk-pie { display: block; width: min(100%, 220px); height: auto; margin-inline: auto; }
+.risk-pie-track,
+.risk-pie-segment { fill: none; stroke-width: 18; }
+.risk-pie-track { stroke: var(--color-neutral-bg); }
+.risk-pie-segment { transition: stroke-dasharray var(--motion-slow); }
+.risk-pie .pie-safe { stroke: var(--color-safe); }
+.risk-pie .pie-warning { stroke: var(--color-warning); }
+.risk-pie .pie-danger { stroke: var(--color-danger); }
+.risk-pie .pie-neutral { stroke: var(--color-neutral); }
+.risk-pie text { fill: var(--color-text); font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; }
+.risk-pie .risk-pie-caption { fill: var(--color-text-muted); font-size: 0.68rem; font-weight: 700; }
+.risk-legend { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.risk-legend li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); }
+.risk-legend-swatch { width: 14px; height: 14px; border-radius: var(--radius-pill); }
+.risk-legend-swatch.pie-safe { background: var(--color-safe); }
+.risk-legend-swatch.pie-warning { background: var(--color-warning); }
+.risk-legend-swatch.pie-danger { background: var(--color-danger); }
+.risk-legend-swatch.pie-neutral { background: var(--color-neutral); }
+.actor-summary { padding: var(--space-5); border-radius: var(--radius-surface); background: var(--color-card-tint); }
+.actor-summary dl { display: grid; gap: var(--space-3); margin: var(--space-4) 0 0; }
+.actor-summary dl div { display: flex; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-divider); }
+.actor-summary dt { font-weight: 700; }
+.actor-summary dd { margin: 0; font-family: var(--font-heading); font-weight: 800; }
+.admin-exports { margin-top: var(--space-6); padding: var(--space-4); border: 1px solid var(--color-safe-border); border-radius: var(--radius-surface); background: var(--color-safe-bg); color: var(--color-safe-text); }
+.admin-exports p { margin: 0 0 var(--space-3); }
+.admin-exports .button-secondary { text-decoration: none; }
+#historyContent,
+.history-table-section { min-width: 0; max-width: 100%; }
+.history-table-section { margin-top: var(--space-6); padding-top: var(--space-6); border-top: 1px solid var(--color-divider); }
+.history-row-count { color: var(--color-text-muted); font-weight: 700; white-space: nowrap; }
+.history-table-wrap { width: 100%; max-width: 100%; min-width: 0; margin-top: var(--space-3); overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-surface); }
+.ai-log-table { width: 100%; min-width: 820px; border-collapse: collapse; font-size: 0.92rem; }
+.ai-log-table th,
+.ai-log-table td { padding: var(--space-3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--color-divider); }
+.ai-log-table th { position: sticky; top: 0; background: var(--color-card-tint); font-family: var(--font-heading); font-weight: 800; }
+.ai-log-table tbody tr:last-child td { border-bottom: 0; }
+.ai-log-table tbody tr:hover { background: var(--color-surface-subtle); }
+
+@media (max-width: 760px) {
+  .history-metrics { grid-template-columns: 1fr; }
+  .history-chart-grid { grid-template-columns: 1fr; }
+  .risk-pie-card { grid-template-columns: 140px minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .history-dashboard h2 { font-size: 1.35rem; }
+  .risk-pie-card { grid-template-columns: 1fr; }
+  .risk-pie { max-width: 180px; }
+  .history-table-heading { display: block; }
+  .history-row-count { display: block; margin-top: var(--space-1); }
+}
+
 /* ---- Footer (forest landmark, broad top corners) ---------------------- */
 
 .site-footer {
@@ -1505,6 +1625,8 @@ html[data-high-contrast="true"] .library-panel,
 html[data-high-contrast="true"] .error-panel,
 html[data-high-contrast="true"] .share-preview,
 html[data-high-contrast="true"] .display-prefs,
+html[data-high-contrast="true"] .history-dashboard,
+html[data-high-contrast="true"] .history-table-wrap,
 html[data-high-contrast="true"] .app-bar {
   border-width: 3px;
 }

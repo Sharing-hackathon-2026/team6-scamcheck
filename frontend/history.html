@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#5838cb">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2350">
+  <meta name="description" content="Lịch sử gọi AI của phiên ScamCheck và thống kê mức rủi ro; quản trị viên có thể xem toàn hệ thống qua Login with exe.">
+  <title>Lịch sử gọi AI — ScamCheck</title>
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v11">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v11">
+  <script>(function(){try{var s=localStorage.getItem('scamcheck.prefs.v1');if(!s)return;var p=JSON.parse(s);var d=document.documentElement;if(p&&p.highContrast===true)d.setAttribute('data-high-contrast','true');if(p&&['1','1.15','1.3'].indexOf(p.fontScale)>=0)d.style.setProperty('--app-font-scale',p.fontScale);}catch(e){}})();</script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Đi đến nội dung chính</a>
+
+  <header class="app-bar" aria-label="ScamCheck">
+    <div class="app-bar-row">
+      <a class="brand" href="/" aria-label="ScamCheck — trang chủ">
+        <span class="brand-mark msymbols" aria-hidden="true">&#xe9e0;</span>
+        <span class="brand-name">ScamCheck</span>
+      </a>
+      <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="primaryNav" aria-label="Mở trình đơn chính">
+        <span class="mobile-menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>Menu</span>
+      </button>
+      <nav id="primaryNav" class="tab-rail" aria-label="Trang chính">
+        <a class="tab" href="/">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xf0c5;</span>
+          <span class="tab-label">Kiểm tra</span>
+        </a>
+        <a class="tab" href="/library.html">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xea19;</span>
+          <span class="tab-label">Thư viện</span>
+        </a>
+        <a class="tab" href="/practice.html">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xf04c;</span>
+          <span class="tab-label">Luyện tập</span>
+        </a>
+        <a class="tab" href="/history.html" aria-current="page">
+          <span class="msymbols tab-icon" aria-hidden="true">&#xe8b3;</span>
+          <span class="tab-label">Lịch sử</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="page" tabindex="-1">
+    <section class="hero" aria-labelledby="historyTitle">
+      <svg class="hero-arc" viewBox="0 0 640 640" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="600" cy="600" r="200" opacity="0.20"/>
+          <circle cx="600" cy="600" r="300" opacity="0.14"/>
+          <circle cx="600" cy="600" r="400" opacity="0.09"/>
+        </g>
+      </svg>
+      <svg class="hero-illustration" viewBox="0 0 240 200" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="48" cy="166" r="16" opacity="0.35"/>
+          <path d="M60 58 H180 a20 20 0 0 1 20 20 v34 a20 20 0 0 1 -20 20 H100 l-22 22 v-22 H60 a20 20 0 0 1 -20 -20 V78 a20 20 0 0 1 20 -20 Z" opacity="0.5"/>
+          <path d="M120 72 l24 9 v20 c0 15-10 25-24 30-14-5-24-15-24-30 V81 Z" opacity="0.9"/>
+          <path d="M108 99 L117 109 L134 86" opacity="0.98"/>
+        </g>
+      </svg>
+      <div class="hero-inner">
+        <p class="hero-eyebrow">Minh bạch theo phiên</p>
+        <h1 id="historyTitle" class="hero-title">Lịch sử gọi AI</h1>
+        <p class="hero-lead">Xem các lần ScamCheck gọi Thám tử, Cô tâm lý hoặc Người ứng cứu trong phiên này. Log chỉ lưu metadata, không lưu nguyên văn tin nhắn.</p>
+      </div>
+    </section>
+
+    <section class="display-prefs" id="displayPrefs" aria-label="Tuỳ chọn hiển thị">
+      <span class="display-prefs-label">Hiển thị</span>
+      <button class="pref-toggle" type="button" data-pref="contrast" aria-pressed="false">
+        <span class="msymbols" aria-hidden="true">&#xeb37;</span>
+        <span>Tương phản cao</span>
+      </button>
+      <div class="font-scale-group" role="group" aria-label="Cỡ chữ">
+        <span class="font-scale-label">Cỡ chữ</span>
+        <button class="font-scale-btn" type="button" data-scale="1" aria-pressed="true">100%</button>
+        <button class="font-scale-btn" type="button" data-scale="1.15" aria-pressed="false">115%</button>
+        <button class="font-scale-btn" type="button" data-scale="1.3" aria-pressed="false">130%</button>
+      </div>
+      <p class="sr-only" data-pref-status aria-live="polite"></p>
+    </section>
+
+    <section class="history-dashboard" aria-labelledby="statsTitle" aria-busy="true">
+      <div class="history-dashboard-head">
+        <div>
+          <p id="historyScope" class="section-eyebrow">Lịch sử của phiên này</p>
+          <h2 id="statsTitle">Tổng quan mức rủi ro</h2>
+          <p id="historyNotice" class="history-dashboard-notice">Đang tải thống kê…</p>
+        </div>
+        <a id="adminLogin" class="admin-shield" href="https://team6-scamcheck.exe.xyz:8001/__exe.dev/login?redirect=%2Fhistory.html%3Fscope%3Dall" aria-label="Đăng nhập quản trị bằng exe.dev" title="Đăng nhập quản trị">
+          <span class="msymbols" aria-hidden="true">&#xe9e0;</span>
+        </a>
+      </div>
+
+      <div id="historyError" class="error-panel" role="alert" hidden></div>
+      <div id="historyContent" hidden>
+        <div class="history-metrics" aria-label="Số liệu chính">
+          <div class="history-metric"><strong id="checkCount">0</strong><span>Lượt kiểm tra có gọi AI</span></div>
+          <div class="history-metric"><strong id="callCount">0</strong><span>Tổng lượt gọi nhân vật AI</span></div>
+          <div class="history-metric"><strong id="retentionDays">30 ngày</strong><span>Thời gian lưu metadata</span></div>
+        </div>
+
+        <div class="history-chart-grid">
+          <figure class="risk-pie-card" aria-labelledby="pieTitle pieDescription">
+            <figcaption>
+              <h3 id="pieTitle">Tỉ lệ verdict</h3>
+              <p id="pieDescription">Tính theo lượt gọi Thám tử trong phạm vi đang xem.</p>
+            </figcaption>
+            <svg class="risk-pie" viewBox="0 0 120 120" role="img" aria-label="Biểu đồ tròn tỉ lệ verdict">
+              <circle class="risk-pie-track" cx="60" cy="60" r="44" pathLength="100"/>
+              <g id="pieSegments"></g>
+              <text id="pieTotal" x="60" y="57" text-anchor="middle">0</text>
+              <text class="risk-pie-caption" x="60" y="73" text-anchor="middle">lượt</text>
+            </svg>
+            <ul id="pieLegend" class="risk-legend"></ul>
+          </figure>
+
+          <section class="actor-summary" aria-labelledby="actorTitle">
+            <h3 id="actorTitle">Nhân vật AI đã gọi</h3>
+            <dl id="actorCounts"></dl>
+          </section>
+        </div>
+
+        <div id="adminExports" class="admin-exports" hidden>
+          <p><strong>Chế độ quản trị:</strong> xuất toàn bộ metadata còn trong thời hạn lưu.</p>
+          <div class="share-actions">
+            <a class="button-secondary" href="/api/ai-logs/export?format=json">
+              <span class="msymbols" aria-hidden="true">&#xf090;</span> Tải JSON
+            </a>
+            <a class="button-secondary" href="/api/ai-logs/export?format=csv">
+              <span class="msymbols" aria-hidden="true">&#xf090;</span> Tải CSV
+            </a>
+          </div>
+        </div>
+
+        <section class="history-table-section" aria-labelledby="tableTitle">
+          <div class="history-table-heading">
+            <h3 id="tableTitle">Chi tiết các lượt gọi AI</h3>
+            <span id="rowCount" class="history-row-count"></span>
+          </div>
+          <p id="historyEmpty" class="history-empty" hidden>Phiên này chưa có lượt gọi AI nào.</p>
+          <div id="historyTableWrap" class="history-table-wrap">
+            <table class="ai-log-table">
+              <thead>
+                <tr>
+                  <th scope="col">Thời gian</th>
+                  <th scope="col">Nhân vật</th>
+                  <th scope="col">Trạng thái</th>
+                  <th scope="col">Mức rủi ro</th>
+                  <th scope="col">Độ dài</th>
+                  <th scope="col">Tóm tắt</th>
+                </tr>
+              </thead>
+              <tbody id="historyRows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p><strong>Quyền riêng tư:</strong> bảng này không chứa nguyên văn tin nhắn, prompt, mã OTP hay dữ liệu tài khoản.</p>
+      <p>Quản trị toàn hệ thống chỉ hoạt động qua Login with exe tại cổng <strong>8001</strong> và allowlist email phía server.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v11"></script>
+  <script type="module" src="/assets/js/history-page.js?v=stage5-tabs-v11"></script>
+</body>
+</html>

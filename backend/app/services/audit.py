@@ -1,17 +1,19 @@
-"""Nhật ký AI trong bộ nhớ theo từng phiên (L1-08)."""
+"""Privacy-preserving AI invocation audit backed by SQLite."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Any
 
-SESSION_LOG_KEY = "ai_call_log"
+from .storage import SQLiteStore
 
 
 def summarize_result(result: dict[str, Any]) -> str:
-    """Tạo tóm tắt ngắn, không lưu toàn bộ nội dung tin nhắn nhạy cảm."""
+    """Create a short summary without writing the source message or prompt."""
     risk_level = result.get("risk_level")
     if isinstance(risk_level, str):
         return f"Mức rủi ro: {risk_level.replace('_', ' ')}"
+    situation = result.get("situation")
+    if isinstance(situation, str):
+        return f"Tình huống ứng cứu: {situation.replace('_', ' ')}"
     return "Đã nhận kết quả kiểm tra"
 
 
@@ -20,28 +22,26 @@ def append_ai_log(
     input_length: int,
     result: dict[str, Any],
     *,
+    store: SQLiteStore,
     actor: str = "detective",
     status: str = "complete",
 ) -> None:
-    """Ghi tối đa 10 lần gọi gần nhất vào Flask session."""
-    logs = session.get(SESSION_LOG_KEY, [])
-    if not isinstance(logs, list):
-        logs = []
-    logs.append(
-        {
-            "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "input_length": input_length,
-            "summary": summarize_result(result),
-            "actor": actor if actor in {"detective", "psychologist", "rescuer"} else "unknown",
-            "status": status,
-        }
+    """Persist one actual AI invocation as metadata under this browser session."""
+    store.append_log(
+        session_id=store.session_id(session),
+        input_length=input_length,
+        summary=summarize_result(result),
+        actor=actor,
+        status=status,
+        risk_level=result.get("risk_level") if isinstance(result, dict) else None,
     )
-    session[SESSION_LOG_KEY] = logs[-10:]
-    if hasattr(session, "modified"):
-        session.modified = True
 
 
-def get_ai_log(session: Any) -> list[dict[str, Any]]:
-    """Đọc log phiên, loại bỏ dữ liệu hỏng thay vì gây lỗi endpoint."""
-    logs = session.get(SESSION_LOG_KEY, [])
-    return logs if isinstance(logs, list) else []
+def get_ai_log(
+    session: Any,
+    *,
+    store: SQLiteStore,
+    limit: int = 500,
+) -> list[dict[str, Any]]:
+    """Read this browser session's log without exposing its internal session id."""
+    return store.list_logs(session_id=store.session_id(session), limit=limit)

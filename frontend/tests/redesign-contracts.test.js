@@ -98,7 +98,7 @@ test('continuing to rescue collapses the three expandable explanations', () => {
 });
 
 test('mobile navigation uses an accessible hamburger menu on all pages', () => {
-  for (const page of ['index.html', 'library.html', 'practice.html']) {
+  for (const page of ['index.html', 'library.html', 'practice.html', 'history.html']) {
     const html = read(`../${page}`);
     assert.match(html, /class="mobile-menu-toggle"[^>]*aria-expanded="false"[^>]*aria-controls="primaryNav"/);
     assert.match(html, /<nav id="primaryNav" class="tab-rail"/);
@@ -125,6 +125,18 @@ test('check workflow auto-scrolls at the three requested transitions', () => {
 });
 
 // #4 decision tokens exist across light/dark/high-contrast.
+test('AI history page exposes session stats and a dedicated exe.dev admin gate', () => {
+  const html = read('../history.html');
+  const historyJs = read('../assets/js/history-page.js');
+  assert.match(html, /class="risk-pie"/);
+  assert.match(html, /class="ai-log-table"/);
+  assert.match(html, /id="adminLogin"[^>]*:8001\/__exe\.dev\/login/);
+  assert.match(html, /id="adminExports"[^>]*hidden/);
+  assert.ok(historyJs.includes("location.hostname}:8001"));
+  assert.ok(historyJs.includes("cache: 'no-store'"));
+  assert.ok(!historyJs.includes('innerHTML'));
+});
+
 test('decision-box tokens are defined for light, dark and high-contrast', () => {
   for (const t of ['--color-decision-bg', '--color-decision-text', '--color-decision-choice-text']) {
     assert.ok(tokens.includes(t), `light token ${t}`);
@@ -140,7 +152,7 @@ test('hero illustration is decorative and protected from narrow-screen overflow'
   assert.match(css, /\.hero-illustration\s*\{[\s\S]*?pointer-events:\s*none/);
   assert.match(css, /\.hero-illustration\s*\{[\s\S]*?z-index:\s*0/);
   assert.match(css, /@media[^{]*max-width:\s*700px[\s\S]*?\.hero-illustration\s*\{\s*display:\s*none/);
-  for (const page of ['index.html', 'library.html', 'practice.html']) {
+  for (const page of ['index.html', 'library.html', 'practice.html', 'history.html']) {
     const html = read(`../${page}`);
     assert.match(html, /<svg class="hero-illustration"[^>]*aria-hidden="true"/, `${page} has decorative hero illustration`);
     assert.match(html, /<svg class="hero-arc"[^>]*aria-hidden="true"/, `${page} keeps the broad arcs`);

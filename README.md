@@ -12,6 +12,7 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 
 - Trình duyệt gọi `fetch('/api/...')` → Nginx reverse-proxy `/api/*` sang Flask → **cùng origin, không lo CORS**.
 - `GEMINI_API_KEY` chỉ tồn tại ở backend.
+- SQLite dùng chung giữa các gunicorn worker để lưu persistent cache và metadata lượt gọi AI; không lưu nguyên văn tin nhắn trong bảng log.
 
 ## Deploy target
 
@@ -43,7 +44,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 193 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 197 test, dùng mock (không tốn lượt AI)
 ```
 
 Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn API):
@@ -75,7 +76,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 76 test Node, không cần runtime dependency ngoài
+npm --prefix frontend test       # 77 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -100,7 +101,10 @@ Web Share/download fallback; high contrast và chữ 100%/115%/130% được lư
 Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
 
 Frontend hiện dùng kiến trúc một tác vụ mỗi trang: `/` kiểm tra, `/library.html` thư viện,
-`/practice.html` luyện tập. Visual direction mint/forest/violet được đo từ Own Your Online
+`/practice.html` luyện tập và `/history.html` xem bảng/biểu đồ lịch sử gọi AI của phiên.
+Nút khiên trên trang lịch sử đưa admin qua [Login with exe](https://exe.dev/docs/login-with-exe)
+tại `:8001`; chỉ email trong `ADMIN_ALLOWED_EMAILS` mới xem universal stats và tải toàn bộ
+metadata JSON/CSV. Visual direction mint/forest/violet được đo từ Own Your Online
 Scam Check và ghi tại `DESIGN_REFERENCE.md`, nhưng không sao chép logo/copy/asset độc quyền.
 Be Vietnam Pro và Material Symbols Rounded được self-host kèm giấy phép; Galano Grotesque
 không bị scrape/hotlink vì là font thương mại. Giao diện tự chuyển light/dark bằng
@@ -120,6 +124,8 @@ FAIL trước được giữ trong báo cáo để chứng minh các lỗi AI pr
 - `GET /api/health` → `{"ok":true,"ready":true}`
 - `POST /api/check` → function-call Thám tử, chain Cô tâm lý khi cần, retry rate-limit; không giới hạn lượt theo phiên.
 - `POST /api/rescue` → 4 situation enum, hotline whitelist + guarded fallback; `GET /api/share/qr.svg` không nhận URL tùy ý.
+- `GET /api/ai-logs` → lịch sử session; universal scope/export yêu cầu exe.dev auth ở `:8001` và email allowlist.
+- `/etc/scamcheck.env` cần cấu hình `ADMIN_ALLOWED_EMAILS=email1@example.com,email2@example.com`; để rỗng sẽ fail closed.
 
 Deploy idempotent qua `deploy/deploy.sh` (chạy **trên VM target**, cần sudo):
 ```bash

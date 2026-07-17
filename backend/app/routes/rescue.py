@@ -109,11 +109,12 @@ def rescue():
         ai_enabled=current_app.config["RESCUE_AI_ENABLED"],
     )
 
-    if situation != "chua_lam_gi":
+    if outcome.ai_called:
         append_ai_log(
             session,
             len(message_text),
-            {"situation": situation},
+            {"situation": situation, "risk_level": context["risk_level"]},
+            store=current_app.extensions["sqlite_store"],
             actor="rescuer",
             status="complete" if outcome.status == "complete" else "guarded_fallback",
         )

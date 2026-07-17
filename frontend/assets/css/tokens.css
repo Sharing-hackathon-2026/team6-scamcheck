@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FROZEN FOUNDATION TOKENS — ScamCheck tabs redesign (stage5-tabs-v10).
+   FROZEN FOUNDATION TOKENS — ScamCheck tabs redesign (stage5-tabs-v11).
    Identity: original Vietnamese editorial-utility palette extracted from the
    Own Your Online "Scam Check" *relationships* (NOT their assets):
      • broad mint working canvas
@@ -156,6 +156,8 @@
   --shadow-control: 0 1px 1px rgb(20 56 64 / 8%);
   --shadow-lift: 0 2px 0 var(--color-action-edge), 0 10px 22px rgb(58 44 158 / 18%);
   --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+  --motion-fast: 160ms var(--ease-spring);
+  --motion-slow: 280ms var(--ease-spring);
   --content-width: 1140px;
 
   /* Structured helpers (consume tokens above; safe to override in dark/HC). */

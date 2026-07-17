@@ -6,6 +6,7 @@
 > **Kiến trúc tách 2 phần** (monorepo, dễ bảo trì):
 > - **Frontend** (`frontend/`): HTML + CSS token hoá + JavaScript thuần → phục vụ bởi **Nginx**.
 > - **Backend** (`backend/`): **Python Flask REST API** trả JSON thuần (không Jinja2).
+> - **SQLite**: persistent cache + metadata lịch sử gọi AI theo session; WAL dùng chung giữa worker.
 > - AI là **Google Gemini** qua HTTP (`requests`).
 >
 > Trình duyệt và Flask **cùng origin**: Nginx phục vụ static ở `/` và reverse-proxy
@@ -17,10 +18,10 @@
 
 ```
 ┌───────────────┐  1. fetch('/api/check', {text})      ┌───────────────────────┐
-│   Trình duyệt │ ──────────────────────────────────▶ │ Edge SSL → Nginx:8000 │
+│   Trình duyệt │ ──────────────────────────────────▶ │ Edge SSL → Nginx      │
 │  (iPhone 45+) │                                       │  • static frontend/   │
 │               │  6. render DOM (JS)                   │  • /api/* → proxy     │
-│  localStorage │ ◀────────────── JSON ────────────────┤    tới Flask          │
+│  localStorage │ ◀────────────── JSON ────────────────┤ :8000 app · :8001 auth│
 │   (history)   │                                       └──────────┬────────────┘
 └───────┬───────┘                                                  │ 2. proxy_pass
         │ 2b. fetch('/api/rescue', {situation})                     ▼
@@ -59,6 +60,7 @@ scamcheck/
 │   ├── index.html                 # tab Kiểm tra: input/result/rescue/share/history
 │   ├── library.html               # tab Thư viện: 12 mẫu và bộ lọc riêng
 │   ├── practice.html              # tab Luyện tập: 10 câu (Cấp 4-C)
+│   ├── history.html               # bảng + pie chart lịch sử AI; admin Login with exe
 │   ├── assets/
 │   │   ├── fonts/                 # Be Vietnam Pro + Material Symbols tự host và licence
 │   │   ├── css/
@@ -73,6 +75,7 @@ scamcheck/
 │   │       ├── icons.js           # map Material Symbols subset → DOM an toàn
 │   │       ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt (L2-04)
 │   │       ├── history.js         # localStorage 10 tin gần nhất (L2-09)
+│   │       ├── history-page.js    # session/universal AI metadata dashboard
 │   │       ├── result-model.js    # chuẩn hoá kết quả + đúng 3 hành động
 │   │       ├── rescue-model.js    # chuẩn hoá payload/response Người ứng cứu
 │   │       ├── speech.js          # Web Speech API + fallback
@@ -94,7 +97,8 @@ scamcheck/
 │   │   │   ├── check.py           # POST /api/check → Thám tử (+Cô tâm lý Cấp 3)
 │   │   │   ├── rescue.py          # POST /api/rescue → Người ứng cứu (Cấp 5)
 │   │   │   ├── links_api.py       # GET /api/links-analyze (Cấp 4-B)
-│   │   │   └── quiz_api.py        # GET /api/quiz (Cấp 4-C, trả 10 tin)
+│   │   │   ├── quiz_api.py        # GET /api/quiz (Cấp 4-C, trả 10 tin)
+│   │   │   └── ai_logs.py         # session history + exe.dev admin JSON/CSV
 │   │   ├── services/              # business logic (KHÔNG import Flask, dễ test)
 │   │   │   ├── gemini.py          # client HTTP Gemini (generate_json / generate_text)
 │   │   │   ├── parser.py          # parse_detective/psychologist/rescuer — có fallback
@@ -103,6 +107,7 @@ scamcheck/
 │   │   │   ├── rescuer.py         # system prompt + gọi Người ứng cứu + post-filter
 │   │   │   ├── links.py           # extract_urls() + detect_spoofed_domains()
 │   │   │   ├── quiz.py            # nạp quiz.json
+│   │   │   ├── storage.py         # SQLite WAL: TTL cache + AI metadata logs
 │   │   │   └── validation.py      # validate_input(): rỗng, >5000 ký tự
 │   │   └── prompts/               # system prompts tách riêng (text)
 │   │       ├── detective.txt
@@ -300,7 +305,9 @@ class RescueResult:
 2. **Pháp lý**: footer pháp lý nhúng trong mọi trang frontend (`components/footer-legal.html`). (L1-04)
 3. **Cấp 5 — không AI tự sinh số**: `strip_unknown_phones()` post-filter mọi số;
    chỉ số trong `backend/data/hotlines.json` được giữ. (L5-03/L5-04)
-4. **Không đăng nhập / không DB**: lịch sử ở `localStorage`, đúng *Ngoài phạm vi* của đề.
+4. **Lịch sử kết quả người dùng** vẫn ở `localStorage`; backend chỉ persist metadata AI theo
+   session và typed cache trong SQLite. Universal history/export yêu cầu Login with exe tại
+   `:8001` và email trong `ADMIN_ALLOWED_EMAILS` (allowlist rỗng = fail closed).
 5. **Đầu vào**: giới hạn ≤5000 ký tự + không rỗng (backend validate).
 6. **CORS**: vì cùng origin qua Nginx, **không cần CORS** trong cấu hình chuẩn. Chỉ bật
    `flask-cors` khi dev tách port (frontend `:5500`, backend `:5000`).
@@ -503,11 +510,14 @@ normalize + validate
 
 ### 10.4 Cache và quyền riêng tư
 
-- Cache backend là TTL/LRU bounded theo từng gunicorn process, mặc định 256 mục/1 giờ.
-- Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload
-  typed. Không log key như định danh người dùng và không persist plaintext xuống đĩa.
-- Không cache lỗi Detective hoặc kết quả Cô tâm lý `unavailable` để tránh giữ lỗi tạm thời.
-- Frontend vẫn giữ lịch sử plaintext tối đa 10 mục trên thiết bị theo yêu cầu sản phẩm.
+- Cache backend nằm trong SQLite WAL, bounded mặc định 256 mục/1 giờ và dùng chung giữa hai
+  gunicorn worker; restart/deploy không làm mất cache còn TTL.
+- Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload typed.
+  Không log cache key như định danh người dùng; không cache lỗi Detective hoặc kết quả Cô tâm lý
+  `unavailable` để tránh giữ lỗi tạm thời.
+- `ai_request_logs` chỉ lưu timestamp, actor, status, risk, input length, summary và session id
+  ngẫu nhiên; không lưu source message/prompt/OTP. Retention mặc định 30 ngày.
+- Frontend vẫn giữ lịch sử kết quả plaintext tối đa 10 mục trên thiết bị theo yêu cầu sản phẩm.
 
 ### 10.5 Đo chất lượng
 

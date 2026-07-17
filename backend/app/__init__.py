@@ -27,15 +27,24 @@ def create_app(cfg: Config | None = None) -> Flask:
     app.config["SHARE_ALLOWED_HOSTS"] = config.SHARE_ALLOWED_HOSTS
     app.config["CHECK_CACHE_CAPACITY"] = config.CHECK_CACHE_CAPACITY
     app.config["CHECK_CACHE_TTL"] = config.CHECK_CACHE_TTL
+    app.config["SQLITE_PATH"] = config.SQLITE_PATH
+    app.config["AI_LOG_RETENTION_DAYS"] = config.AI_LOG_RETENTION_DAYS
+    app.config["ADMIN_ALLOWED_EMAILS"] = config.ADMIN_ALLOWED_EMAILS
+    app.config["ADMIN_AUTH_ORIGIN"] = config.ADMIN_AUTH_ORIGIN
+    app.config["ADMIN_PROXY_PORT"] = config.ADMIN_PROXY_PORT
     app.config["HOTLINES_PATH"] = config.HOTLINES_PATH
     app.config["RESCUE_AI_ENABLED"] = config.RESCUE_AI_ENABLED
 
-    from .services.cache import TTLHashCache
+    from .services.storage import SQLiteStore
 
-    app.extensions["check_cache"] = TTLHashCache(
+    store = SQLiteStore(
+        config.SQLITE_PATH,
         capacity=config.CHECK_CACHE_CAPACITY,
         ttl_seconds=config.CHECK_CACHE_TTL,
+        log_retention_days=config.AI_LOG_RETENTION_DAYS,
     )
+    app.extensions["sqlite_store"] = store
+    app.extensions["check_cache"] = store
 
     # CORS chỉ bật khi khai báo rõ cho dev tách port. Prod cùng origin không gửi wildcard.
     if config.CORS_ORIGINS:

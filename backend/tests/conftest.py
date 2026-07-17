@@ -21,9 +21,15 @@ class _TestConfig(Config):
 
 
 @pytest.fixture()
-def client():
-    """Flask test client với config test."""
-    app = create_app(_TestConfig)
+def client(tmp_path):
+    """Flask test client với SQLite riêng cho từng test."""
+    class RuntimeTestConfig(_TestConfig):
+        SQLITE_PATH = str(tmp_path / "scamcheck-test.sqlite3")
+        ADMIN_ALLOWED_EMAILS = ("admin@example.com",)
+        ADMIN_AUTH_ORIGIN = "https://team6-scamcheck.exe.xyz:8001"
+        ADMIN_PROXY_PORT = 8001
+
+    app = create_app(RuntimeTestConfig)
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c

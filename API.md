@@ -72,7 +72,7 @@ Quy tắc contract:
 - Relevant result luôn có đúng ba hành động; `khong_lien_quan` có danh sách rỗng.
 - Cô tâm lý chỉ chạy cho `nghi_ngo`/`nguy_hiem`. Lỗi bước này vẫn trả HTTP 200 và giữ kết quả Thám tử.
 - URL thường chỉ được phân tích tại chỗ. Shortener allowlisted mới được resolve với timeout, giới hạn redirect và chặn private/loopback/link-local/reserved IP mỗi hop.
-- Cache key là SHA-256 của NFC input + model + pipeline version. Cache bounded/TTL, không persist plaintext; lỗi AI và `psychologist_status=unavailable` không được cache.
+- Cache key là SHA-256 của NFC input + model + pipeline version. Value typed được persist trong SQLite với TTL/capacity dùng chung giữa gunicorn worker; lỗi AI và `psychologist_status=unavailable` không được cache.
 - `cache.hit=true` nghĩa là request trùng không gọi AI lại.
 
 ### Response 400
@@ -199,24 +199,46 @@ Endpoint bỏ qua mọi query URL tùy ý và chỉ nhận `BASE_URL`/request ho
 `SHARE_ALLOWED_HOSTS`; production bắt buộc HTTPS. Host header/config ngoài allowlist trả 503,
 không thể biến endpoint thành QR phishing. Không gọi dịch vụ QR ngoài và cache public một giờ.
 
-## `GET /api/check/log`
+## `GET /api/check/log` (compatibility)
 
-Tối đa 10 metadata persona invocation gần nhất trong Flask session. Không lưu toàn văn tin.
-Cache hit không tạo invocation giả.
+Trả metadata invocation thuộc browser session hiện tại từ SQLite. Không lưu toàn văn tin/prompt;
+cache hit không tạo invocation giả.
+
+## `GET /api/ai-logs?scope=self|all`
+
+- `scope=self` (mặc định): không cần đăng nhập, session id ngẫu nhiên nằm trong Flask cookie đã ký;
+  response không lộ session id.
+- `scope=all`: chỉ hoạt động qua origin exe.dev `:8001`, cần cả `X-ExeDev-UserID` và
+  `X-ExeDev-Email` do Login with exe thêm; email phải có trong `ADMIN_ALLOWED_EMAILS`. Sai port/email trả `403`, chưa login trả `401`.
+- Mọi response có `Cache-Control: no-store`.
 
 ```json
 {
-  "logs": [
-    {
-      "at":"2026-07-14T10:00:00+00:00",
-      "actor":"detective | psychologist | rescuer",
-      "status":"complete | error | invalid_response",
-      "input_length":86,
-      "summary":"Mức rủi ro: nghi ngo"
-    }
-  ]
+  "scope":"self",
+  "admin_email":null,
+  "stats":{
+    "ai_calls":3,
+    "checks":2,
+    "risk_counts":{"an_toan":1,"nghi_ngo":0,"nguy_hiem":1,"khong_lien_quan":0},
+    "actor_counts":{"detective":2,"psychologist":1},
+    "retention_days":30
+  },
+  "logs":[{
+    "id":1,
+    "at":"2026-07-14T10:00:00+00:00",
+    "actor":"detective",
+    "status":"complete",
+    "risk_level":"nghi_ngo",
+    "input_length":86,
+    "summary":"Mức rủi ro: nghi ngo"
+  }]
 }
 ```
+
+## `GET /api/ai-logs/export?format=json|csv`
+
+Xuất toàn bộ metadata còn trong retention window. Luôn yêu cầu exe.dev auth tại `:8001` và
+email allowlist; CSV chặn formula injection. File không chứa nguyên văn tin nhắn hay prompt.
 
 ## `GET /api/scam-library`
 

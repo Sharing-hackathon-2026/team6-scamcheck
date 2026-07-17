@@ -50,6 +50,24 @@ if sudo grep -q '^BASE_URL=' "$ENV_FILE"; then
 else
   printf '\nBASE_URL=%s\n' "$PUBLIC_BASE_URL" | sudo tee -a "$ENV_FILE" >/dev/null
 fi
+SQLITE_PATH="/var/lib/scamcheck/scamcheck.sqlite3"
+if sudo grep -q '^SQLITE_PATH=' "$ENV_FILE"; then
+  sudo sed -i "s|^SQLITE_PATH=.*|SQLITE_PATH=$SQLITE_PATH|" "$ENV_FILE"
+else
+  printf 'SQLITE_PATH=%s\n' "$SQLITE_PATH" | sudo tee -a "$ENV_FILE" >/dev/null
+fi
+if ! sudo grep -q '^ADMIN_AUTH_ORIGIN=' "$ENV_FILE"; then
+  printf 'ADMIN_AUTH_ORIGIN=https://team6-scamcheck.exe.xyz:8001\n' | sudo tee -a "$ENV_FILE" >/dev/null
+fi
+if ! sudo grep -q '^ADMIN_PROXY_PORT=' "$ENV_FILE"; then
+  printf 'ADMIN_PROXY_PORT=8001\n' | sudo tee -a "$ENV_FILE" >/dev/null
+fi
+if ! sudo grep -q '^ADMIN_ALLOWED_EMAILS=' "$ENV_FILE"; then
+  printf 'ADMIN_ALLOWED_EMAILS=\n' | sudo tee -a "$ENV_FILE" >/dev/null
+fi
+if sudo grep -q '^ADMIN_ALLOWED_EMAILS=$' "$ENV_FILE"; then
+  echo "    ! ADMIN_ALLOWED_EMAILS đang rỗng: admin login sẽ fail closed cho tới khi cấu hình email." >&2
+fi
 
 echo "==> [5/6] Cài systemd backend + nginx"
 sudo cp "$INSTALL_DIR/deploy/scamcheck-backend.service" /etc/systemd/system/
@@ -65,6 +83,8 @@ server {
     listen [::]:80 default_server;
     listen 8000;
     listen [::]:8000;
+    listen 8001;
+    listen [::]:8001;
 
     root /opt/scamcheck/frontend;
     index index.html;
@@ -74,7 +94,8 @@ server {
 
     location /api/ {
         proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host $host;
+        # Preserve :8001 so Flask only trusts exe.dev auth headers on admin origin.
+        proxy_set_header Host $http_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -120,8 +141,17 @@ if ! printf '%s' "$qr_svg" | grep -Fq 'Mã QR dẫn tới https://team6-scamchec
   exit 1
 fi
 echo "    share QR: public origin không port"
+admin_status=$(curl -sS --max-time 5 -o /dev/null -w '%{http_code}' \
+  -H 'Host: team6-scamcheck.exe.xyz:8001' http://127.0.0.1:5000/api/ai-logs?scope=all)
+if [ "$admin_status" != "401" ]; then
+  echo "    ! Admin log API phải yêu cầu exe.dev login (nhận HTTP $admin_status)." >&2
+  exit 1
+fi
+sudo test -f /var/lib/scamcheck/scamcheck.sqlite3
+echo "    SQLite + admin auth gate: sẵn sàng"
 echo "    frontend:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/
 echo "    library:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/library.html
 echo "    practice:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/practice.html
+echo "    history:"; curl -fsS --max-time 5 -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:8000/history.html
 echo
 echo "✓ Deploy xong. Public: https://team6-scamcheck.exe.xyz/"

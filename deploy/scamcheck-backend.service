@@ -23,6 +23,8 @@ EnvironmentFile=/etc/scamcheck.env
 Environment=PYTHONPATH=/opt/scamcheck/backend
 RuntimeDirectory=scamcheck
 RuntimeDirectoryMode=750
+StateDirectory=scamcheck
+StateDirectoryMode=750
 Environment=TMPDIR=/run/scamcheck
 Environment=WORKER_TEMP_DIR=/run/scamcheck
 ExecStart=/opt/scamcheck/backend/.venv/bin/gunicorn \

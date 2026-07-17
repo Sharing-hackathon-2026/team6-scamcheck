@@ -23,7 +23,14 @@ bp = Blueprint("check", __name__)
 
 
 def _record_call(actor: str, text: str, result: dict, status: str = "complete") -> None:
-    append_ai_log(session, len(text), result, actor=actor, status=status)
+    append_ai_log(
+        session,
+        len(text),
+        result,
+        store=current_app.extensions["sqlite_store"],
+        actor=actor,
+        status=status,
+    )
 
 
 @bp.post("/api/check")
@@ -133,5 +140,7 @@ def check():
 @bp.get("/api/check/log")
 def check_log():
     """Trả nhật ký metadata của từng persona invocation trong phiên."""
-    logs = get_ai_log(session)
-    return jsonify({"logs": logs})
+    logs = get_ai_log(session, store=current_app.extensions["sqlite_store"])
+    response = jsonify({"logs": logs})
+    response.headers["Cache-Control"] = "no-store"
+    return response

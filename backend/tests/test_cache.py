@@ -1,4 +1,5 @@
 from app.services.cache import TTLHashCache, build_cache_key
+from app.services.storage import SQLiteStore
 
 
 def test_cache_key_uses_model_and_pipeline_version_without_plaintext():
@@ -21,6 +22,19 @@ def test_ttl_expiry_lru_capacity_and_defensive_copy():
     assert cache.get("b") is None
     now[0] = 11
     assert cache.get("a") is None
+
+
+def test_sqlite_cache_survives_store_restart_and_expires(tmp_path):
+    now = [100.0]
+    path = str(tmp_path / "persistent-cache.sqlite3")
+    first = SQLiteStore(path, capacity=2, ttl_seconds=10, clock=lambda: now[0])
+    first.put("a", {"value": [1]})
+    second = SQLiteStore(path, capacity=2, ttl_seconds=10, clock=lambda: now[0])
+    value = second.get("a")
+    value["value"].append(9)
+    assert second.get("a") == {"value": [1]}
+    now[0] = 111.0
+    assert second.get("a") is None
 
 
 def test_duplicate_check_returns_cache_without_second_ai_call(client, monkeypatch):

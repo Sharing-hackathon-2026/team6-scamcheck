@@ -69,6 +69,22 @@ class Config:
     GEMINI_MAX_RETRIES: int = 2
     CHECK_CACHE_CAPACITY: int = _positive_int(os.environ.get("CHECK_CACHE_CAPACITY"), 256)
     CHECK_CACHE_TTL: int = _positive_int(os.environ.get("CHECK_CACHE_TTL"), 3600)
+    SQLITE_PATH: str = os.environ.get(
+        "SQLITE_PATH",
+        str(Path(__file__).resolve().parent.parent / "instance" / "scamcheck.sqlite3"),
+    )
+    AI_LOG_RETENTION_DAYS: int = _positive_int(
+        os.environ.get("AI_LOG_RETENTION_DAYS"), 30
+    )
+    ADMIN_ALLOWED_EMAILS: tuple[str, ...] = tuple(
+        email.strip().casefold()
+        for email in os.environ.get("ADMIN_ALLOWED_EMAILS", "").split(",")
+        if email.strip()
+    )
+    ADMIN_AUTH_ORIGIN: str = os.environ.get(
+        "ADMIN_AUTH_ORIGIN", "https://team6-scamcheck.exe.xyz:8001"
+    ).rstrip("/")
+    ADMIN_PROXY_PORT: int = _positive_int(os.environ.get("ADMIN_PROXY_PORT"), 8001)
     RESCUE_AI_ENABLED: bool = _env_enabled(os.environ.get("RESCUE_AI_ENABLED"), True)
 
 

@@ -146,9 +146,9 @@ Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
 
-## Tabs redesign (stage5-tabs-v10) — IA, font, icon
+## Tabs redesign (stage5-tabs-v11) — IA, font, icon
 
-Kiến trúc thông tin mới: **một tác vụ mỗi trang**, ba đích đến là link thật
+Kiến trúc thông tin mới: **một tác vụ mỗi trang**, bốn đích đến là link thật
 (`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;
 mobile ≤700px dùng nút **Menu** dạng hamburger mở danh sách dọc. Nút đồng bộ
 `aria-expanded`, đóng bằng Escape/click ngoài và trả focus về nút khi nhấn Escape:
@@ -159,9 +159,12 @@ mobile ≤700px dùng nút **Menu** dạng hamburger mở danh sách dọc. Nút
 2. `/library.html` — chỉ Thư viện: API `/api/scam-library` (12 mẫu, 4 nhóm), bộ lọc nhóm,
    trạng thái empty/loading/error/success, module riêng `library.js`.
 3. `/practice.html` — chỉ Luyện tập: đúng 10 câu, retry thật, phím tắt 1/2/Enter, điểm + restart.
+4. `/history.html` — lịch sử gọi AI theo phiên, bảng metadata và SVG pie chart. Người dùng thường
+   chỉ xem session id đã ký trong cookie; nút khiên đưa admin sang Login with exe tại `:8001`.
+   Universal stats và nút JSON/CSV chỉ hiện sau khi backend xác nhận email trong allowlist env.
 
 Kiểm chứng tự động (headless Chromium thật): không cuộn ngang ở 320/390/768/1024/1440 cho cả
-ba trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; 100/115/130% thật chuyển
+bốn trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; 100/115/130% thật chuyển
 token; tùy chọn lưu qua điều hướng. Khi bấm “Tiếp tục — chọn tình huống”, ba phần giải thích
 được thu gọn thành native `details/summary` nhưng vẫn mở lại bằng bàn phím hoặc chạm. Request
 QR dùng `cache: no-store` để không tái dùng SVG cũ từng chứa cổng nội bộ.
