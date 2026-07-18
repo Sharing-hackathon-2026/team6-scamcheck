@@ -77,7 +77,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 82 test Node, không cần runtime dependency ngoài
+npm --prefix frontend test       # 81 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -98,7 +98,7 @@ và chế độ luyện tập 10 câu tại `/practice.html`. Báo cáo thật g
 Stage 5 bổ sung câu hỏi tình huống một chạm, FSM ba persona, Người ứng cứu có deterministic
 fallback/kill switch, bảng 10 ngân hàng + Công an + kênh 156 có bằng chứng theo từng số và post-filter
 cứng mọi số điện thoại. Kết quả có thể xuất ảnh PNG 1080×1350 với QR same-origin chuẩn,
-Web Share/download fallback; high contrast và cỡ chữ điều chỉnh bằng nút −/+ được lưu trên thiết bị.
+Web Share/download fallback; high contrast và cỡ chữ chọn bằng dropdown được lưu trên thiết bị.
 Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
 
 Frontend hiện dùng kiến trúc một tác vụ mỗi trang: `/` kiểm tra, `/library.html` thư viện,

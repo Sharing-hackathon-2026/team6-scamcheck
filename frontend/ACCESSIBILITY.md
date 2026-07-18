@@ -116,8 +116,8 @@ Fresh UX gate theo `utility-ui-eval`:
 ## Stage 5 — Người ứng cứu, chia sẻ và tùy chọn đọc
 
 - Cụm “Hiển thị” có native buttons ≥44px, live announcement và dùng chung localStorage trên
-  bốn trang. Cỡ chữ hiển thị mức hiện tại giữa nút −/+; ba nấc thật vẫn là 100%/115%/130%.
-  Nút chạm biên bị disable; storage hỏng/bị chặn rơi về mặc định, không khóa UI.
+  bốn trang. Cỡ chữ dùng một dropdown native có label; ba mức là 100%/115%/130%.
+  Storage hỏng/bị chặn rơi về mặc định, không khóa UI.
 - Tương phản cao là lớp token riêng cho cả system light/dark, tăng border/focus/muted text;
   không thay dark mode tự động bằng toggle và không dùng màu làm tín hiệu duy nhất.
 - Câu “Bác đã làm gì rồi?” chỉ xuất hiện cho `nghi_ngo`/`nguy_hiem`, gồm đúng bốn native
@@ -146,7 +146,7 @@ Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
 
-## Tabs redesign (stage5-tabs-v13) — IA, font, icon
+## Tabs redesign (stage5-tabs-v14) — IA, font, icon
 
 Kiến trúc thông tin mới: **một tác vụ mỗi trang**, bốn đích đến là link thật
 (`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;
@@ -165,7 +165,7 @@ mobile ≤700px dùng nút **Menu** dạng hamburger mở danh sách dọc. Nút
    Universal stats và nút JSON/CSV chỉ hiện sau khi backend xác nhận email trong allowlist env.
 
 Kiểm chứng tự động (headless Chromium thật): không cuộn ngang ở 320/390/768/1024/1440 cho cả
-bốn trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; stepper −/+ chuyển đúng
+bốn trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; dropdown chuyển đúng
 100/115/130% và tùy chọn lưu qua điều hướng. Ô nhập có bộ đếm ký tự bên phải; tại 0 ký tự còn
 lại, cảnh báo đỏ có `role=alert` xuất hiện bên trái. Khi bấm “Tiếp tục — chọn tình huống”, ba phần giải thích
 được thu gọn thành native `details/summary` nhưng vẫn mở lại bằng bàn phím hoặc chạm. Request

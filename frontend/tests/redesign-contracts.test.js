@@ -143,15 +143,17 @@ test('AI history page exposes session stats and a dedicated exe.dev admin gate',
   assert.ok(!historyJs.includes('innerHTML'));
 });
 
-test('font controls use a compact minus/current/plus stepper on every page', () => {
+test('font controls use one labelled native dropdown on every page', () => {
   for (const page of ['index.html', 'library.html', 'practice.html', 'history.html']) {
     const html = read(`../${page}`);
-    assert.match(html, /data-font-step="decrease"/);
-    assert.match(html, /data-font-current/);
-    assert.match(html, /data-font-step="increase"/);
-    assert.ok(!html.includes('data-scale='));
+    assert.match(html, /<label[^>]*for="fontScaleSelect"[^>]*>Cỡ chữ<\/label>/);
+    assert.match(html, /<select id="fontScaleSelect"[^>]*data-font-scale>/);
+    assert.match(html, /<option value="1">100%<\/option>/);
+    assert.match(html, /<option value="1\.15">115%<\/option>/);
+    assert.match(html, /<option value="1\.3">130%<\/option>/);
+    assert.ok(!html.includes('data-font-step='));
   }
-  assert.match(css, /\.font-step-btn\s*\{[^}]*min-height:\s*44px/);
+  assert.match(css, /\.font-scale-select\s*\{[^}]*min-height:\s*44px/);
 });
 
 test('message input exposes remaining characters and a limit warning', () => {

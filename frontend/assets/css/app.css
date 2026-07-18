@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v13).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v14).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -403,31 +403,27 @@ summary:focus:not(:focus-visible),
   gap: var(--space-2);
   margin-left: auto;
 }
-.font-scale-current {
-  min-width: 132px;
+.font-scale-label {
+  color: var(--color-text-muted);
+  font-weight: 800;
+  font-size: 0.88rem;
+}
+.font-scale-select {
+  min-width: 112px;
+  min-height: 44px;
+  padding: var(--space-2) 38px var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background-color: var(--color-surface);
   color: var(--color-text);
   font-weight: 800;
-  text-align: center;
-}
-.font-step-btn {
-  width: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface);
-  color: var(--color-action-strong);
-  font-size: 1.4rem;
-  font-weight: 800;
-  line-height: 1;
   cursor: pointer;
-  transition:
-    background-color 160ms var(--ease-spring),
-    border-color 160ms var(--ease-spring);
 }
-.font-step-btn:hover:not(:disabled) { border-color: var(--color-action); background: var(--color-violet-soft); }
-.font-step-btn:disabled { cursor: not-allowed; opacity: 0.42; }
+.font-scale-select:hover { border-color: var(--color-action); }
+.font-scale-select:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
 
 /* ---- Surfaces ---------------------------------------------------------- */
 

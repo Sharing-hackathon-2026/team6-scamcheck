@@ -610,7 +610,7 @@ implementation QR độc lập trong bước verification, không thêm dependen
 ### 11.4 Preference accessibility
 
 `preferences.js` dùng một schema localStorage fail-safe cho high contrast và ba nấc font scale.
-UI gọn bằng nút −, thông báo mức hiện tại và nút + trên cả bốn trang. Inline head bootstrap
+UI dùng một dropdown native có label trên cả bốn trang. Inline head bootstrap
 chỉ áp giá trị allowlist để giảm flash; module vẫn normalize lần nữa. System `prefers-color-scheme` tiếp tục quyết định
 light/dark, hoàn toàn không có theme toggle.
 

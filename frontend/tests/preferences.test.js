@@ -8,7 +8,6 @@ import {
   normalizePreferences,
   PREF_KEY,
   savePreferences,
-  stepFontScale,
 } from '../assets/js/preferences.js';
 
 function memoryStorage(initial = {}) {
@@ -47,14 +46,6 @@ test('fontScaleLabel maps known scales and falls back to 100%', () => {
   assert.equal(fontScaleLabel('1.15'), '115%');
   assert.equal(fontScaleLabel('1.3'), '130%');
   assert.equal(fontScaleLabel('weird'), '100%');
-});
-
-test('stepFontScale clamps plus and minus to the three supported levels', () => {
-  assert.equal(stepFontScale('1', 'decrease'), '1');
-  assert.equal(stepFontScale('1', 'increase'), '1.15');
-  assert.equal(stepFontScale('1.15', 'increase'), '1.3');
-  assert.equal(stepFontScale('1.3', 'increase'), '1.3');
-  assert.equal(stepFontScale('1.3', 'decrease'), '1.15');
 });
 
 test('loadPreferences returns defaults when storage is unavailable or corrupt', () => {
