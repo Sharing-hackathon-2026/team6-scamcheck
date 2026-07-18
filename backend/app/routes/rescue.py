@@ -13,7 +13,7 @@ from ..services.rescuer import build_rescue_pipeline
 from ..services.validation import normalize_nfc
 
 bp = Blueprint("rescue", __name__)
-_ALLOWED_RISKS = {"an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"}
+_ALLOWED_RISKS = {"an_toan", "nghi_ngo", "nguy_hiem"}
 _SITUATION_LABELS = {
     "chua_lam_gi": "Chưa làm gì",
     "da_bam_link": "Đã bấm vào đường link",
@@ -117,6 +117,7 @@ def rescue():
             store=current_app.extensions["sqlite_store"],
             actor="rescuer",
             status="complete" if outcome.status == "complete" else "guarded_fallback",
+            prompt=message_text,
         )
     orchestration = after_situation(situation, rescuer_called=outcome.ai_called)
     response = {

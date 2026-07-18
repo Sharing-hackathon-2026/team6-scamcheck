@@ -12,7 +12,13 @@ from typing import Any, Iterable
 from ..prompts import STAGE1_REFUSAL
 from .rule_engine import RuleSignal, evaluate_rules, is_otp_delivery_notification
 
-RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"}
+RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem"}
+_LEGACY_NOT_RELATED = "khong_lien_quan"
+_OUTSIDE_SCOPE_HINT_RE = re.compile(
+    r"\b(?:không\s+thuộc.{0,45}(?:kiểm\s+tra|lừa\s+đảo)|"
+    r"không\s+liên\s+quan.{0,30}lừa\s+đảo|ngoài\s+phạm\s+vi)\b",
+    re.I,
+)
 DEFAULT_ACTIONS = [
     "Không bấm link hoặc quét mã QR trong tin nhắn.",
     "Không cung cấp mã OTP, mật khẩu hay thông tin cá nhân.",
@@ -185,7 +191,8 @@ def parse_detective(
     if not danger and is_otp_delivery_notification(source_text):
         return DetectiveResult("an_toan", OTP_NOTICE_REASON, [], OTP_NOTICE_ACTIONS.copy())
 
-    if not isinstance(raw, dict) or raw.get("risk_level") not in RISK_LEVELS:
+    raw_risk = raw.get("risk_level") if isinstance(raw, dict) else None
+    if not isinstance(raw, dict) or raw_risk not in RISK_LEVELS | {_LEGACY_NOT_RELATED}:
         fallback = fallback_detective_result()
         if danger:
             return DetectiveResult(
@@ -194,19 +201,26 @@ def parse_detective(
             )
         return fallback
 
-    risk_level = raw["risk_level"]
+    risk_level = "an_toan" if raw_risk == _LEGACY_NOT_RELATED else raw_risk
+    raw_reason = _clean_text(raw.get("reason"), 350)
+    outside_scope = raw_risk == _LEGACY_NOT_RELATED or (
+        risk_level == "an_toan"
+        and (raw_reason == STAGE1_REFUSAL or bool(_OUTSIDE_SCOPE_HINT_RE.search(raw_reason)))
+    )
     forced_by_rules = False
     if danger and risk_level != "nguy_hiem":
         risk_level = "nguy_hiem"
+        outside_scope = False
         forced_by_rules = True
-    elif warning and risk_level in {"an_toan", "khong_lien_quan"}:
+    elif warning and risk_level == "an_toan":
         risk_level = "nghi_ngo"
+        outside_scope = False
         forced_by_rules = True
 
-    if risk_level == "khong_lien_quan":
-        return DetectiveResult(risk_level, STAGE1_REFUSAL, [], [])
+    if outside_scope:
+        return DetectiveResult("an_toan", STAGE1_REFUSAL, [], [])
 
-    reason = _clean_text(raw.get("reason"), 350)
+    reason = raw_reason
     if forced_by_rules:
         reason = CONSERVATIVE_REASON if danger else (
             "Tin nhắn có tín hiệu kỹ thuật cần xác minh thêm; không nên mở đường dẫn hoặc làm theo vội."

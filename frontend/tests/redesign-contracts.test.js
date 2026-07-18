@@ -21,12 +21,12 @@ const nginx = read('../../deploy/nginx.conf');
 
 // #5 multi-step flow: rescue guidance only for risky verdicts; the question is
 // revealed behind the Continue action. Share card offered for the three verdicts
-// that carry a useful summary (not for "khong_lien_quan").
+// that carry a useful summary.
 test('offersRescueGuidance is true only for nghi_ngo / nguy_hiem', () => {
   assert.equal(offersRescueGuidance('nguy_hiem'), true);
   assert.equal(offersRescueGuidance('nghi_ngo'), true);
   assert.equal(offersRescueGuidance('an_toan'), false);
-  assert.equal(offersRescueGuidance('khong_lien_quan'), false);
+  assert.equal(offersRescueGuidance('unknown'), false);
   assert.equal(offersRescueGuidance(undefined), false);
   assert.equal(offersRescueGuidance('bogus'), false);
 });
@@ -35,7 +35,7 @@ test('offersShareCard is true for an_toan / nghi_ngo / nguy_hiem only', () => {
   assert.equal(offersShareCard('an_toan'), true);
   assert.equal(offersShareCard('nghi_ngo'), true);
   assert.equal(offersShareCard('nguy_hiem'), true);
-  assert.equal(offersShareCard('khong_lien_quan'), false);
+  assert.equal(offersShareCard('unknown'), false);
   assert.equal(offersShareCard(undefined), false);
 });
 
@@ -132,12 +132,35 @@ test('AI history page exposes session stats and a dedicated exe.dev admin gate',
   const historyJs = read('../assets/js/history-page.js');
   assert.match(html, /class="risk-pie"/);
   assert.match(html, /class="ai-log-table"/);
+  assert.match(html, /Tỷ lệ kết quả/);
+  assert.match(html, /Prompt đã nhập/);
+  assert.match(html, /Verdict Thám tử/);
   assert.match(html, /id="adminLogin"[^>]*:8001\/__exe\.dev\/login/);
   assert.match(html, /id="adminExports"[^>]*hidden/);
   assert.ok(historyJs.includes("location.hostname}:8001"));
   assert.ok(historyJs.includes("isAdmin ? personalHistoryUrl() : adminLoginUrl()"));
   assert.ok(historyJs.includes("cache: 'no-store'"));
   assert.ok(!historyJs.includes('innerHTML'));
+});
+
+test('font controls use a compact minus/current/plus stepper on every page', () => {
+  for (const page of ['index.html', 'library.html', 'practice.html', 'history.html']) {
+    const html = read(`../${page}`);
+    assert.match(html, /data-font-step="decrease"/);
+    assert.match(html, /data-font-current/);
+    assert.match(html, /data-font-step="increase"/);
+    assert.ok(!html.includes('data-scale='));
+  }
+  assert.match(css, /\.font-step-btn\s*\{[^}]*min-height:\s*44px/);
+});
+
+test('message input exposes remaining characters and a limit warning', () => {
+  const html = read('../index.html');
+  assert.match(html, /id="charCounter"[^>]*aria-live="polite"/);
+  assert.match(html, /id="charLimitWarning"[^>]*role="alert"[^>]*hidden/);
+  assert.match(app, /addEventListener\('input', updateCharacterCounter\)/);
+  assert.match(app, /remaining\.toLocaleString\('vi-VN'\)/);
+  assert.match(css, /\.char-limit-warning\s*\{[^}]*color:\s*var\(--color-danger-text\)/);
 });
 
 test('shared assets use immutable browser cache and tab documents warm on intent', () => {

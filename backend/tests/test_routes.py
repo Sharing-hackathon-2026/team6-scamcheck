@@ -93,7 +93,7 @@ def test_check_returns_502_on_gemini_error(client, monkeypatch):
     assert len(client.get("/api/check/log").get_json()["logs"]) == 1
 
 
-def test_log_contains_only_metadata(client, mock_gemini_text):
+def test_log_contains_prompt_and_detective_verdict(client, mock_gemini_text):
     import json
 
     mock_gemini_text["payload"] = {"candidates": [{"content": {"parts": [{"text": json.dumps(_structured("an_toan"))}]}}]}
@@ -101,7 +101,8 @@ def test_log_contains_only_metadata(client, mock_gemini_text):
     data = client.get("/api/check/log").get_json()
     assert len(data["logs"]) == 1
     assert data["logs"][0]["input_length"] == len("Nội dung nhạy cảm bí mật")
-    assert "Nội dung nhạy cảm" not in str(data["logs"])
+    assert data["logs"][0]["prompt"] == "Nội dung nhạy cảm bí mật"
+    assert data["logs"][0]["verdict"]["risk_level"] == "an_toan"
 
 
 def test_legacy_cookie_logs_do_not_block_new_sqlite_analysis(client, mock_gemini_text):

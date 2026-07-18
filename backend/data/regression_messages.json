@@ -110,13 +110,13 @@
   {
     "id": "unrelated-family",
     "text": "Chiều nay cả nhà ăn cơm lúc 6 giờ nhé.",
-    "expected": "khong_lien_quan",
+    "expected": "an_toan",
     "reason": "Tin sinh hoạt thông thường."
   },
   {
     "id": "unrelated-weather",
     "text": "Ngày mai có thể mưa, nhớ mang áo mưa.",
-    "expected": "khong_lien_quan",
+    "expected": "an_toan",
     "reason": "Không thuộc phạm vi lừa đảo."
   }
 ]

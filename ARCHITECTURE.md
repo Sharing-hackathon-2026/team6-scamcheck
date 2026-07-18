@@ -6,7 +6,7 @@
 > **Kiến trúc tách 2 phần** (monorepo, dễ bảo trì):
 > - **Frontend** (`frontend/`): HTML + CSS token hoá + JavaScript thuần → phục vụ bởi **Nginx**.
 > - **Backend** (`backend/`): **Python Flask REST API** trả JSON thuần (không Jinja2).
-> - **SQLite**: persistent cache + metadata lịch sử gọi AI theo session; WAL dùng chung giữa worker.
+> - **SQLite**: persistent cache + lịch sử prompt/verdict theo session; WAL dùng chung giữa worker.
 > - AI là **Google Gemini** qua HTTP (`requests`).
 >
 > Trình duyệt và Flask **cùng origin**: Nginx phục vụ static ở `/` và reverse-proxy
@@ -75,7 +75,7 @@ scamcheck/
 │   │       ├── icons.js           # map Material Symbols subset → DOM an toàn
 │   │       ├── highlight-excerpts.js  # tô vàng <mark> theo excerpt (L2-04)
 │   │       ├── history.js         # localStorage 10 tin gần nhất (L2-09)
-│   │       ├── history-page.js    # session/universal AI metadata dashboard
+│   │       ├── history-page.js    # session/universal prompt + verdict dashboard
 │   │       ├── result-model.js    # chuẩn hoá kết quả + đúng 3 hành động
 │   │       ├── rescue-model.js    # chuẩn hoá payload/response Người ứng cứu
 │   │       ├── speech.js          # Web Speech API + fallback
@@ -107,7 +107,7 @@ scamcheck/
 │   │   │   ├── rescuer.py         # system prompt + gọi Người ứng cứu + post-filter
 │   │   │   ├── links.py           # extract_urls() + detect_spoofed_domains()
 │   │   │   ├── quiz.py            # nạp quiz.json
-│   │   │   ├── storage.py         # SQLite WAL: TTL cache + AI metadata logs
+│   │   │   ├── storage.py         # SQLite WAL: TTL cache + AI prompt/verdict logs
 │   │   │   └── validation.py      # validate_input(): rỗng, >5000 ký tự
 │   │   └── prompts/               # system prompts tách riêng (text)
 │   │       ├── detective.txt
@@ -305,9 +305,9 @@ class RescueResult:
 2. **Pháp lý**: footer pháp lý nhúng trong mọi trang frontend (`components/footer-legal.html`). (L1-04)
 3. **Cấp 5 — không AI tự sinh số**: `strip_unknown_phones()` post-filter mọi số;
    chỉ số trong `backend/data/hotlines.json` được giữ. (L5-03/L5-04)
-4. **Lịch sử kết quả người dùng** vẫn ở `localStorage`; backend chỉ persist metadata AI theo
-   session và typed cache trong SQLite. Universal history/export yêu cầu Login with exe tại
-   `:8001` và email trong `ADMIN_ALLOWED_EMAILS` (allowlist rỗng = fail closed).
+4. **Lịch sử kết quả người dùng** có bản gần đây trong `localStorage`; SQLite lưu lịch sử AI
+   theo session gồm prompt đã nhập và verdict Thám tử trong 30 ngày. Universal history/export
+   yêu cầu Login with exe tại `:8001` và email trong `ADMIN_ALLOWED_EMAILS` (rỗng = fail closed).
 5. **Đầu vào**: giới hạn ≤5000 ký tự + không rỗng (backend validate).
 6. **CORS**: vì cùng origin qua Nginx, **không cần CORS** trong cấu hình chuẩn. Chỉ bật
    `flask-cors` khi dev tách port (frontend `:5500`, backend `:5000`).
@@ -388,7 +388,7 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
                                       │
                                parser + guardrail
                                       │
-                 an_toan/khong_lien_quan ─▶ psychologist_status=not_needed
+                 an_toan ────────────────▶ psychologist_status=not_needed
                                       │
                  nghi_ngo/nguy_hiem
                                       ▼
@@ -410,7 +410,7 @@ Gemini Thám tử --forced function call--> arguments DetectiveResult
 - Hai model call không chạy song song vì Cô tâm lý phụ thuộc verdict; tin an toàn
   tốn 1 lượt, tin nghi ngờ/nguy hiểm tối đa 2 lượt.
 - Budget thời gian: Thám tử 6s, một retry; Cô tâm lý 5s, không retry.
-- Không có quota theo phiên; audit vẫn giữ tối đa 10 metadata persona invocation gần nhất.
+- Không có quota theo phiên; lịch sử SQLite giữ prompt/verdict theo retention 30 ngày và API UI giới hạn 500 dòng gần nhất.
 
 ### 9.2 Contract bổ sung
 
@@ -461,7 +461,7 @@ Phần này là thiết kế triển khai cho Stage 4; các tên file Stage 4 tr
 normalize + validate
       │
       ├─ SHA-256(normalized text + model + pipeline version)
-      │       └─ cache hit: trả kết quả typed, không gọi AI/không lưu plaintext server
+      │       └─ cache hit: trả kết quả typed, không gọi AI và không ghi thêm lịch sử
       │
       ├─ extract/normalize URL
       │       ├─ URL thường: phân tích domain tại chỗ
@@ -478,10 +478,10 @@ normalize + validate
       │
       ├─ parser + merge policy bảo thủ
       │       ├─ danger rule: verdict cuối = nguy_hiem
-      │       └─ warning rule: không cho an_toan/khong_lien_quan, nâng tối thiểu nghi_ngo
+      │       └─ warning rule: nâng an_toan tối thiểu thành nghi_ngo
       │
       ├─ Cô tâm lý nếu verdict cuối nghi_ngo/nguy_hiem
-      └─ cache kết quả hoàn chỉnh + trả technical_analysis và cache metadata
+      └─ cache kết quả hoàn chỉnh + trả technical_analysis + ghi prompt/verdict theo session
 ```
 
 ### 10.2 URL/SSRF và tên miền giả
@@ -507,9 +507,9 @@ normalize + validate
   thêm link, thao tác, chuyển tiền hay đe doạ thì ngoại lệ không áp dụng.
 - Rule signal có `code`, `severity`, `label`, `excerpt`, `explanation`; excerpt luôn là
   lát cắt thật từ input.
-- Rule nguy hiểm có quyền nâng verdict nhưng không hạ verdict AI. Signal cảnh báo chỉ
-  nâng nhãn lạc quan lên `nghi_ngo`. Frontend hiển thị riêng nguồn kỹ thuật, không giả
-  là kết luận chắc chắn của một heuristic.
+- Rule nguy hiểm có quyền nâng verdict; signal cảnh báo chỉ nâng nhãn lạc quan lên
+  `nghi_ngo`. Ngoại lệ hạ duy nhất là full-match thông báo cấp OTP thuần tuý. Frontend
+  hiển thị riêng nguồn kỹ thuật, không giả là kết luận chắc chắn của một heuristic.
 
 ### 10.4 Cache và quyền riêng tư
 
@@ -521,14 +521,15 @@ normalize + validate
 - Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload typed.
   Không log cache key như định danh người dùng; không cache lỗi Detective hoặc kết quả Cô tâm lý
   `unavailable` để tránh giữ lỗi tạm thời.
-- `ai_request_logs` chỉ lưu timestamp, actor, status, risk, input length, summary và session id
-  ngẫu nhiên; không lưu source message/prompt/OTP. Retention mặc định 30 ngày.
+- `ai_request_logs` lưu timestamp, actor, status, risk, input length, prompt đã nhập, verdict
+  JSON đã chuẩn hoá và session id ngẫu nhiên. Retention mặc định 30 ngày; API self chỉ trả
+  đúng session, API toàn hệ thống và export bắt buộc exe.dev auth + email allowlist.
 - Frontend vẫn giữ lịch sử kết quả plaintext tối đa 10 mục trên thiết bị theo yêu cầu sản phẩm.
 
 ### 10.5 Đo chất lượng
 
-- `data/evaluation_messages.json`: ít nhất 60 tin cân bằng bốn nhãn, có dev/eval split
-  và tối thiểu 15 ca khó.
+- `data/evaluation_messages.json`: 60 tin theo ba verdict (30 an toàn, gồm 15 ngoài phạm vi;
+  15 nghi ngờ; 15 nguy hiểm), có dev/eval split và tối thiểu 15 ca khó.
 - `services/evaluation.py` sinh accuracy, precision/recall/F1 từng lớp, confusion matrix,
   latency và invalid/fallback rate.
 - `scripts/run_stage4_evaluation.py` hỗ trợ `--prompt-mode stage3|stage4`, throttle mặc
@@ -555,7 +556,7 @@ normalize + validate
 POST /api/check
   START
     └─ Detective (1 call)
-         ├─ an_toan/khong_lien_quan ──▶ assessment_complete
+         ├─ an_toan ──────────────────▶ assessment_complete
          └─ nghi_ngo/nguy_hiem
               └─ Psychologist (1 call, lỗi không đổi verdict)
                    └─ awaiting_situation
@@ -608,9 +609,9 @@ implementation QR độc lập trong bước verification, không thêm dependen
 
 ### 11.4 Preference accessibility
 
-`preferences.js` dùng một schema localStorage fail-safe cho high contrast và font scale
-100%/115%/130% trên cả main/practice. Inline head bootstrap chỉ áp giá trị allowlist để giảm
-flash; module vẫn normalize lần nữa. System `prefers-color-scheme` tiếp tục quyết định
+`preferences.js` dùng một schema localStorage fail-safe cho high contrast và ba nấc font scale.
+UI gọn bằng nút −, thông báo mức hiện tại và nút + trên cả bốn trang. Inline head bootstrap
+chỉ áp giá trị allowlist để giảm flash; module vẫn normalize lần nữa. System `prefers-color-scheme` tiếp tục quyết định
 light/dark, hoàn toàn không có theme toggle.
 
 Runbook vận hành và quy trình rà hotline: `backend/RESCUE_RUNBOOK.md`.

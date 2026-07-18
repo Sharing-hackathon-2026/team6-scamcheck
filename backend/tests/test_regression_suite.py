@@ -8,7 +8,7 @@ def test_regression_dataset_has_twenty_labelled_messages():
     cases = load_regression_cases()
     assert len(cases) >= 20
     assert {case["expected"] for case in cases} == {
-        "an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"
+        "an_toan", "nghi_ngo", "nguy_hiem"
     }
 
 

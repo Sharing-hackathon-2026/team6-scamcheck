@@ -1,4 +1,4 @@
-"""Test SQLite-backed, session-scoped AI metadata audit."""
+"""Test SQLite-backed, session-scoped prompt and verdict history."""
 from __future__ import annotations
 
 from app.services.audit import append_ai_log, get_ai_log, summarize_result
@@ -13,21 +13,23 @@ def test_summarize_result_uses_only_risk_level():
     assert summarize_result({"risk_level": "nguy_hiem", "reason": "bí mật"}) == "Mức rủi ro: nguy hiem"
 
 
-def test_append_log_persists_full_session_history_as_metadata(tmp_path):
+def test_append_log_persists_prompt_and_normalized_verdict(tmp_path):
     session = {}
     store = _store(tmp_path)
     for _ in range(12):
         append_ai_log(
             session,
             30,
-            {"risk_level": "nghi_ngo", "reason": "không được lưu"},
+            {"risk_level": "nghi_ngo", "reason": "Cần kiểm tra."},
             store=store,
+            prompt="Prompt người dùng",
         )
     logs = get_ai_log(session, store=store)
     assert len(logs) == 12
     assert logs[0]["input_length"] == 30
     assert logs[0]["risk_level"] == "nghi_ngo"
-    assert "không được lưu" not in str(logs)
+    assert logs[0]["prompt"] == "Prompt người dùng"
+    assert logs[0]["verdict"]["reason"] == "Cần kiểm tra."
     assert "scamcheck_session_id" in session
 
 

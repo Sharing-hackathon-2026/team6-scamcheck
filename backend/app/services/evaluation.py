@@ -7,7 +7,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
 
-LABELS = ("an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan")
+LABELS = ("an_toan", "nghi_ngo", "nguy_hiem")
 DEFAULT_EVALUATION_PATH = Path(__file__).resolve().parents[2] / "data" / "evaluation_messages.json"
 
 
@@ -29,8 +29,12 @@ def load_evaluation_cases(path: Path = DEFAULT_EVALUATION_PATH) -> list[dict[str
             raise ValueError("Mỗi ca phải có tags.")
         ids.add(item["id"])
     counts = Counter(item["expected"] for item in value)
-    if max(counts.values()) - min(counts.values()) > 1 or set(counts) != set(LABELS):
-        raise ValueError("Bộ đánh giá phải cân bằng bốn nhãn.")
+    expected_counts = {"an_toan": 30, "nghi_ngo": 15, "nguy_hiem": 15}
+    if counts != expected_counts:
+        raise ValueError(
+            "Bộ đánh giá phải giữ 30 ca an toàn (gồm 15 ngoài phạm vi), "
+            "15 nghi ngờ và 15 nguy hiểm."
+        )
     if sum(item["difficulty"] == "hard" for item in value) < 15:
         raise ValueError("Bộ đánh giá cần ít nhất 15 ca khó.")
     if {item["split"] for item in value} != {"dev", "eval"}:

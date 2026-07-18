@@ -1,4 +1,4 @@
-"""Privacy-preserving AI invocation audit backed by SQLite."""
+"""Session-scoped AI invocation history backed by SQLite."""
 from __future__ import annotations
 
 from typing import Any
@@ -7,7 +7,7 @@ from .storage import SQLiteStore
 
 
 def summarize_result(result: dict[str, Any]) -> str:
-    """Create a short summary without writing the source message or prompt."""
+    """Create a short index summary alongside the stored prompt and verdict."""
     risk_level = result.get("risk_level")
     if isinstance(risk_level, str):
         return f"Mức rủi ro: {risk_level.replace('_', ' ')}"
@@ -25,8 +25,9 @@ def append_ai_log(
     store: SQLiteStore,
     actor: str = "detective",
     status: str = "complete",
+    prompt: str = "",
 ) -> None:
-    """Persist one actual AI invocation as metadata under this browser session."""
+    """Persist one actual AI invocation with prompt and normalized verdict."""
     store.append_log(
         session_id=store.session_id(session),
         input_length=input_length,
@@ -34,6 +35,8 @@ def append_ai_log(
         actor=actor,
         status=status,
         risk_level=result.get("risk_level") if isinstance(result, dict) else None,
+        prompt=prompt,
+        verdict=result if isinstance(result, dict) else {},
     )
 
 

@@ -72,8 +72,9 @@ EDGE_CASES: list[dict[str, Any]] = [
     {
         "id": "ordinary_message",
         "text": "Chiều nay cả nhà ăn cơm lúc 6 giờ nhé",
-        "expected": "khong_lien_quan",
-        "ai_risk": "khong_lien_quan",
+        "expected": "an_toan",
+        "ai_risk": "an_toan",
+        "reason": "Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo.",
     },
 ]
 
@@ -84,7 +85,7 @@ def _raw_result(case: dict[str, Any]) -> Any:
         return case["raw"]
     return {
         "risk_level": case["ai_risk"],
-        "reason": "Phân tích giả phục vụ kiểm thử.",
+        "reason": case.get("reason", "Phân tích giả phục vụ kiểm thử."),
         "red_flags": [
             {
                 "label": "Dấu hiệu",

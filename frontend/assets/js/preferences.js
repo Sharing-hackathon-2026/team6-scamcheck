@@ -5,7 +5,7 @@
 export const PREF_KEY = 'scamcheck.prefs.v1';
 export const DEFAULT_PREFERENCES = Object.freeze({ highContrast: false, fontScale: '1' });
 
-/** Ba mức cỡ chữ: 100% / 115% / 130%. Mọi giá trị khác rơi về mặc định. */
+/** Ba nấc cỡ chữ: nút −/+ di chuyển giữa 100% / 115% / 130%. */
 export const FONT_SCALE_OPTIONS = Object.freeze(['1', '1.15', '1.3']);
 
 const FONT_SCALE_LABELS = Object.freeze({
@@ -16,6 +16,13 @@ const FONT_SCALE_LABELS = Object.freeze({
 
 export function fontScaleLabel(value) {
   return FONT_SCALE_LABELS[value] || '100%';
+}
+
+export function stepFontScale(value, direction) {
+  const current = Math.max(0, FONT_SCALE_OPTIONS.indexOf(value));
+  const delta = direction === 'increase' ? 1 : direction === 'decrease' ? -1 : 0;
+  const next = Math.max(0, Math.min(FONT_SCALE_OPTIONS.length - 1, current + delta));
+  return FONT_SCALE_OPTIONS[next];
 }
 
 function hasStorageShape(storage) {
@@ -75,7 +82,7 @@ export function applyPreferences(root, preferences) {
 /**
  * Lắp điều khiển hiển thị vào một vùng DOM chứa:
  *  - nút [data-pref="contrast"] (bật/tắt tương phản cao)
- *  - các nút [data-scale] (mỗi nút một giá trị trong FONT_SCALE_OPTIONS)
+ *  - hai nút [data-font-step] và output [data-font-current]
  * Trả về { getPreferences } để các luồng khác biết trạng thái hiện tại.
  */
 export function wirePreferences({
@@ -86,14 +93,17 @@ export function wirePreferences({
 }) {
   let prefs = initial ? normalizePreferences(initial) : loadPreferences(storage);
   const contrastBtn = root && root.querySelector ? root.querySelector('[data-pref="contrast"]') : null;
-  const scaleBtns = root && root.querySelectorAll ? root.querySelectorAll('[data-scale]') : [];
+  const decreaseBtn = root && root.querySelector ? root.querySelector('[data-font-step="decrease"]') : null;
+  const increaseBtn = root && root.querySelector ? root.querySelector('[data-font-step="increase"]') : null;
+  const currentOutput = root && root.querySelector ? root.querySelector('[data-font-current]') : null;
   const status = root && root.querySelector ? root.querySelector('[data-pref-status]') : null;
 
   const sync = () => {
     if (contrastBtn) contrastBtn.setAttribute('aria-pressed', String(prefs.highContrast));
-    scaleBtns.forEach((button) => {
-      button.setAttribute('aria-pressed', String(button.dataset.scale === prefs.fontScale));
-    });
+    const index = FONT_SCALE_OPTIONS.indexOf(prefs.fontScale);
+    if (decreaseBtn) decreaseBtn.disabled = index <= 0;
+    if (increaseBtn) increaseBtn.disabled = index >= FONT_SCALE_OPTIONS.length - 1;
+    if (currentOutput) currentOutput.textContent = `Cỡ chữ: ${fontScaleLabel(prefs.fontScale)}`;
   };
 
   const commit = () => {
@@ -115,9 +125,11 @@ export function wirePreferences({
           : 'Đã tắt tương phản cao.';
         return;
       }
-      const scaleBtn = event.target.closest('[data-scale]');
-      if (scaleBtn && FONT_SCALE_OPTIONS.includes(scaleBtn.dataset.scale)) {
-        prefs = normalizePreferences({ ...prefs, fontScale: scaleBtn.dataset.scale });
+      const stepBtn = event.target.closest('[data-font-step]');
+      if (stepBtn) {
+        const nextScale = stepFontScale(prefs.fontScale, stepBtn.dataset.fontStep);
+        if (nextScale === prefs.fontScale) return;
+        prefs = normalizePreferences({ ...prefs, fontScale: nextScale });
         commit();
         if (status) status.textContent = `Đã đổi cỡ chữ thành ${fontScaleLabel(prefs.fontScale)}.`;
       }

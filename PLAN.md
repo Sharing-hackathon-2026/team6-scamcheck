@@ -88,8 +88,8 @@ Chi tiết:
 | L1-04 | Hàm đọc kết quả chịu lỗi | Bắt buộc | ✅ Xong | `parse_detective()` validate/coerce; JSON sai → fallback `nghi_ngo`; xoá excerpt AI bịa; 6 test |
 | L1-05 | Xử lý ca biên + **thử lại khi rate-limit** | Bắt buộc | ✅ Xong | Validate rỗng/>5000; retry 429/503 tối đa 2 lần (0.5s, 1s); exhausted/mạng → lỗi thân thiện 502 |
 | L1-06 | Triển khai lên mạng công khai | Bắt buộc | ✅ Xong | Live tại https://team6-scamcheck.exe.xyz/ (full SSL edge → nginx + gunicorn, verified end-to-end) |
-| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | Theo yêu cầu sản phẩm mới: bỏ quota phiên; vẫn giữ timeout ≤8s, retry hữu hạn và log metadata 10 mục |
-| L1-08 | Nhật ký gọi AI | Nên có | ✅ Xong | `GET /api/check/log`; tối đa 10 metadata/lượt trong session (thời điểm, độ dài, tóm tắt), không lưu nội dung tin |
+| L1-07 | Trần tài nguyên gọi AI | Bắt buộc | ✅ Xong | Bỏ quota phiên; vẫn giữ timeout ≤8s, retry hữu hạn và cache bounded |
+| L1-08 | Nhật ký gọi AI | Nên có | ✅ Xong | SQLite retention 30 ngày; session history lưu prompt + verdict, admin universal/export qua exe.dev allowlist |
 
 **Test (pytest):** 41 test xanh: JSON mode, parser fallback/excerpt, retry 429/503, session log, validation, prompt và routes.
 
@@ -138,7 +138,7 @@ Chi tiết:
 - `psychologist_status` thuộc `complete | not_needed | unavailable`; lỗi bước hai
   không đổi HTTP 200 hay che kết quả Thám tử.
 - Không giới hạn lượt theo phiên. Audit chỉ lưu actor, trạng thái,
-  độ dài input và tóm tắt; không lưu nội dung tin.
+  độ dài input, prompt đã nhập và verdict đã chuẩn hoá; retention mặc định 30 ngày.
 - Route dùng budget hữu hạn: Thám tử timeout 6s + tối đa một retry rate-limit;
   Cô tâm lý timeout 5s, không retry, giữ worst-case AI wait dưới 20s.
 - Psychologist schema chỉ có `message`; parser ép 2–3 câu và thay fallback khi model
@@ -182,7 +182,7 @@ fallback và accessible names tiếp tục được phủ bởi test Stage 2.
 |---|---|---|---|---|
 | L4-01 | Soi và **giải** đường dẫn | Bắt buộc | ✅ Xong | Tách scheme/www/bare URL; shortener resolve ≤3 hop, timeout, không đọc body, chặn SSRF mỗi hop |
 | L4-02 | Phát hiện tên miền giả bằng thuật toán | Bắt buộc | ✅ Xong | IDN/punycode, zero-width, mixed-script, confusable skeleton, Levenshtein; test 11 kiểu giả |
-| L4-03 | Phát hiện dấu hiệu bằng **luật** | Bắt buộc | ✅ Xong | Pure rules OTP/dữ liệu/tiền/STK/khẩn cấp/URL; phủ định theo mệnh đề; merge chỉ nâng verdict |
+| L4-03 | Phát hiện dấu hiệu bằng **luật** | Bắt buộc | ✅ Xong | Pure rules OTP/dữ liệu/tiền/STK/khẩn cấp/URL; phủ định theo mệnh đề; merge bảo thủ + ngoại lệ OTP notice full-match |
 | L4-04 | Bộ dữ liệu đánh giá **60 tin** | Bắt buộc | ✅ Xong | 60 tin cân bằng 15/nhãn, 28 ca khó, dev/eval split, rationale/tags, dữ liệu tổng hợp NFC |
 | L4-05 | Đo chất lượng AI có số liệu | Bắt buộc | ✅ Xong | JSON+Markdown: accuracy, class metrics, confusion, latency, invalid, 3 failure modes và metadata tái lập |
 | L4-06 | Cải thiện dựa trên số liệu | Bắt buộc | ✅ Xong | Prompt scope + rules: accuracy 51,7%→66,7%; hard accuracy 53,6%→71,4%; danger recall giữ 100% |
@@ -221,7 +221,7 @@ main `8,6/10`, practice `8,0/10`, cả hai `true_operational_tool`, không criti
 | L5-09 | Nút tải ảnh về máy | Nên có | ✅ Xong | Web Share File + Blob download; iOS fallback mở ảnh/chạm giữ; cần smoke iPhone thật |
 | L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ✅ Xong | High contrast light/dark + 100/115/130%, localStorage fail-safe dùng cả hai trang |
 
-**Test hiện tại:** 202 pytest backend + 80 Node tests frontend; compileall/syntax/NFC/diff check đạt.
+**Test hiện tại:** 204 pytest backend + 82 Node tests frontend; compileall/syntax/NFC/diff check đạt.
 
 **🛡️ Safety mentor gate:** ✅ PASS — fresh `gpt-5.6-terra`, không critical/major,
 `recommendation=ship`. Hai vòng FAIL trước đã buộc sửa AI prose, 113, Host-header QR và

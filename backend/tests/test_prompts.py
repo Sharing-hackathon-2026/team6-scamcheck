@@ -11,21 +11,16 @@ from app.prompts import (
 
 
 def test_refusal_message_is_short_and_vietnamese():
-    # Refusal canned phải ngắn (tiết kiệm token) và nói rõ phạm vi công cụ.
-    assert len(STAGE1_REFUSAL) < 300
-    assert "ScamCheck" in STAGE1_REFUSAL
-    assert "lừa đảo" in STAGE1_REFUSAL
+    assert STAGE1_REFUSAL == "Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo."
 
 
 def test_stage1_system_prompt_defines_role():
     assert "ScamCheck" in STAGE1_SYSTEM_PROMPT
 
 
-def test_stage1_system_prompt_requires_refusal_for_unrelated():
-    # Harden: phải yêu cầu AI từ chối tin không liên quan.
+def test_stage1_system_prompt_folds_outside_scope_into_safe():
     lowered = STAGE1_SYSTEM_PROMPT.lower()
-    assert "không liên quan" in lowered
-    # Câu canned phải được nhúng nguyên văn vào prompt để AI复读 đúng.
+    assert "không tồn tại nhãn \"khong_lien_quan\"" in lowered
     assert STAGE1_REFUSAL in STAGE1_SYSTEM_PROMPT
 
 
@@ -84,6 +79,9 @@ def test_fixed_schema_has_exact_public_contract():
         "red_flags",
         "actions",
     }
+    assert DETECTIVE_RESPONSE_SCHEMA["properties"]["risk_level"]["enum"] == [
+        "an_toan", "nghi_ngo", "nguy_hiem",
+    ]
     assert DETECTIVE_RESPONSE_SCHEMA["properties"]["red_flags"]["maxItems"] == 3
     assert DETECTIVE_RESPONSE_SCHEMA["properties"]["red_flags"]["items"]["additionalProperties"] is False
 

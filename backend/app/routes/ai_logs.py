@@ -87,13 +87,16 @@ def ai_logs():
 
 
 def _safe_csv_cell(value: object) -> str:
-    text = "" if value is None else str(value)
+    if isinstance(value, (dict, list)):
+        text = json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+    else:
+        text = "" if value is None else str(value)
     return f"'{text}" if text.startswith(("=", "+", "-", "@")) else text
 
 
 @bp.get("/api/ai-logs/export")
 def export_ai_logs():
-    """Download all retained metadata; always requires allowlisted exe.dev login."""
+    """Download retained history; always requires allowlisted exe.dev login."""
     email, error = _admin_email()
     if error is not None:
         if error.status_code == 401:
@@ -111,7 +114,7 @@ def export_ai_logs():
         output = io.StringIO(newline="")
         fields = [
             "id", "session_id", "at", "actor", "status",
-            "risk_level", "input_length", "summary",
+            "risk_level", "input_length", "summary", "prompt", "verdict",
         ]
         writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()

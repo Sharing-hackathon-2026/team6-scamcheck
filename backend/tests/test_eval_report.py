@@ -11,11 +11,11 @@ from app.services.evaluation import (
 )
 
 
-def test_dataset_has_60_balanced_cases_hard_subset_and_splits():
+def test_dataset_has_60_three_verdict_cases_hard_subset_and_splits():
     cases = load_evaluation_cases()
     assert len(cases) == 60
     assert {label: sum(case["expected"] == label for case in cases) for label in LABELS} == {
-        label: 15 for label in LABELS
+        "an_toan": 30, "nghi_ngo": 15, "nguy_hiem": 15,
     }
     assert sum(case["difficulty"] == "hard" for case in cases) >= 15
     assert {case["split"] for case in cases} == {"dev", "eval"}

@@ -39,7 +39,7 @@ from app.services.links import analyze_links
 from app.services.parser import RISK_LEVELS, parse_detective
 from app.services.rule_engine import evaluate_rules
 
-PROMPT_VERSION = "detective-function-call-v3-stage4-scope"
+PROMPT_VERSION = "detective-function-call-v4-three-verdicts"
 
 
 def stage3_baseline_prompt() -> str:
@@ -47,8 +47,8 @@ def stage3_baseline_prompt() -> str:
     scope = f'''PHẠM VI:
 Chỉ phân tích khi tin có hoặc nghi có giả danh; yêu cầu tiền; OTP, mật khẩu hoặc
 thông tin nhạy cảm; link, QR hay tệp; đầu tư/lợi nhuận bất thường; đe dọa hoặc
-áp lực khẩn cấp. Tin ngoài phạm vi phải có risk_level "khong_lien_quan", reason
-đúng nguyên văn "Tin nhắn này không liên quan đến lừa đảo. ScamCheck chỉ kiểm tra tin nhắn nghi lừa đảo qua SMS, Zalo, Messenger hoặc email.", red_flags [] và actions [].
+áp lực khẩn cấp. Tin ngoài phạm vi phải có risk_level "an_toan", reason đúng nguyên văn
+"Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo.", red_flags [] và actions [].
 
 NGUYÊN TẮC BẢO THỦ BẮT BUỘC:'''
     prompt = re.sub(

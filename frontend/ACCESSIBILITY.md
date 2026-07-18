@@ -17,7 +17,7 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 | Tự động light/dark | `color-scheme: light dark` trên `:root`; dark override nguyên qua `@media (prefers-color-scheme: dark)`; **không có toggle thủ công** | Đạt bằng kiểm tra CSS |
 | Tương phản chữ (dark) | Chữ mint-light `#e2f4ee` và chữ phụ `#9ec8c0` trên forest đậm `#0c1e22` | Đạt: 15.03:1 và 9.37:1 |
 | Giảm chói dark | Dark dịch quan hệ mint/forest/violet thay vì đảo màu; nền forest đậm, chữ mint-light, semantic risk giảm bão hòa; native controls nhận `color-scheme: dark` | Đạt bằng kiểm tra trực quan + đo màu |
-| Không chỉ dùng màu | Thẻ rủi ro luôn có nhãn chữ “An toàn/Nghi ngờ/Nguy hiểm/Không liên quan”, biểu tượng và viền | Đạt |
+| Không chỉ dùng màu | Thẻ rủi ro luôn có nhãn chữ “An toàn/Nghi ngờ/Nguy hiểm”, biểu tượng và viền | Đạt |
 | Trạng thái động | `role=status`, `role=alert`, `aria-live`, `aria-busy`; kết quả có thể nhận focus | Đạt |
 | Loading | Có câu trạng thái, spinner và skeleton rõ; spinner bị ẩn với AT để tránh nhiễu | Đạt |
 | Giảm chuyển động | `prefers-reduced-motion: reduce` tắt gần như toàn bộ animation/transition | Đạt |
@@ -115,9 +115,9 @@ Fresh UX gate theo `utility-ui-eval`:
 
 ## Stage 5 — Người ứng cứu, chia sẻ và tùy chọn đọc
 
-- Cụm “Hiển thị” có native buttons ≥44px, `aria-pressed`, live announcement và dùng chung
-  localStorage giữa `/` với `/practice.html`. Ba mức chữ thật là 100%/115%/130%; storage
-  hỏng/bị chặn rơi về mặc định, không khóa UI.
+- Cụm “Hiển thị” có native buttons ≥44px, live announcement và dùng chung localStorage trên
+  bốn trang. Cỡ chữ hiển thị mức hiện tại giữa nút −/+; ba nấc thật vẫn là 100%/115%/130%.
+  Nút chạm biên bị disable; storage hỏng/bị chặn rơi về mặc định, không khóa UI.
 - Tương phản cao là lớp token riêng cho cả system light/dark, tăng border/focus/muted text;
   không thay dark mode tự động bằng toggle và không dùng màu làm tín hiệu duy nhất.
 - Câu “Bác đã làm gì rồi?” chỉ xuất hiện cho `nghi_ngo`/`nguy_hiem`, gồm đúng bốn native
@@ -146,7 +146,7 @@ Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
 
-## Tabs redesign (stage5-tabs-v12) — IA, font, icon
+## Tabs redesign (stage5-tabs-v13) — IA, font, icon
 
 Kiến trúc thông tin mới: **một tác vụ mỗi trang**, bốn đích đến là link thật
 (`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;
@@ -159,13 +159,15 @@ mobile ≤700px dùng nút **Menu** dạng hamburger mở danh sách dọc. Nút
 2. `/library.html` — chỉ Thư viện: API `/api/scam-library` (12 mẫu, 4 nhóm), bộ lọc nhóm,
    trạng thái empty/loading/error/success, module riêng `library.js`.
 3. `/practice.html` — chỉ Luyện tập: đúng 10 câu, retry thật, phím tắt 1/2/Enter, điểm + restart.
-4. `/history.html` — lịch sử gọi AI theo phiên, bảng metadata và SVG pie chart. Người dùng thường
-   chỉ xem session id đã ký trong cookie; nút khiên đưa admin sang Login with exe tại `:8001`.
+4. `/history.html` — lịch sử gọi AI theo phiên, bảng prompt + verdict và SVG biểu đồ “Tỷ lệ
+   kết quả”. Người dùng thường chỉ xem session id đã ký trong cookie; nút khiên đưa admin sang
+   Login with exe tại `:8001`.
    Universal stats và nút JSON/CSV chỉ hiện sau khi backend xác nhận email trong allowlist env.
 
 Kiểm chứng tự động (headless Chromium thật): không cuộn ngang ở 320/390/768/1024/1440 cho cả
-bốn trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; 100/115/130% thật chuyển
-token; tùy chọn lưu qua điều hướng. Khi bấm “Tiếp tục — chọn tình huống”, ba phần giải thích
+bốn trang; menu mobile không làm rộng trang; nút tối thiểu ≥47.9px; stepper −/+ chuyển đúng
+100/115/130% và tùy chọn lưu qua điều hướng. Ô nhập có bộ đếm ký tự bên phải; tại 0 ký tự còn
+lại, cảnh báo đỏ có `role=alert` xuất hiện bên trái. Khi bấm “Tiếp tục — chọn tình huống”, ba phần giải thích
 được thu gọn thành native `details/summary` nhưng vẫn mở lại bằng bàn phím hoặc chạm. Request
 QR dùng `cache: no-store` để không tái dùng SVG cũ từng chứa cổng nội bộ.
 

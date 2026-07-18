@@ -6,7 +6,6 @@ const RISK_SERIES = Object.freeze([
   { key: 'an_toan', label: 'An toàn', className: 'pie-safe' },
   { key: 'nghi_ngo', label: 'Nghi ngờ', className: 'pie-warning' },
   { key: 'nguy_hiem', label: 'Nguy hiểm', className: 'pie-danger' },
-  { key: 'khong_lien_quan', label: 'Không liên quan', className: 'pie-neutral' },
 ]);
 const ACTOR_LABELS = Object.freeze({
   detective: 'Thám tử',
@@ -120,6 +119,37 @@ function renderActors(actorCounts = {}) {
   });
 }
 
+function promptCell(log) {
+  const cell = document.createElement('td');
+  const details = createElement('details', '', 'history-cell-details');
+  const prompt = typeof log.prompt === 'string' ? log.prompt : '';
+  details.append(
+    createElement('summary', prompt ? `Xem prompt · ${prompt.length} ký tự` : 'Prompt chưa được lưu'),
+    createElement('p', prompt || 'Dòng này được tạo trước khi tính năng lưu prompt được bật.'),
+  );
+  cell.append(details);
+  return cell;
+}
+
+function verdictCell(log) {
+  const cell = document.createElement('td');
+  const details = createElement('details', '', 'history-cell-details');
+  const verdict = log.verdict && typeof log.verdict === 'object' ? log.verdict : {};
+  const risk = verdict.risk_level || log.risk_level;
+  details.append(createElement('summary', RISK_LABELS[risk] || 'Xem verdict'));
+  details.append(createElement('p', verdict.reason || log.summary || 'Chưa có nội dung verdict.'));
+  const flags = Array.isArray(verdict.red_flags) ? verdict.red_flags : [];
+  if (flags.length) {
+    const list = createElement('ul');
+    flags.slice(0, 3).forEach((flag) => {
+      list.append(createElement('li', flag?.label || 'Dấu hiệu cần chú ý'));
+    });
+    details.append(list);
+  }
+  cell.append(details);
+  return cell;
+}
+
 function renderLogs(logs, isAdmin) {
   elements.rows.replaceChildren();
   const ordered = [...logs].reverse();
@@ -129,9 +159,8 @@ function renderLogs(logs, isAdmin) {
       createElement('td', formatDate(log.at)),
       createElement('td', ACTOR_LABELS[log.actor] || 'Không xác định'),
       createElement('td', STATUS_LABELS[log.status] || log.status || 'Không rõ'),
-      createElement('td', RISK_LABELS[log.risk_level] || '—'),
-      createElement('td', `${Number(log.input_length || 0)} ký tự`),
-      createElement('td', log.summary || '—'),
+      promptCell(log),
+      verdictCell(log),
     );
     if (isAdmin && log.session_id) {
       row.firstElementChild.title = `Phiên: ${log.session_id}`;
@@ -149,7 +178,7 @@ function render(data) {
   elements.scope.textContent = isAdmin ? 'Toàn hệ thống · quản trị' : 'Lịch sử của phiên này';
   elements.notice.textContent = isAdmin
     ? `Đã xác thực ${data.admin_email}. Bảng hiển thị tối đa 500 dòng mới nhất.`
-    : 'Chỉ trình duyệt đang dùng mới xem được phiên này. Cache hit không tạo lượt gọi AI giả.';
+    : 'Chỉ trình duyệt đang dùng mới xem được phiên này. Lịch sử gồm prompt và verdict; cache hit không tạo lượt gọi AI giả.';
   elements.checkCount.textContent = String(stats.checks || 0);
   elements.callCount.textContent = String(stats.ai_calls || 0);
   elements.retentionDays.textContent = `${stats.retention_days || 30} ngày`;

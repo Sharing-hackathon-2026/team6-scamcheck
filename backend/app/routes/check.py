@@ -30,6 +30,7 @@ def _record_call(actor: str, text: str, result: dict, status: str = "complete") 
         store=current_app.extensions["sqlite_store"],
         actor=actor,
         status=status,
+        prompt=text,
     )
 
 

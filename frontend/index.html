@@ -7,8 +7,8 @@
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2350">
   <meta name="description" content="ScamCheck — kiểm tra nhanh một tin nhắn có dấu hiệu lừa đảo, soi đường dẫn, đề xuất việc nên làm.">
   <title>ScamCheck — Kiểm tra lừa đảo</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v12">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v12">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v13">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v13">
   <script>(function(){try{var s=localStorage.getItem('scamcheck.prefs.v1');if(!s)return;var p=JSON.parse(s);var d=document.documentElement;if(p&&p.highContrast===true)d.setAttribute('data-high-contrast','true');if(p&&['1','1.15','1.3'].indexOf(p.fontScale)>=0)d.style.setProperty('--app-font-scale',p.fontScale);}catch(e){}})();</script>
 </head>
 <body>
@@ -80,11 +80,10 @@
         <span class="msymbols" aria-hidden="true">&#xeb37;</span><!-- contrast -->
         <span>Tương phản cao</span>
       </button>
-      <div class="font-scale-group" role="group" aria-label="Cỡ chữ">
-        <span class="font-scale-label">Cỡ chữ</span>
-        <button class="font-scale-btn" type="button" data-scale="1" aria-pressed="true">100%</button>
-        <button class="font-scale-btn" type="button" data-scale="1.15" aria-pressed="false">115%</button>
-        <button class="font-scale-btn" type="button" data-scale="1.3" aria-pressed="false">130%</button>
+      <div class="font-scale-group" role="group" aria-label="Điều chỉnh cỡ chữ">
+        <button class="font-step-btn" type="button" data-font-step="decrease" aria-label="Giảm cỡ chữ">−</button>
+        <output class="font-scale-current" data-font-current aria-live="polite">Cỡ chữ: 100%</output>
+        <button class="font-step-btn" type="button" data-font-step="increase" aria-label="Tăng cỡ chữ">+</button>
       </div>
       <p class="sr-only" data-pref-status aria-live="polite"></p>
     </section>
@@ -95,7 +94,11 @@
           <label class="field-label" for="textInput">Nội dung tin nhắn cần kiểm tra</label>
           <p id="inputHelp" class="field-help">Không nhập mật khẩu, mã OTP hoặc thông tin thẻ thật của bác. Nội dung sẽ được gửi tới dịch vụ AI để phân tích.</p>
           <p class="keyboard-hint">Mẹo trên máy tính: nhấn Ctrl hoặc ⌘ cùng Enter để kiểm tra nhanh.</p>
-          <textarea id="textInput" aria-describedby="inputHelp speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
+          <textarea id="textInput" aria-describedby="inputHelp charCounter charLimitWarning speechStatus" maxlength="5000" placeholder="Ví dụ: Tài khoản của quý khách sắp bị khoá. Bấm vào liên kết này và nhập mã OTP để xác minh..."></textarea>
+          <div class="input-meta">
+            <p id="charLimitWarning" class="char-limit-warning" role="alert" hidden>Đã đạt giới hạn 5.000 ký tự. Bác hãy xoá bớt để nhập nội dung khác.</p>
+            <p id="charCounter" class="char-counter" aria-live="polite">Còn 5.000 ký tự</p>
+          </div>
 
           <div class="sample-area" aria-labelledby="sampleTitle">
             <p id="sampleTitle" class="sample-title">Thử nhanh với tin mẫu</p>
@@ -165,8 +168,8 @@
     </div>
   </footer>
 
-  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v12"></script>
-  <script type="module" src="/assets/js/app.js?v=stage5-tabs-v12"></script>
+  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v13"></script>
+  <script type="module" src="/assets/js/app.js?v=stage5-tabs-v13"></script>
   <noscript><p class="noscript-warning">ScamCheck cần JavaScript để kiểm tra tin nhắn. Bác vui lòng bật JavaScript hoặc nhờ người thân hỗ trợ.</p></noscript>
 </body>
 </html>

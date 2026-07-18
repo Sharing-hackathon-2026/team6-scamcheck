@@ -50,10 +50,23 @@ def test_hallucinated_excerpt_is_removed():
     assert result.red_flags[0].excerpt == ""
 
 
-def test_unrelated_has_canned_reason_and_empty_lists():
+def test_outside_scope_is_folded_into_safe_with_canned_reason_and_empty_lists():
     result = parse_detective({"risk_level": "khong_lien_quan", "reason": "x", "red_flags": [1], "actions": ["x"]})
+    assert result.risk_level == "an_toan"
     assert result.reason == STAGE1_REFUSAL
     assert result.red_flags == []
+    assert result.actions == []
+
+
+def test_safe_outside_scope_reason_variant_is_canonicalized():
+    result = parse_detective({
+        "risk_level": "an_toan",
+        "reason": "Đây là trò chuyện ngoài phạm vi của công cụ.",
+        "red_flags": [],
+        "actions": ["x"],
+    })
+    assert result.risk_level == "an_toan"
+    assert result.reason == STAGE1_REFUSAL
     assert result.actions == []
 
 
@@ -65,7 +78,7 @@ def test_conservative_guard_overrides_safe_otp_result():
     assert result.actions == DEFAULT_ACTIONS
 
 
-def test_conservative_guard_overrides_unrelated_money_request():
+def test_conservative_guard_still_overrides_legacy_unrelated_money_request():
     raw = {"risk_level": "khong_lien_quan", "reason": "x", "red_flags": [], "actions": []}
     result = parse_detective(raw, "Chuyển tiền cọc 2 triệu đồng ngay")
     assert result.risk_level == "nguy_hiem"

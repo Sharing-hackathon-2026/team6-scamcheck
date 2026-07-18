@@ -40,15 +40,15 @@ test('library.js owns the library API + DOM wiring', () => {
 test('all four entry scripts use the shared cache-bust version', () => {
   for (const file of ['index.html', 'library.html', 'practice.html', 'history.html']) {
     const html = read(`../${file}`);
-    assert.ok(html.includes('v=stage5-tabs-v12'), `${file} must use stage5-tabs-v12`);
-    assert.ok(html.includes('/assets/js/navigation.js?v=stage5-tabs-v12'), `${file} must reveal its active tab`);
+    assert.ok(html.includes('v=stage5-tabs-v13'), `${file} must use stage5-tabs-v13`);
+    assert.ok(html.includes('/assets/js/navigation.js?v=stage5-tabs-v13'), `${file} must reveal its active tab`);
   }
   const app = read('../assets/js/app.js');
   const library = read('../assets/js/library.js');
   const history = read('../assets/js/history-page.js');
-  assert.ok(app.includes("./result-model.js?v=stage5-tabs-v12"));
-  assert.ok(app.includes("./share-card.js?v=stage5-tabs-v12"));
-  assert.ok(library.includes('./stage3-model.js?v=stage5-tabs-v12'));
+  assert.ok(app.includes("./result-model.js?v=stage5-tabs-v13"));
+  assert.ok(app.includes("./share-card.js?v=stage5-tabs-v13"));
+  assert.ok(library.includes('./stage3-model.js?v=stage5-tabs-v13'));
   assert.ok(history.includes('/api/ai-logs?scope='));
   assert.ok(!history.includes('innerHTML'));
 });

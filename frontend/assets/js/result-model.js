@@ -4,7 +4,6 @@ export const RISK_META = Object.freeze({
   an_toan: { label: 'An toàn', announcement: 'Kết quả: An toàn' },
   nghi_ngo: { label: 'Nghi ngờ', announcement: 'Kết quả: Nghi ngờ' },
   nguy_hiem: { label: 'Nguy hiểm', announcement: 'Kết quả: Nguy hiểm' },
-  khong_lien_quan: { label: 'Không liên quan', announcement: 'Kết quả: Không liên quan' },
 });
 
 // Stage 5 multi-step flow gating (single source of truth, unit-tested):
@@ -22,6 +21,8 @@ export function offersShareCard(riskLevel) {
   return SHARE_RISK_LEVELS.has(riskLevel);
 }
 
+export const OUTSIDE_SCOPE_REASON = 'Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo.';
+
 export const FALLBACK_ACTIONS = Object.freeze([
   'Không bấm liên kết, không cung cấp mã OTP hoặc mật khẩu.',
   'Liên hệ tổ chức qua số điện thoại chính thức do bác tự tìm.',
@@ -33,8 +34,7 @@ function cleanText(value) {
 }
 
 /** Bảo đảm giao diện luôn có đúng ba hành động cho ba mức rủi ro chính. */
-export function normalizeActions(actions, riskLevel) {
-  if (riskLevel === 'khong_lien_quan') return [];
+export function normalizeActions(actions) {
   const unique = [];
   (Array.isArray(actions) ? actions : []).forEach((action) => {
     const cleaned = cleanText(action);
@@ -49,9 +49,10 @@ export function normalizeActions(actions, riskLevel) {
 
 export function normalizeDetective(value) {
   const detective = value && typeof value === 'object' ? value : {};
-  const riskLevel = Object.hasOwn(RISK_META, detective.risk_level)
-    ? detective.risk_level
-    : 'nghi_ngo';
+  const legacyOutsideScope = detective.risk_level === 'khong_lien_quan';
+  const riskLevel = legacyOutsideScope
+    ? 'an_toan'
+    : Object.hasOwn(RISK_META, detective.risk_level) ? detective.risk_level : 'nghi_ngo';
   const redFlags = (Array.isArray(detective.red_flags) ? detective.red_flags : [])
     .filter((flag) => flag && typeof flag === 'object')
     .map((flag) => ({
@@ -60,10 +61,14 @@ export function normalizeDetective(value) {
       excerpt: cleanText(flag.excerpt),
     }));
 
+  const cleanedReason = cleanText(detective.reason);
+  const outsideScope = legacyOutsideScope || cleanedReason === OUTSIDE_SCOPE_REASON;
   return {
     risk_level: riskLevel,
-    reason: cleanText(detective.reason) || 'Chưa đủ thông tin để kết luận chắc chắn. Bác nên kiểm tra lại qua kênh chính thức.',
-    red_flags: riskLevel === 'khong_lien_quan' ? [] : redFlags,
-    actions: normalizeActions(detective.actions, riskLevel),
+    reason: outsideScope
+      ? OUTSIDE_SCOPE_REASON
+      : cleanedReason || 'Chưa đủ thông tin để kết luận chắc chắn. Bác nên kiểm tra lại qua kênh chính thức.',
+    red_flags: outsideScope ? [] : redFlags,
+    actions: outsideScope ? [] : normalizeActions(detective.actions),
   };
 }

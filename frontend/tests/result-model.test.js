@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeNfc } from '../assets/js/unicode.js';
 import {
   FALLBACK_ACTIONS,
+  OUTSIDE_SCOPE_REASON,
   normalizeActions,
   normalizeDetective,
   RISK_META,
@@ -14,22 +15,18 @@ test('normalizeNfc composes Vietnamese combining marks', () => {
   assert.notEqual(normalizeNfc(decomposed), decomposed);
 });
 
-test('all four backend risk levels have friendly UI metadata', () => {
-  assert.deepEqual(Object.keys(RISK_META), ['an_toan', 'nghi_ngo', 'nguy_hiem', 'khong_lien_quan']);
+test('the three backend verdicts have friendly UI metadata', () => {
+  assert.deepEqual(Object.keys(RISK_META), ['an_toan', 'nghi_ngo', 'nguy_hiem']);
 });
 
 test('normalizeActions always returns exactly three unique actions for relevant messages', () => {
-  const actions = normalizeActions([' Không gửi OTP. ', 'Không gửi OTP.', '', 'Gọi ngân hàng.'], 'nguy_hiem');
+  const actions = normalizeActions([' Không gửi OTP. ', 'Không gửi OTP.', '', 'Gọi ngân hàng.']);
   assert.equal(actions.length, 3);
   assert.deepEqual(actions.slice(0, 2), ['Không gửi OTP.', 'Gọi ngân hàng.']);
 });
 
 test('normalizeActions uses three safe fallbacks when API actions are absent', () => {
-  assert.deepEqual(normalizeActions([], 'nghi_ngo'), [...FALLBACK_ACTIONS]);
-});
-
-test('not-related result gracefully has no irrelevant action list', () => {
-  assert.deepEqual(normalizeActions(['Không dùng'], 'khong_lien_quan'), []);
+  assert.deepEqual(normalizeActions([]), [...FALLBACK_ACTIONS]);
 });
 
 test('normalizeDetective falls back safely for malformed risk and fields', () => {
@@ -40,7 +37,7 @@ test('normalizeDetective falls back safely for malformed risk and fields', () =>
   assert.equal(value.actions.length, 3);
 });
 
-test('normalizeDetective retains clean excerpt data and strips flags for not-related content', () => {
+test('normalizeDetective retains clean excerpts and folds the legacy not-related label into safe', () => {
   const relevant = normalizeDetective({
     risk_level: 'an_toan',
     reason: ' Hợp lệ. ',
@@ -50,5 +47,11 @@ test('normalizeDetective retains clean excerpt data and strips flags for not-rel
   assert.deepEqual(relevant.red_flags[0], {
     label: 'Thông tin', explanation: 'Bình thường.', excerpt: 'giao hàng',
   });
-  assert.deepEqual(normalizeDetective({ risk_level: 'khong_lien_quan', red_flags: relevant.red_flags }).red_flags, []);
+  const legacy = normalizeDetective({
+    risk_level: 'khong_lien_quan', red_flags: relevant.red_flags, actions: ['x'],
+  });
+  assert.equal(legacy.risk_level, 'an_toan');
+  assert.equal(legacy.reason, OUTSIDE_SCOPE_REASON);
+  assert.deepEqual(legacy.red_flags, []);
+  assert.deepEqual(legacy.actions, []);
 });

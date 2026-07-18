@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v12).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v13).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -403,31 +403,31 @@ summary:focus:not(:focus-visible),
   gap: var(--space-2);
   margin-left: auto;
 }
-.font-scale-label {
-  color: var(--color-text-muted);
-  font-weight: 800;
-  font-size: 0.82rem;
-}
-.font-scale-btn {
-  min-width: 56px;
-  min-height: 44px;
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
+.font-scale-current {
+  min-width: 132px;
   color: var(--color-text);
   font-weight: 800;
+  text-align: center;
+}
+.font-step-btn {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-action-strong);
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1;
   cursor: pointer;
   transition:
     background-color 160ms var(--ease-spring),
     border-color 160ms var(--ease-spring);
 }
-.font-scale-btn:hover { border-color: var(--color-action); }
-.font-scale-btn[aria-pressed="true"] {
-  border-color: var(--color-action);
-  background: var(--color-violet-soft);
-  color: var(--color-action-strong);
-}
+.font-step-btn:hover:not(:disabled) { border-color: var(--color-action); background: var(--color-violet-soft); }
+.font-step-btn:disabled { cursor: not-allowed; opacity: 0.42; }
 
 /* ---- Surfaces ---------------------------------------------------------- */
 
@@ -482,6 +482,19 @@ textarea {
 }
 textarea::placeholder { color: var(--color-placeholder); opacity: 1; }
 textarea:focus-visible { border-color: var(--color-action); }
+
+.input-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 1.7em;
+  margin-top: var(--space-1);
+}
+.char-counter,
+.char-limit-warning { margin: 0; font-size: 0.88rem; font-weight: 700; }
+.char-counter { margin-left: auto; color: var(--color-text-muted); text-align: right; white-space: nowrap; }
+.char-limit-warning { color: var(--color-danger-text); text-align: left; }
 
 /* ---- Samples + buttons ------------------------------------------------- */
 
@@ -658,7 +671,6 @@ textarea:focus-visible { border-color: var(--color-action); }
 .risk-card[data-risk="an_toan"] { border-color: var(--color-safe-border); background: var(--color-safe-bg); color: var(--color-safe-text); }
 .risk-card[data-risk="nghi_ngo"] { border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning-text); }
 .risk-card[data-risk="nguy_hiem"] { border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger-text); }
-.risk-card[data-risk="khong_lien_quan"] { border-color: var(--color-neutral-border); background: var(--color-neutral-bg); color: var(--color-neutral-text); }
 
 .risk-icon {
   display: grid;
@@ -1141,7 +1153,6 @@ mark {
 .history-risk.chip-an_toan { background: var(--color-safe-bg); color: var(--color-safe-text); }
 .history-risk.chip-nghi_ngo { background: var(--color-warning-bg); color: var(--color-warning-text); }
 .history-risk.chip-nguy_hiem { background: var(--color-danger-bg); color: var(--color-danger-text); }
-.history-risk.chip-khong_lien_quan { background: var(--color-neutral-bg); color: var(--color-neutral-text); }
 .history-preview {
   display: -webkit-box;
   overflow: hidden;
@@ -1362,7 +1373,6 @@ mark {
 .risk-pie .pie-safe { stroke: var(--color-safe); }
 .risk-pie .pie-warning { stroke: var(--color-warning); }
 .risk-pie .pie-danger { stroke: var(--color-danger); }
-.risk-pie .pie-neutral { stroke: var(--color-neutral); }
 .risk-pie text { fill: var(--color-text); font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; }
 .risk-pie .risk-pie-caption { fill: var(--color-text-muted); font-size: 0.68rem; font-weight: 700; }
 .risk-legend { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
@@ -1371,7 +1381,6 @@ mark {
 .risk-legend-swatch.pie-safe { background: var(--color-safe); }
 .risk-legend-swatch.pie-warning { background: var(--color-warning); }
 .risk-legend-swatch.pie-danger { background: var(--color-danger); }
-.risk-legend-swatch.pie-neutral { background: var(--color-neutral); }
 .actor-summary { padding: var(--space-5); border-radius: var(--radius-surface); background: var(--color-card-tint); }
 .actor-summary dl { display: grid; gap: var(--space-3); margin: var(--space-4) 0 0; }
 .actor-summary dl div { display: flex; justify-content: space-between; gap: var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-divider); }
@@ -1391,6 +1400,10 @@ mark {
 .ai-log-table th { position: sticky; top: 0; background: var(--color-card-tint); font-family: var(--font-heading); font-weight: 800; }
 .ai-log-table tbody tr:last-child td { border-bottom: 0; }
 .ai-log-table tbody tr:hover { background: var(--color-surface-subtle); }
+.history-cell-details { min-width: 210px; max-width: 360px; }
+.history-cell-details summary { color: var(--color-action-strong); font-weight: 800; cursor: pointer; }
+.history-cell-details p { margin: var(--space-2) 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-cell-details ul { margin: var(--space-2) 0 0; padding-left: 1.25em; }
 
 @media (max-width: 760px) {
   .history-metrics { grid-template-columns: 1fr; }

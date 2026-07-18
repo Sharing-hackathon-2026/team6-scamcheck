@@ -12,7 +12,8 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 
 - Trình duyệt gọi `fetch('/api/...')` → Nginx reverse-proxy `/api/*` sang Flask → **cùng origin, không lo CORS**.
 - `GEMINI_API_KEY` chỉ tồn tại ở backend.
-- SQLite dùng chung giữa các gunicorn worker để lưu persistent cache và metadata lượt gọi AI; không lưu nguyên văn tin nhắn trong bảng log.
+- Backend chỉ trả ba verdict: `an_toan`, `nghi_ngo`, `nguy_hiem`; tin ngoài phạm vi được gộp vào `an_toan` với thông báo ngắn cố định.
+- SQLite dùng chung giữa các gunicorn worker để lưu persistent cache và lịch sử theo phiên gồm prompt đã nhập + verdict Thám tử (retention mặc định 30 ngày).
 
 ## Deploy target
 
@@ -44,7 +45,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 202 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 204 test, dùng mock (không tốn lượt AI)
 ```
 
 Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn API):
@@ -76,7 +77,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 80 test Node, không cần runtime dependency ngoài
+npm --prefix frontend test       # 82 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -97,14 +98,14 @@ và chế độ luyện tập 10 câu tại `/practice.html`. Báo cáo thật g
 Stage 5 bổ sung câu hỏi tình huống một chạm, FSM ba persona, Người ứng cứu có deterministic
 fallback/kill switch, bảng 10 ngân hàng + Công an + kênh 156 có bằng chứng theo từng số và post-filter
 cứng mọi số điện thoại. Kết quả có thể xuất ảnh PNG 1080×1350 với QR same-origin chuẩn,
-Web Share/download fallback; high contrast và chữ 100%/115%/130% được lưu trên thiết bị.
+Web Share/download fallback; high contrast và cỡ chữ điều chỉnh bằng nút −/+ được lưu trên thiết bị.
 Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
 
 Frontend hiện dùng kiến trúc một tác vụ mỗi trang: `/` kiểm tra, `/library.html` thư viện,
 `/practice.html` luyện tập và `/history.html` xem bảng/biểu đồ lịch sử gọi AI của phiên.
 Nút khiên trên trang lịch sử đưa admin qua [Login with exe](https://exe.dev/docs/login-with-exe)
 tại `:8001`; chỉ email trong `ADMIN_ALLOWED_EMAILS` mới xem universal stats và tải toàn bộ
-metadata JSON/CSV. Khi đang ở chế độ quản trị, bấm lại khiên sẽ trở về lịch sử cá nhân trên
+prompt/verdict JSON/CSV. Khi đang ở chế độ quản trị, bấm lại khiên sẽ trở về lịch sử cá nhân trên
 public origin không port. Visual direction mint/forest/violet được đo từ Own Your Online
 Scam Check và ghi tại `DESIGN_REFERENCE.md`, nhưng không sao chép logo/copy/asset độc quyền.
 Be Vietnam Pro và Material Symbols Rounded được self-host kèm giấy phép; Galano Grotesque

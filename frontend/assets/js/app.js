@@ -1,7 +1,7 @@
 // Logic giao diện trang kiểm tra (/). Thư viện đã tách ra library.js; trang này
 // KHÔNG fetch /api/scam-library và không phụ thuộc DOM thư viện.
 // Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v12';
+import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v13';
 import { renderHighlightedText } from './highlight-excerpts.js';
 import {
   addHistoryEntry,
@@ -12,13 +12,13 @@ import {
 } from './history.js';
 import { wirePreferences } from './preferences.js';
 import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
-import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v12';
+import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v13';
 import {
   buildShareCardModel,
   decodeQrModules,
   drawShareCard,
   safeFileName,
-} from './share-card.js?v=stage5-tabs-v12';
+} from './share-card.js?v=stage5-tabs-v13';
 import { normalizePsychologist } from './stage3-model.js';
 import { normalizeTechnicalAnalysis } from './stage4-model.js';
 import { normalizeNfc } from './unicode.js';
@@ -41,11 +41,12 @@ const RISK_ICON_NAMES = Object.freeze({
   an_toan: 'gpp_good',
   nghi_ngo: 'warning',
   nguy_hiem: 'priority_high',
-  khong_lien_quan: 'info',
 });
 
 const elements = {
   textInput: document.getElementById('textInput'),
+  charCounter: document.getElementById('charCounter'),
+  charLimitWarning: document.getElementById('charLimitWarning'),
   checkBtn: document.getElementById('checkBtn'),
   clearBtn: document.getElementById('clearBtn'),
   speechBtn: document.getElementById('speechBtn'),
@@ -73,6 +74,14 @@ let rescueController = null;
 let rescueToken = 0;
 let shareController = null;
 let shareToken = 0;
+
+const MAX_INPUT_CHARS = Number(elements.textInput.maxLength) || 5000;
+
+function updateCharacterCounter() {
+  const remaining = Math.max(0, MAX_INPUT_CHARS - elements.textInput.value.length);
+  elements.charCounter.textContent = `Còn ${remaining.toLocaleString('vi-VN')} ký tự`;
+  elements.charLimitWarning.hidden = remaining !== 0;
+}
 
 const RESCUE_CHOICES = Object.freeze([
   { situation: 'chua_lam_gi', label: RESCUE_SITUATIONS.chua_lam_gi },
@@ -283,9 +292,7 @@ function appendSignals(container, detective) {
   if (!detective.red_flags.length) {
     content.append(createElement('p', {
       className: 'no-signals',
-      text: detective.risk_level === 'khong_lien_quan'
-        ? 'Nội dung này không thuộc nhóm tin cần kiểm tra lừa đảo.'
-        : 'Không có dấu hiệu cụ thể nào được trích ra từ tin nhắn.',
+      text: 'Không có dấu hiệu cụ thể nào được trích ra từ tin nhắn.',
     }));
   } else {
     const list = createElement('ul', { className: 'signal-list' });
@@ -914,6 +921,7 @@ function clearCurrent() {
   abortRescueAndShare();
   currentCheck = null;
   elements.textInput.value = '';
+  updateCharacterCounter();
   elements.result.hidden = true;
   elements.error.hidden = true;
   elements.loadingPanel.hidden = true;
@@ -930,6 +938,7 @@ async function onCheck() {
   abortRescueAndShare();
   currentCheck = null;
   elements.textInput.value = normalizeNfc(elements.textInput.value);
+  updateCharacterCounter();
   const text = elements.textInput.value.trim();
   if (!text) {
     showError('Vui lòng dán, gõ hoặc đọc nội dung tin nhắn cần kiểm tra.');
@@ -977,7 +986,8 @@ function openHistoryEntry(id) {
   const entry = historyEntries.find((item) => item.id === id);
   if (!entry) return;
   stopSpeech();
-  elements.textInput.value = normalizeNfc(entry.text);
+  elements.textInput.value = normalizeNfc(entry.text).slice(0, MAX_INPUT_CHARS);
+  updateCharacterCounter();
   showResult(entry.text, entry.detective, {
     psychologist: entry.psychologist?.message ? { message: entry.psychologist.message } : null,
     status: entry.psychologist?.status || 'not_needed',
@@ -1012,7 +1022,10 @@ function setupSpeech() {
   recognition.addEventListener('result', (event) => {
     const transcript = transcriptFromEvent(event);
     if (transcript) {
-      elements.textInput.value = normalizeNfc(appendTranscript(elements.textInput.value, transcript));
+      elements.textInput.value = normalizeNfc(
+        appendTranscript(elements.textInput.value, transcript),
+      ).slice(0, MAX_INPUT_CHARS);
+      updateCharacterCounter();
     }
   });
 
@@ -1054,13 +1067,16 @@ elements.clearBtn.addEventListener('click', clearCurrent);
 elements.textInput.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') onCheck();
 });
+elements.textInput.addEventListener('input', updateCharacterCounter);
 elements.textInput.addEventListener('change', () => {
   elements.textInput.value = normalizeNfc(elements.textInput.value);
+  updateCharacterCounter();
 });
 
 document.querySelectorAll('[data-sample]').forEach((button) => {
   button.addEventListener('click', () => {
     elements.textInput.value = normalizeNfc(samples[button.dataset.sample] || '');
+    updateCharacterCounter();
     elements.textInput.focus();
     elements.status.textContent = 'Đã điền tin mẫu. Bấm “Kiểm tra tin nhắn” để phân tích.';
   });
@@ -1089,6 +1105,7 @@ elements.clearHistoryBtn.addEventListener('click', () => {
 });
 
 renderHistory();
+updateCharacterCounter();
 setupSpeech();
 setupHeroDoubleTap();
 

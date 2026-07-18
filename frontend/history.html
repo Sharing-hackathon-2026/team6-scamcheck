@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#5838cb">
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#2a2350">
-  <meta name="description" content="Lịch sử gọi AI của phiên ScamCheck và thống kê mức rủi ro; quản trị viên có thể xem toàn hệ thống qua Login with exe.">
+  <meta name="description" content="Lịch sử prompt và verdict của ScamCheck cùng thống kê kết quả; quản trị viên có thể xem toàn hệ thống qua Login with exe.">
   <title>Lịch sử gọi AI — ScamCheck</title>
-  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v12">
-  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v12">
+  <link rel="stylesheet" href="/assets/css/tokens.css?v=stage5-tabs-v13">
+  <link rel="stylesheet" href="/assets/css/app.css?v=stage5-tabs-v13">
   <script>(function(){try{var s=localStorage.getItem('scamcheck.prefs.v1');if(!s)return;var p=JSON.parse(s);var d=document.documentElement;if(p&&p.highContrast===true)d.setAttribute('data-high-contrast','true');if(p&&['1','1.15','1.3'].indexOf(p.fontScale)>=0)d.style.setProperty('--app-font-scale',p.fontScale);}catch(e){}})();</script>
 </head>
 <body>
@@ -65,7 +65,7 @@
       <div class="hero-inner">
         <p class="hero-eyebrow">Minh bạch theo phiên</p>
         <h1 id="historyTitle" class="hero-title">Lịch sử gọi AI</h1>
-        <p class="hero-lead">Xem các lần ScamCheck gọi Thám tử, Cô tâm lý hoặc Người ứng cứu trong phiên này. Log chỉ lưu metadata, không lưu nguyên văn tin nhắn.</p>
+        <p class="hero-lead">Xem prompt, verdict của Thám tử và các lần ScamCheck gọi nhân vật AI trong phiên này.</p>
       </div>
     </section>
 
@@ -75,11 +75,10 @@
         <span class="msymbols" aria-hidden="true">&#xeb37;</span>
         <span>Tương phản cao</span>
       </button>
-      <div class="font-scale-group" role="group" aria-label="Cỡ chữ">
-        <span class="font-scale-label">Cỡ chữ</span>
-        <button class="font-scale-btn" type="button" data-scale="1" aria-pressed="true">100%</button>
-        <button class="font-scale-btn" type="button" data-scale="1.15" aria-pressed="false">115%</button>
-        <button class="font-scale-btn" type="button" data-scale="1.3" aria-pressed="false">130%</button>
+      <div class="font-scale-group" role="group" aria-label="Điều chỉnh cỡ chữ">
+        <button class="font-step-btn" type="button" data-font-step="decrease" aria-label="Giảm cỡ chữ">−</button>
+        <output class="font-scale-current" data-font-current aria-live="polite">Cỡ chữ: 100%</output>
+        <button class="font-step-btn" type="button" data-font-step="increase" aria-label="Tăng cỡ chữ">+</button>
       </div>
       <p class="sr-only" data-pref-status aria-live="polite"></p>
     </section>
@@ -107,8 +106,8 @@
         <div class="history-chart-grid">
           <figure class="risk-pie-card" aria-labelledby="pieTitle pieDescription">
             <figcaption>
-              <h3 id="pieTitle">Tỉ lệ verdict</h3>
-              <p id="pieDescription">Tính theo lượt gọi Thám tử trong phạm vi đang xem.</p>
+              <h3 id="pieTitle">Tỷ lệ kết quả</h3>
+              <p id="pieDescription">Tính theo kết quả của Thám tử trong phạm vi đang xem.</p>
             </figcaption>
             <svg class="risk-pie" viewBox="0 0 120 120" role="img" aria-label="Biểu đồ tròn tỉ lệ verdict">
               <circle class="risk-pie-track" cx="60" cy="60" r="44" pathLength="100"/>
@@ -126,7 +125,7 @@
         </div>
 
         <div id="adminExports" class="admin-exports" hidden>
-          <p><strong>Chế độ quản trị:</strong> xuất toàn bộ metadata còn trong thời hạn lưu.</p>
+          <p><strong>Chế độ quản trị:</strong> xuất toàn bộ prompt và verdict còn trong thời hạn lưu.</p>
           <div class="share-actions">
             <a class="button-secondary" href="/api/ai-logs/export?format=json">
               <span class="msymbols" aria-hidden="true">&#xf090;</span> Tải JSON
@@ -150,9 +149,8 @@
                   <th scope="col">Thời gian</th>
                   <th scope="col">Nhân vật</th>
                   <th scope="col">Trạng thái</th>
-                  <th scope="col">Mức rủi ro</th>
-                  <th scope="col">Độ dài</th>
-                  <th scope="col">Tóm tắt</th>
+                  <th scope="col">Prompt đã nhập</th>
+                  <th scope="col">Verdict Thám tử</th>
                 </tr>
               </thead>
               <tbody id="historyRows"></tbody>
@@ -165,12 +163,12 @@
 
   <footer class="site-footer">
     <div class="footer-inner">
-      <p><strong>Quyền riêng tư:</strong> bảng này không chứa nguyên văn tin nhắn, prompt, mã OTP hay dữ liệu tài khoản.</p>
+      <p><strong>Quyền riêng tư:</strong> lịch sử có lưu prompt đã nhập và verdict trong 30 ngày. Không nhập OTP, mật khẩu hoặc thông tin thẻ thật.</p>
       <p>Quản trị toàn hệ thống chỉ hoạt động qua Login with exe tại cổng <strong>8001</strong> và allowlist email phía server.</p>
     </div>
   </footer>
 
-  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v12"></script>
-  <script type="module" src="/assets/js/history-page.js?v=stage5-tabs-v12"></script>
+  <script type="module" src="/assets/js/navigation.js?v=stage5-tabs-v13"></script>
+  <script type="module" src="/assets/js/history-page.js?v=stage5-tabs-v13"></script>
 </body>
 </html>

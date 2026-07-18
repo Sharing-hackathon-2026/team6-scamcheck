@@ -20,7 +20,6 @@ export const RISK_CARD_COLORS = Object.freeze({
   an_toan: { accent: '#166534', soft: '#e7f3ec', onSoft: '#124c29' },
   nghi_ngo: { accent: '#9a5a06', soft: '#fbeec6', onSoft: '#6f3d12' },
   nguy_hiem: { accent: '#b42318', soft: '#fbe3e3', onSoft: '#7f1d1d' },
-  khong_lien_quan: { accent: '#52616b', soft: '#e9edf0', onSoft: '#334651' },
 });
 
 export const SHARE_CARD_DEFAULTS = Object.freeze({

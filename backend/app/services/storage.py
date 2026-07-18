@@ -1,4 +1,4 @@
-"""SQLite persistence for bounded cache and privacy-preserving AI call metadata."""
+"""SQLite persistence for bounded cache and session-scoped AI call history."""
 from __future__ import annotations
 
 import json
@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 _SESSION_ID_KEY = "scamcheck_session_id"
 _SESSION_ID_RE = re.compile(r"^[0-9a-f]{32}$")
-_RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"}
+_RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem"}
 _ACTORS = {"detective", "psychologist", "rescuer", "unknown"}
 
 
@@ -23,9 +23,9 @@ def _iso_utc(timestamp: float) -> str:
 class SQLiteStore:
     """One SQLite database shared by gunicorn workers through WAL mode.
 
-    Cache keys are hashes supplied by ``build_cache_key``. AI logs contain only
-    metadata and a pseudonymous browser-session id; raw messages/prompts are
-    deliberately never written to the log table.
+    Cache keys are hashes supplied by ``build_cache_key``. AI history is scoped
+    by a pseudonymous browser-session id and stores the submitted prompt plus
+    the normalized Detective verdict for the history table requested by users.
     """
 
     def __init__(
@@ -78,7 +78,9 @@ class SQLiteStore:
                     status TEXT NOT NULL,
                     risk_level TEXT,
                     input_length INTEGER NOT NULL,
-                    summary TEXT NOT NULL
+                    summary TEXT NOT NULL,
+                    prompt_text TEXT NOT NULL DEFAULT '',
+                    verdict_json TEXT NOT NULL DEFAULT '{}'
                 );
                 CREATE INDEX IF NOT EXISTS idx_ai_logs_session_time
                     ON ai_request_logs(session_id, created_unix);
@@ -86,6 +88,24 @@ class SQLiteStore:
                     ON ai_request_logs(actor, risk_level);
                 """
             )
+            # Additive migration for databases deployed before prompt/verdict history.
+            columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(ai_request_logs)").fetchall()
+            }
+            migrations = {
+                "prompt_text": "ALTER TABLE ai_request_logs ADD COLUMN prompt_text TEXT NOT NULL DEFAULT ''",
+                "verdict_json": "ALTER TABLE ai_request_logs ADD COLUMN verdict_json TEXT NOT NULL DEFAULT '{}'",
+            }
+            for column, statement in migrations.items():
+                if column in columns:
+                    continue
+                try:
+                    connection.execute(statement)
+                except sqlite3.OperationalError as exc:
+                    # Hai gunicorn worker có thể cùng migrate DB cũ lúc boot.
+                    if "duplicate column name" not in str(exc).casefold():
+                        raise
 
     # Cache API kept compatible with the previous in-memory TTLHashCache.
     def get(self, key: str) -> dict[str, Any] | None:
@@ -172,6 +192,8 @@ class SQLiteStore:
         actor: str,
         status: str,
         risk_level: str | None,
+        prompt: str = "",
+        verdict: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         now = self._clock()
         clean_actor = actor if actor in _ACTORS else "unknown"
@@ -179,13 +201,16 @@ class SQLiteStore:
         clean_status = str(status or "unknown")[:48]
         clean_summary = str(summary or "Đã nhận kết quả kiểm tra")[:240]
         clean_length = max(0, int(input_length))
+        clean_prompt = str(prompt or "")[:5000]
+        clean_verdict = verdict if isinstance(verdict, dict) else {}
+        verdict_json = json.dumps(clean_verdict, ensure_ascii=False, separators=(",", ":"))
         with self._connect() as connection:
             connection.execute(
                 """
                 INSERT INTO ai_request_logs
                     (session_id, created_at, created_unix, actor, status,
-                     risk_level, input_length, summary)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     risk_level, input_length, summary, prompt_text, verdict_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_id,
@@ -196,6 +221,8 @@ class SQLiteStore:
                     clean_risk,
                     clean_length,
                     clean_summary,
+                    clean_prompt,
+                    verdict_json,
                 ),
             )
             self._prune_logs(connection, now)
@@ -206,6 +233,8 @@ class SQLiteStore:
             "risk_level": clean_risk,
             "input_length": clean_length,
             "summary": clean_summary,
+            "prompt": clean_prompt,
+            "verdict": clean_verdict,
         }
 
     def _prune_logs(self, connection: sqlite3.Connection, now: float) -> None:
@@ -231,7 +260,7 @@ class SQLiteStore:
         query = f"""
             SELECT * FROM (
                 SELECT id, session_id, created_at, actor, status, risk_level,
-                       input_length, summary, created_unix
+                       input_length, summary, prompt_text, verdict_json, created_unix
                 FROM ai_request_logs {where}
                 ORDER BY created_unix DESC, id DESC {limit_sql}
             ) ORDER BY created_unix ASC, id ASC
@@ -241,14 +270,23 @@ class SQLiteStore:
             rows = connection.execute(query, params).fetchall()
         logs = []
         for row in rows:
+            try:
+                verdict = json.loads(row["verdict_json"])
+            except (TypeError, json.JSONDecodeError):
+                verdict = {}
+            if not isinstance(verdict, dict):
+                verdict = {}
+            risk_level = "an_toan" if row["risk_level"] == "khong_lien_quan" else row["risk_level"]
             item = {
                 "id": row["id"],
                 "at": row["created_at"],
                 "actor": row["actor"],
                 "status": row["status"],
-                "risk_level": row["risk_level"],
+                "risk_level": risk_level,
                 "input_length": row["input_length"],
                 "summary": row["summary"],
+                "prompt": row["prompt_text"],
+                "verdict": verdict,
             }
             if include_session_id:
                 item["session_id"] = row["session_id"]
@@ -267,9 +305,16 @@ class SQLiteStore:
             ).fetchone()[0])
             risk_rows = connection.execute(
                 f"""
-                SELECT risk_level, COUNT(*) AS amount
+                SELECT CASE
+                         WHEN risk_level = 'khong_lien_quan' THEN 'an_toan'
+                         ELSE risk_level
+                       END AS risk_level,
+                       COUNT(*) AS amount
                 FROM ai_request_logs {actor_where}
-                GROUP BY risk_level
+                GROUP BY CASE
+                         WHEN risk_level = 'khong_lien_quan' THEN 'an_toan'
+                         ELSE risk_level
+                       END
                 """,
                 params,
             ).fetchall()

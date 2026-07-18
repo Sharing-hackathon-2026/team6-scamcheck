@@ -9,11 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-STAGE1_REFUSAL = (
-    "Tin nhắn này không liên quan đến lừa đảo. "
-    "ScamCheck chỉ kiểm tra tin nhắn nghi lừa đảo qua SMS, Zalo, "
-    "Messenger hoặc email."
-)
+STAGE1_REFUSAL = "Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo."
 
 # Dùng đồng thời trong prompt và Gemini JSON mode để một định nghĩa schema không
 # bị trôi giữa hai nơi. Parser vẫn là lớp cưỡng chế cuối cùng.
@@ -24,7 +20,7 @@ DETECTIVE_RESPONSE_SCHEMA: dict[str, Any] = {
     "properties": {
         "risk_level": {
             "type": "string",
-            "enum": ["an_toan", "nghi_ngo", "nguy_hiem", "khong_lien_quan"],
+            "enum": ["an_toan", "nghi_ngo", "nguy_hiem"],
         },
         "reason": {"type": "string"},
         "red_flags": {
@@ -94,13 +90,13 @@ Phân tích cả (a) tin có hoặc nghi có giả danh, tiền, OTP/mật khẩ
 link/QR/tệp, đầu tư, đe dọa/khẩn cấp và (b) thông báo dịch vụ mà người dùng thường
 cần phân biệt thật–giả như ngân hàng, giao hàng, hóa đơn, lịch hẹn, bảo mật tài khoản.
 Một thông báo dịch vụ bình thường không xin dữ liệu/tiền và không dẫn link lạ thuộc
-phạm vi và có thể là "an_toan". Chỉ dùng "khong_lien_quan" cho trò chuyện gia đình,
-thời tiết, kiến thức/dịch thuật, nội dung hư cấu hoặc yêu cầu không phải một tin cần
-kiểm tra. Khi ngoài phạm vi, reason đúng nguyên văn "{STAGE1_REFUSAL}", red_flags []
-và actions [].
+phạm vi và có thể là "an_toan". Trò chuyện gia đình, thời tiết, kiến thức/dịch thuật,
+nội dung hư cấu hoặc yêu cầu không phải một tin cần kiểm tra cũng dùng "an_toan",
+nhưng reason phải đúng nguyên văn "{STAGE1_REFUSAL}", red_flags [] và actions [].
+Không tồn tại nhãn "khong_lien_quan" trong đầu ra.
 
 NGUYÊN TẮC BẢO THỦ BẮT BUỘC:
-- TUYỆT ĐỐI KHÔNG gán "an_toan" hoặc "khong_lien_quan" nếu tin yêu cầu chuyển
+- TUYỆT ĐỐI KHÔNG gán "an_toan" nếu tin yêu cầu chuyển
   hay nộp tiền; yêu cầu OTP, mã PIN, mật khẩu; yêu cầu CCCD, số thẻ, tài khoản
   hoặc thông tin nhạy cảm; thúc bấm link đáng ngờ/tải tệp; hoặc dùng đe dọa khẩn
   cấp. Các trường hợp này phải là "nguy_hiem".
@@ -119,16 +115,16 @@ Chỉ trả đúng một JSON object hợp lệ, không markdown, không lời d
 trường. JSON phải tuân thủ chính xác schema sau:
 {_SCHEMA_TEXT}
 
-Với "an_toan", "nghi_ngo", "nguy_hiem": red_flags có 0–3 mục và actions phải
-đúng 3 câu thiết thực. Với "khong_lien_quan": hai mảng phải rỗng. Tổng câu trả
-lời không quá 120 từ.
+Với thông báo ngoài phạm vi có reason cố định nêu trên, red_flags và actions phải rỗng.
+Với các kết quả "an_toan", "nghi_ngo", "nguy_hiem" còn lại: red_flags có 0–3 mục và
+actions phải đúng 3 câu thiết thực. Tổng câu trả lời không quá 120 từ.
 """
 
 DETECTIVE_FUNCTION_DECLARATIONS: list[dict[str, Any]] = [
     {
         "name": "complete_detective",
         "description": (
-            "Kết thúc phân tích khi tin an toàn hoặc không liên quan; trả toàn bộ kết quả Thám tử."
+            "Kết thúc phân tích khi tin an toàn; trả toàn bộ kết quả Thám tử."
         ),
         "parameters": GEMINI_DETECTIVE_RESPONSE_SCHEMA,
     },
@@ -274,7 +270,7 @@ DETECTIVE_SYSTEM_PROMPT = STAGE1_SYSTEM_PROMPT + """
 
 ĐIỀU PHỐI TOOL CALL:
 - Luôn kết thúc ngay bằng đúng một function call, không sinh văn bản trước hoặc sau.
-- Dùng complete_detective khi kết quả là an_toan hoặc khong_lien_quan.
+- Dùng complete_detective khi kết quả là an_toan.
 - Dùng handoff_to_psychologist khi kết quả là nghi_ngo hoặc nguy_hiem.
 - Arguments của function call phải là toàn bộ JSON DetectiveResult theo schema đã nêu.
 """
