@@ -1,35 +1,35 @@
 // Logic giao diện trang kiểm tra (/). Thư viện đã tách ra library.js; trang này
 // KHÔNG fetch /api/scam-library và không phụ thuộc DOM thư viện.
 // Chuẩn hoá NFC ở mọi boundary để tránh browser render Unicode tổ hợp sai.
-import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v14';
-import { renderHighlightedText } from './highlight-excerpts.js';
+import { check, rescue, fetchShareQrSvg, ApiError } from './api.js?v=stage5-tabs-v15';
+import { renderHighlightedText } from './highlight-excerpts.js?v=stage5-tabs-v15';
 import {
   addHistoryEntry,
   clearHistory,
   deleteHistoryEntry,
   loadHistory,
   saveHistory,
-} from './history.js';
-import { wirePreferences } from './preferences.js';
-import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js';
-import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v14';
+} from './history.js?v=stage5-tabs-v15';
+import { wirePreferences } from './preferences.js?v=stage5-tabs-v15';
+import { buildRescuePayload, normalizeRescue, SITUATIONS as RESCUE_SITUATIONS } from './rescue-model.js?v=stage5-tabs-v15';
+import { normalizeDetective, RISK_META, offersRescueGuidance, offersShareCard } from './result-model.js?v=stage5-tabs-v15';
 import {
   buildShareCardModel,
   decodeQrModules,
   drawShareCard,
   safeFileName,
-} from './share-card.js?v=stage5-tabs-v14';
-import { normalizePsychologist } from './stage3-model.js';
-import { normalizeTechnicalAnalysis } from './stage4-model.js';
-import { normalizeNfc } from './unicode.js';
-import { materialIcon } from './icons.js';
+} from './share-card.js?v=stage5-tabs-v15';
+import { normalizePsychologist } from './stage3-model.js?v=stage5-tabs-v15';
+import { normalizeTechnicalAnalysis } from './stage4-model.js?v=stage5-tabs-v15';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
+import { materialIcon } from './icons.js?v=stage5-tabs-v15';
 import {
   appendTranscript,
   getSpeechRecognitionConstructor,
   SPEECH_MESSAGES,
   speechErrorMessage,
   transcriptFromEvent,
-} from './speech.js';
+} from './speech.js?v=stage5-tabs-v15';
 
 const samples = Object.freeze({
   danger: 'THÔNG BÁO KHẨN: Tài khoản ngân hàng của quý khách sẽ bị khoá sau 30 phút. Bấm https://xac-minh-ngay.example và cung cấp mã OTP để duy trì dịch vụ.',

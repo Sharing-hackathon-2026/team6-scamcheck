@@ -77,7 +77,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 81 test Node, không cần runtime dependency ngoài
+npm --prefix frontend test       # 82 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 

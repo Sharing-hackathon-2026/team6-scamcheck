@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
 
 export const HISTORY_KEY = 'scamcheck.history.v2';
 export const HISTORY_LIMIT = 10;

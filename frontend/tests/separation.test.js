@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -40,15 +40,24 @@ test('library.js owns the library API + DOM wiring', () => {
 test('all four entry scripts use the shared cache-bust version', () => {
   for (const file of ['index.html', 'library.html', 'practice.html', 'history.html']) {
     const html = read(`../${file}`);
-    assert.ok(html.includes('v=stage5-tabs-v14'), `${file} must use stage5-tabs-v14`);
-    assert.ok(html.includes('/assets/js/navigation.js?v=stage5-tabs-v14'), `${file} must reveal its active tab`);
+    assert.ok(html.includes('v=stage5-tabs-v15'), `${file} must use stage5-tabs-v15`);
+    assert.ok(html.includes('/assets/js/navigation.js?v=stage5-tabs-v15'), `${file} must reveal its active tab`);
   }
   const app = read('../assets/js/app.js');
   const library = read('../assets/js/library.js');
   const history = read('../assets/js/history-page.js');
-  assert.ok(app.includes("./result-model.js?v=stage5-tabs-v14"));
-  assert.ok(app.includes("./share-card.js?v=stage5-tabs-v14"));
-  assert.ok(library.includes('./stage3-model.js?v=stage5-tabs-v14'));
+  assert.ok(app.includes("./result-model.js?v=stage5-tabs-v15"));
+  assert.ok(app.includes("./share-card.js?v=stage5-tabs-v15"));
+  assert.ok(library.includes('./stage3-model.js?v=stage5-tabs-v15'));
   assert.ok(history.includes('/api/ai-logs?scope='));
   assert.ok(!history.includes('innerHTML'));
+});
+
+test('every runtime module dependency is versioned for immutable asset caching', () => {
+  const jsDir = join(here, '../assets/js');
+  for (const file of readdirSync(jsDir).filter((name) => name.endsWith('.js'))) {
+    const source = read(`../assets/js/${file}`);
+    const unversioned = [...source.matchAll(/from\s+['"](\.\/[^'"?]+\.js)['"]/g)];
+    assert.deepEqual(unversioned, [], `${file} has an unversioned module import`);
+  }
 });

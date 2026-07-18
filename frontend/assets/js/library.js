@@ -3,9 +3,9 @@
 // và không phụ thuộc DOM của thư viện. Mọi render dùng textContent/DOM API.
 // Thiết lập chỉ chạy khi các node thư viện tồn tại; không ném nếu thiếu.
 
-import { ApiError, getScamLibrary } from "./api.js";
-import { filterLibraryItems, libraryGroupFromHash } from "./stage3-model.js?v=stage5-tabs-v14";
-import { wirePreferences } from "./preferences.js";
+import { ApiError, getScamLibrary } from "./api.js?v=stage5-tabs-v15";
+import { filterLibraryItems, libraryGroupFromHash } from "./stage3-model.js?v=stage5-tabs-v15";
+import { wirePreferences } from "./preferences.js?v=stage5-tabs-v15";
 
 function createElement(tag, { className = "", text = "", attributes = {} } = {}) {
   const element = document.createElement(tag);

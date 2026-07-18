@@ -514,8 +514,9 @@ normalize + validate
 ### 10.4 Cache và quyền riêng tư
 
 - Static CSS/JS/font/icon tự host có `Cache-Control: public, immutable` một năm; mọi thay đổi
-  CSS/JS bump query version. Điều hướng tab warm-up HTML đích theo pointer/focus/touch nhưng
-  vẫn giữ real links; HTML dùng `no-cache` để revalidate.
+  CSS/JS bump query version. Cả entry script lẫn mọi static module import đều mang cùng version,
+  tránh trình duyệt tái dùng dependency cũ. Điều hướng tab warm-up HTML đích theo
+  pointer/focus/touch nhưng vẫn giữ real links; HTML dùng `no-cache` để revalidate.
 - Cache backend nằm trong SQLite WAL, bounded mặc định 256 mục/1 giờ và dùng chung giữa hai
   gunicorn worker; restart/deploy không làm mất cache còn TTL.
 - Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload typed.

@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
 
 function clean(value) {
   return typeof value === 'string' ? normalizeNfc(value).trim() : '';

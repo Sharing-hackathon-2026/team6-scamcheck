@@ -2,7 +2,7 @@
 // Mục tiêu: bảo vệ giao diện khi backend trả thiếu/thừa trường, và đảm bảo
 // payload gửi đi KHÔNG mang theo lịch sử hay toàn văn dư thừa.
 
-import { normalizeNfc } from './unicode.js';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
 
 export const SITUATIONS = Object.freeze({
   chua_lam_gi: 'Chưa làm gì',

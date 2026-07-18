@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
 
 /**
  * Chuẩn hoá chuỗi để đối chiếu excerpt thân thiện với hoa/thường và khoảng trắng.
