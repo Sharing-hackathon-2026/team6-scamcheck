@@ -6,7 +6,7 @@
 // theo nhãn, lời nhắc an toàn, QR + URL sản phẩm). KHÔNG đưa toàn văn tin nhắn, excerpt,
 // số tài khoản hay dữ liệu cá nhân vào ảnh.
 
-import { RISK_META } from './result-model.js?v=stage5-tabs-v15';
+import { RISK_META } from './result-model.js?v=stage5-tabs-v16';
 
 const REASON_LIMIT = 132;
 const SIGN_LIMIT = 56;

@@ -6,6 +6,7 @@ import {
   revealCurrentTab,
   setMobileMenuOpen,
   wireTabPrefetch,
+  wireViewportResizeEffect,
 } from '../assets/js/navigation.js';
 
 test('revealCurrentTab centers the active tab inside an overflowing rail', () => {
@@ -51,6 +52,30 @@ test('wireTabPrefetch warms a tab on pointer, keyboard or touch intent', () => {
   };
   assert.equal(wireTabPrefetch(rail, { head: {}, createElement() {} }), true);
   assert.deepEqual([...listeners.keys()], ['pointerenter', 'focusin', 'touchstart']);
+});
+
+test('wireViewportResizeEffect adds and clears the matching zoom class', async () => {
+  const listeners = new Map();
+  const classes = new Set();
+  const view = {
+    innerWidth: 800,
+    addEventListener: (type, callback) => listeners.set(type, callback),
+    matchMedia: () => ({ matches: false }),
+  };
+  const root = {
+    offsetWidth: 800,
+    classList: {
+      add: (...names) => names.forEach((name) => classes.add(name)),
+      remove: (...names) => names.forEach((name) => classes.delete(name)),
+    },
+  };
+  assert.equal(wireViewportResizeEffect(view, root), true);
+  view.innerWidth = 900;
+  listeners.get('resize')();
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.equal(classes.has('viewport-zoom-in'), true);
+  await new Promise((resolve) => setTimeout(resolve, 280));
+  assert.equal(classes.has('viewport-zoom-in'), false);
 });
 
 test('setMobileMenuOpen synchronizes expanded state and menu visibility', () => {

@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v16';
 
 export function normalizePsychologist(value, status = 'not_needed', error = '') {
   const message = value && typeof value.message === 'string'

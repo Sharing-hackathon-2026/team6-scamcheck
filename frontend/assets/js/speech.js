@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v16';
 
 export const SPEECH_MESSAGES = Object.freeze({
   unsupported: 'Trình duyệt này chưa hỗ trợ nhập bằng giọng nói. Bác vẫn có thể dán hoặc gõ tin nhắn.',

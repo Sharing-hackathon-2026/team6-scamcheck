@@ -7,7 +7,7 @@
 > - **Frontend** (`frontend/`): HTML + CSS token hoá + JavaScript thuần → phục vụ bởi **Nginx**.
 > - **Backend** (`backend/`): **Python Flask REST API** trả JSON thuần (không Jinja2).
 > - **SQLite**: persistent cache + lịch sử prompt/verdict theo session; WAL dùng chung giữa worker.
-> - AI là **Google Gemini** qua HTTP (`requests`).
+> - AI là **Google Gemini 3.5 Flash-Lite** qua HTTP (`requests`).
 >
 > Trình duyệt và Flask **cùng origin**: Nginx phục vụ static ở `/` và reverse-proxy
 > `/api/*` → Flask. Frontend gọi `fetch('/api/...')` → không lo CORS.
@@ -517,6 +517,8 @@ normalize + validate
   CSS/JS bump query version. Cả entry script lẫn mọi static module import đều mang cùng version,
   tránh trình duyệt tái dùng dependency cũ. Điều hướng tab warm-up HTML đích theo
   pointer/focus/touch nhưng vẫn giữ real links; HTML dùng `no-cache` để revalidate.
+- Dropdown cỡ chữ đổi custom property bằng transition font-size thật; resize viewport phát một nhịp
+  zoom nhẹ sau debounce. Cả hai tuân thủ `prefers-reduced-motion`.
 - Cache backend nằm trong SQLite WAL, bounded mặc định 256 mục/1 giờ và dùng chung giữa hai
   gunicorn worker; restart/deploy không làm mất cache còn TTL.
 - Key là SHA-256 của NFC input cùng model và `STAGE4_PIPELINE_VERSION`; value là payload typed.

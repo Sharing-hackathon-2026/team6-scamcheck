@@ -1,7 +1,7 @@
-import { ApiError, getQuiz } from './api.js?v=stage5-tabs-v15';
-import { wirePreferences } from './preferences.js?v=stage5-tabs-v15';
-import { normalizeQuiz, quizGuidance, scoreQuiz } from './stage4-model.js?v=stage5-tabs-v15';
-import { materialIcon } from './icons.js?v=stage5-tabs-v15';
+import { ApiError, getQuiz } from './api.js?v=stage5-tabs-v16';
+import { wirePreferences } from './preferences.js?v=stage5-tabs-v16';
+import { normalizeQuiz, quizGuidance, scoreQuiz } from './stage4-model.js?v=stage5-tabs-v16';
+import { materialIcon } from './icons.js?v=stage5-tabs-v16';
 
 const elements = {
   status: document.getElementById('practiceStatus'),

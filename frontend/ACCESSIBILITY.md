@@ -20,7 +20,7 @@ Mục tiêu: WCAG 2.1/2.2 mức AA cho luồng chính trên iPhone Safari và de
 | Không chỉ dùng màu | Thẻ rủi ro luôn có nhãn chữ “An toàn/Nghi ngờ/Nguy hiểm”, biểu tượng và viền | Đạt |
 | Trạng thái động | `role=status`, `role=alert`, `aria-live`, `aria-busy`; kết quả có thể nhận focus | Đạt |
 | Loading | Có câu trạng thái, spinner và skeleton rõ; spinner bị ẩn với AT để tránh nhiễu | Đạt |
-| Giảm chuyển động | `prefers-reduced-motion: reduce` tắt gần như toàn bộ animation/transition | Đạt |
+| Giảm chuyển động | `prefers-reduced-motion: reduce` tắt smooth font/viewport zoom và gần như toàn bộ animation/transition | Đạt |
 | Form label/help | Textarea có `<label>` và `aria-describedby`; cảnh báo không nhập OTP/mật khẩu | Đạt |
 | Giọng nói | Nút bật/tắt có `aria-pressed`; trạng thái/quyền/lỗi microphone được thông báo bằng chữ | Đạt |
 | Safari không hỗ trợ Speech API | Ẩn nút không dùng được và hiện hướng dẫn nhập bàn phím/dán nội dung | Đạt |
@@ -116,8 +116,9 @@ Fresh UX gate theo `utility-ui-eval`:
 ## Stage 5 — Người ứng cứu, chia sẻ và tùy chọn đọc
 
 - Cụm “Hiển thị” có native buttons ≥44px, live announcement và dùng chung localStorage trên
-  bốn trang. Cỡ chữ dùng một dropdown native có label; ba mức là 100%/115%/130%.
-  Storage hỏng/bị chặn rơi về mặc định, không khóa UI.
+  bốn trang. Cỡ chữ dùng một dropdown native có label; ba mức là 100%/115%/130%
+  và chuyển nấc mượt. Resize viewport có zoom nhẹ sau khi kéo xong. Cả hai hiệu ứng tắt
+  khi người dùng chọn reduced motion. Storage hỏng/bị chặn rơi về mặc định, không khóa UI.
 - Tương phản cao là lớp token riêng cho cả system light/dark, tăng border/focus/muted text;
   không thay dark mode tự động bằng toggle và không dùng màu làm tín hiệu duy nhất.
 - Câu “Bác đã làm gì rồi?” chỉ xuất hiện cho `nghi_ngo`/`nguy_hiem`, gồm đúng bốn native
@@ -146,7 +147,7 @@ Caveat còn lại: cần kiểm tra iPhone Safari thật, thao tác “Lưu vào
 vật lý và VoiceOver trước demo chính thức; headless Chromium không mô phỏng hoàn toàn native
 share sheet hay cách iOS lưu ảnh.
 
-## Tabs redesign (stage5-tabs-v15) — IA, font, icon
+## Tabs redesign (stage5-tabs-v16) — IA, font, icon
 
 Kiến trúc thông tin mới: **một tác vụ mỗi trang**, bốn đích đến là link thật
 (`aria-current="page"`, mở tab mới / back-forward hoạt động). Desktop dùng thanh tab;

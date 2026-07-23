@@ -8,6 +8,9 @@ export const DEFAULT_PREFERENCES = Object.freeze({ highContrast: false, fontScal
 /** Ba mức cỡ chữ trong dropdown: 100% / 115% / 130%. */
 export const FONT_SCALE_OPTIONS = Object.freeze(['1', '1.15', '1.3']);
 
+const FONT_TRANSITION_MS = 300;
+const fontTransitionTimers = new WeakMap();
+
 const FONT_SCALE_LABELS = Object.freeze({
   '1': '100%',
   '1.15': '115%',
@@ -61,13 +64,29 @@ export function savePreferences(storage, preferences) {
  * Áp dụng tùy chọn lên phần tử gốc (thường là document.documentElement).
  * Tách ra để app.js và practice.js dùng chung; không unit test trực tiếp (cần DOM).
  */
-export function applyPreferences(root, preferences) {
+export function applyPreferences(root, preferences, { animateFont = false } = {}) {
   if (!root || typeof root.setAttribute !== 'function') return;
   const prefs = normalizePreferences(preferences);
   if (prefs.highContrast) {
     root.setAttribute('data-high-contrast', 'true');
   } else {
     root.removeAttribute('data-high-contrast');
+  }
+
+  const view = root.ownerDocument?.defaultView;
+  const reduceMotion = view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  if (animateFont && !reduceMotion && root.classList) {
+    const oldTimer = fontTransitionTimers.get(root);
+    if (oldTimer) clearTimeout(oldTimer);
+    root.classList.remove('is-font-resizing');
+    // Buộc browser ghi nhận cỡ cũ trước khi đổi custom property.
+    void root.offsetWidth;
+    root.classList.add('is-font-resizing');
+    const timer = setTimeout(() => {
+      root.classList.remove('is-font-resizing');
+      fontTransitionTimers.delete(root);
+    }, FONT_TRANSITION_MS);
+    fontTransitionTimers.set(root, timer);
   }
   root.style.setProperty('--app-font-scale', prefs.fontScale);
 }
@@ -94,9 +113,9 @@ export function wirePreferences({
     if (scaleSelect) scaleSelect.value = prefs.fontScale;
   };
 
-  const commit = () => {
+  const commit = ({ animateFont = false } = {}) => {
     savePreferences(storage, prefs);
-    applyPreferences(documentRoot, prefs);
+    applyPreferences(documentRoot, prefs, { animateFont });
     sync();
   };
 
@@ -118,7 +137,7 @@ export function wirePreferences({
       const select = event.target.closest('[data-font-scale]');
       if (!select || !FONT_SCALE_OPTIONS.includes(select.value)) return;
       prefs = normalizePreferences({ ...prefs, fontScale: select.value });
-      commit();
+      commit({ animateFont: true });
       if (status) status.textContent = `Đã đổi cỡ chữ thành ${fontScaleLabel(prefs.fontScale)}.`;
     });
   }

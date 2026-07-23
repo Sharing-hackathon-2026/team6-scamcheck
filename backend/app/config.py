@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 
 
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+
+
 def _positive_int(value: str | None, default: int) -> int:
     """Đọc số nguyên dương từ env, trả ``default`` nếu giá trị không hợp lệ."""
     try:
@@ -37,7 +40,7 @@ class Config:
     """Đọc cấu hình từ env một cách an toàn."""
 
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
     FLASK_SECRET_KEY: str = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
     PORT: int = _positive_int(os.environ.get("PORT"), 5000)
 

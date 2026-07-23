@@ -1,6 +1,6 @@
-import { wirePreferences } from './preferences.js?v=stage5-tabs-v15';
-import { materialIcon } from './icons.js?v=stage5-tabs-v15';
-import { API_BASE } from './config.js?v=stage5-tabs-v15';
+import { wirePreferences } from './preferences.js?v=stage5-tabs-v16';
+import { materialIcon } from './icons.js?v=stage5-tabs-v16';
+import { API_BASE } from './config.js?v=stage5-tabs-v16';
 
 const RISK_SERIES = Object.freeze([
   { key: 'an_toan', label: 'An toàn', className: 'pie-safe' },

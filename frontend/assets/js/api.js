@@ -1,5 +1,5 @@
 // Wrapper fetch cho backend API structured (L1-03).
-import { API_BASE } from './config.js?v=stage5-tabs-v15';
+import { API_BASE } from './config.js?v=stage5-tabs-v16';
 
 /** Lỗi thân thiện khi gọi API. */
 export class ApiError extends Error {

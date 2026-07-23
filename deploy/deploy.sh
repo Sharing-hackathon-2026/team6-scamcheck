@@ -42,6 +42,13 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 sudo chown root:"$USER" "$ENV_FILE"
 sudo chmod 640 "$ENV_FILE"
+# Nâng model mặc định cũ nhưng giữ nguyên nếu operator đã chọn một model custom khác.
+DEFAULT_GEMINI_MODEL="gemini-3.5-flash-lite"
+if sudo grep -q '^GEMINI_MODEL=gemini-3.1-flash-lite$' "$ENV_FILE"; then
+  sudo sed -i "s|^GEMINI_MODEL=.*|GEMINI_MODEL=$DEFAULT_GEMINI_MODEL|" "$ENV_FILE"
+elif ! sudo grep -q '^GEMINI_MODEL=' "$ENV_FILE"; then
+  printf 'GEMINI_MODEL=%s\n' "$DEFAULT_GEMINI_MODEL" | sudo tee -a "$ENV_FILE" >/dev/null
+fi
 # Public edge cung cấp full SSL ở origin không port; QR phải trỏ tới URL final-user này,
 # không phải cổng Nginx nội bộ 8000.
 PUBLIC_BASE_URL="https://team6-scamcheck.exe.xyz/"

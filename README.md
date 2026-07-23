@@ -26,7 +26,7 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 
 ### Yêu cầu
 - Python 3.11+ và `pip`.
-- Một khóa API Gemini (test local dùng `gemini-3.1-flash-lite`).
+- Một khóa API Gemini (mặc định dùng `gemini-3.5-flash-lite`).
 
 ### Backend
 ```bash
@@ -45,7 +45,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 204 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 205 test, dùng mock (không tốn lượt AI)
 ```
 
 Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn API):
@@ -77,7 +77,7 @@ python -m http.server 5500
 
 Kiểm thử helper frontend (highlight, lịch sử, ứng cứu, chia sẻ, tùy chọn đọc):
 ```bash
-npm --prefix frontend test       # 82 test Node, không cần runtime dependency ngoài
+npm --prefix frontend test       # 83 test Node, không cần runtime dependency ngoài
 npm --prefix frontend run check  # syntax check toàn bộ JavaScript
 ```
 
@@ -99,6 +99,7 @@ Stage 5 bổ sung câu hỏi tình huống một chạm, FSM ba persona, Ngườ
 fallback/kill switch, bảng 10 ngân hàng + Công an + kênh 156 có bằng chứng theo từng số và post-filter
 cứng mọi số điện thoại. Kết quả có thể xuất ảnh PNG 1080×1350 với QR same-origin chuẩn,
 Web Share/download fallback; high contrast và cỡ chữ chọn bằng dropdown được lưu trên thiết bị.
+Đổi cỡ chữ và resize viewport có chuyển động zoom nhẹ, tự tắt theo `prefers-reduced-motion`.
 Runbook crisis flow: `backend/RESCUE_RUNBOOK.md`.
 
 Frontend hiện dùng kiến trúc một tác vụ mỗi trang: `/` kiểm tra, `/library.html` thư viện,

@@ -1,7 +1,11 @@
 """Test helper cấu hình L1-07."""
 from __future__ import annotations
 
-from app.config import _bounded_timeout, _env_enabled, _positive_int
+from app.config import DEFAULT_GEMINI_MODEL, _bounded_timeout, _env_enabled, _positive_int
+
+
+def test_default_gemini_model_uses_current_flash_lite_release():
+    assert DEFAULT_GEMINI_MODEL == "gemini-3.5-flash-lite"
 
 
 def test_positive_int_returns_default_for_invalid_or_non_positive():

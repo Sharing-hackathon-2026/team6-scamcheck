@@ -15,7 +15,7 @@ class _TestConfig(Config):
     """Config cố định cho test."""
 
     GEMINI_API_KEY = "test-key"
-    GEMINI_MODEL = "gemini-3.1-flash-lite"
+    GEMINI_MODEL = "gemini-3.5-flash-lite"
     FLASK_SECRET_KEY = "test-secret"
     CORS_ORIGINS = []
 

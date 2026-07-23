@@ -73,7 +73,7 @@ def main() -> int:
     parser.add_argument("--output-name", default="stage4-evaluation")
     args = parser.parse_args()
     key = os.environ.get("GEMINI_API_KEY", "")
-    model = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
     if not key:
         print("Thiếu GEMINI_API_KEY; không gọi AI.", file=sys.stderr)
         return 2

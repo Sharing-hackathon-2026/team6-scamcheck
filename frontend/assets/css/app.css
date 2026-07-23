@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ScamCheck — giao diện tabs redesign (stage5-tabs-v15).
+   ScamCheck — giao diện tabs redesign (stage5-tabs-v16).
    Bản sắc: canvas mint rộng, mực forest, violet dành riêng cho thương hiệu +
    hành động chính; mốc hero (violet) / footer (forest) cong rộng; trang biên tập
    phẳng với đường phân chia, pill cho điều khiển, dải số thứ tự cho các bước.
@@ -29,6 +29,25 @@ body {
   background-image: radial-gradient(120% 80% at 100% 0%, var(--color-arc), transparent 55%);
   background-attachment: fixed;
   overflow-x: hidden;
+}
+
+/* Cỡ chữ chuyển nấc theo font-size thật; resize cửa sổ có một nhịp zoom rất nhẹ. */
+html.is-font-resizing,
+html.is-font-resizing body {
+  transition: font-size 260ms var(--ease-spring);
+}
+html.viewport-zoom-in body,
+html.viewport-zoom-out body { transform-origin: top center; }
+html.viewport-zoom-in body { animation: viewport-zoom-in 240ms var(--ease-spring); }
+html.viewport-zoom-out body { animation: viewport-zoom-out 240ms var(--ease-spring); }
+
+@keyframes viewport-zoom-in {
+  from { opacity: 0.97; transform: scale(0.992); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes viewport-zoom-out {
+  from { opacity: 0.97; transform: scale(1.008); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 button, textarea, input { font: inherit; }

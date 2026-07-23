@@ -4,6 +4,43 @@
 // font/icon dùng chung được HTTP cache immutable nên không tải lại giữa các trang.
 
 const prefetchedPages = new Set();
+const VIEWPORT_EFFECT_DELAY_MS = 90;
+const VIEWPORT_EFFECT_DURATION_MS = 260;
+
+/** Nhịp zoom nhẹ sau khi người dùng kết thúc kéo rộng/hẹp cửa sổ. */
+export function wireViewportResizeEffect(
+  view = globalThis.window,
+  root = globalThis.document?.documentElement,
+) {
+  if (!view?.addEventListener || !root?.classList) return false;
+  let previousWidth = view.innerWidth;
+  let pendingClass = '';
+  let debounceTimer;
+  let cleanupTimer;
+
+  const clearClasses = () => {
+    root.classList.remove('viewport-zoom-in', 'viewport-zoom-out');
+  };
+  view.addEventListener('resize', () => {
+    const nextWidth = view.innerWidth;
+    if (Math.abs(nextWidth - previousWidth) >= 2) {
+      pendingClass = nextWidth > previousWidth ? 'viewport-zoom-in' : 'viewport-zoom-out';
+    }
+    previousWidth = nextWidth;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const effectClass = pendingClass;
+      pendingClass = '';
+      if (!effectClass || view.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      clearClasses();
+      void root.offsetWidth;
+      root.classList.add(effectClass);
+      clearTimeout(cleanupTimer);
+      cleanupTimer = setTimeout(clearClasses, VIEWPORT_EFFECT_DURATION_MS);
+    }, VIEWPORT_EFFECT_DELAY_MS);
+  });
+  return true;
+}
 
 export function prefetchPage(href, doc = globalThis.document, currentHref = globalThis.location?.href) {
   if (!href || !doc?.head || typeof URL !== 'function') return false;
@@ -102,4 +139,5 @@ if (typeof document !== 'undefined') {
   }
   wireMobileMenu(header);
   wireTabPrefetch(rail);
+  wireViewportResizeEffect(window, document.documentElement);
 }

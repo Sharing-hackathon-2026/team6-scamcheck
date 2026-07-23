@@ -1,4 +1,4 @@
-import { normalizeNfc } from './unicode.js?v=stage5-tabs-v15';
+import { normalizeNfc } from './unicode.js?v=stage5-tabs-v16';
 
 export const RISK_META = Object.freeze({
   an_toan: { label: 'An toàn', announcement: 'Kết quả: An toàn' },
