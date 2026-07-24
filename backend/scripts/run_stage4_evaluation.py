@@ -39,7 +39,7 @@ from app.services.links import analyze_links
 from app.services.parser import RISK_LEVELS, parse_detective
 from app.services.rule_engine import evaluate_rules
 
-PROMPT_VERSION = "detective-function-call-v4-three-verdicts"
+PROMPT_VERSION = "detective-function-call-v5-evidence-threshold"
 
 
 def stage3_baseline_prompt() -> str:
@@ -50,9 +50,9 @@ thông tin nhạy cảm; link, QR hay tệp; đầu tư/lợi nhuận bất thư
 áp lực khẩn cấp. Tin ngoài phạm vi phải có risk_level "an_toan", reason đúng nguyên văn
 "Tin nhắn không thuộc nội dung cần kiểm tra lừa đảo.", red_flags [] và actions [].
 
-NGUYÊN TẮC BẢO THỦ BẮT BUỘC:'''
+NGUYÊN TẮC PHÂN LOẠI THEO BẰNG CHỨNG:'''
     prompt = re.sub(
-        r"PHẠM VI:\n.*?\nNGUYÊN TẮC BẢO THỦ BẮT BUỘC:", scope,
+        r"PHẠM VI:\n.*?\nNGUYÊN TẮC PHÂN LOẠI THEO BẰNG CHỨNG:", scope,
         DETECTIVE_SYSTEM_PROMPT, flags=re.DOTALL,
     )
     return re.sub(

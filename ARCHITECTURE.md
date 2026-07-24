@@ -508,8 +508,12 @@ normalize + validate
 - Rule signal có `code`, `severity`, `label`, `excerpt`, `explanation`; excerpt luôn là
   lát cắt thật từ input.
 - Rule nguy hiểm có quyền nâng verdict; signal cảnh báo chỉ nâng nhãn lạc quan lên
-  `nghi_ngo`. Ngoại lệ hạ duy nhất là full-match thông báo cấp OTP thuần tuý. Frontend
-  hiển thị riêng nguồn kỹ thuật, không giả là kết luận chắc chắn của một heuristic.
+  `nghi_ngo`. Yêu cầu tiền chỉ là `danger` khi có số tiền, tài khoản, mục đích/đích
+  thanh toán hoặc đe doạ cụ thể; câu trần như “Chuyển tiền cho tôi” là `warning`.
+- Hai ambiguity cap hẹp giữ yêu cầu tiền trần và thông báo điểm hết hạn + link thường ở
+  `nghi_ngo` kể cả khi model quá nhạy. Cap fail closed: bất kỳ danger signal nào đều vô
+  hiệu. Ngoại lệ OTP full-match vẫn độc lập. Frontend hiển thị riêng nguồn kỹ thuật,
+  không giả heuristic là kết luận chắc chắn.
 
 ### 10.4 Cache và quyền riêng tư
 

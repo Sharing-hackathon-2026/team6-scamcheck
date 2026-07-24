@@ -221,7 +221,7 @@ main `8,6/10`, practice `8,0/10`, cả hai `true_operational_tool`, không criti
 | L5-09 | Nút tải ảnh về máy | Nên có | ✅ Xong | Web Share File + Blob download; iOS fallback mở ảnh/chạm giữ; cần smoke iPhone thật |
 | L5-10 | Tương phản cao + cỡ chữ điều chỉnh | Bắt buộc | ✅ Xong | High contrast light/dark + dropdown 100/115/130% trên bốn trang, smooth resize và localStorage fail-safe |
 
-**Test hiện tại:** 205 pytest backend + 83 Node tests frontend; compileall/syntax/NFC/diff check đạt.
+**Test hiện tại:** 210 pytest backend + 83 Node tests frontend; compileall/syntax/NFC/diff check đạt.
 
 **🛡️ Safety mentor gate:** ✅ PASS — fresh `gpt-5.6-terra`, không critical/major,
 `recommendation=ship`. Hai vòng FAIL trước đã buộc sửa AI prose, 113, Host-header QR và

@@ -13,6 +13,7 @@ Hackathon FCT — Team 6. AI: Google Gemini.
 - Trình duyệt gọi `fetch('/api/...')` → Nginx reverse-proxy `/api/*` sang Flask → **cùng origin, không lo CORS**.
 - `GEMINI_API_KEY` chỉ tồn tại ở backend.
 - Backend chỉ trả ba verdict: `an_toan`, `nghi_ngo`, `nguy_hiem`; tin ngoài phạm vi được gộp vào `an_toan` với thông báo ngắn cố định.
+- Tin mơ hồ thiếu chi tiết kiểm chứng (ví dụ yêu cầu chuyển tiền trần hoặc điểm thưởng hết hạn + link thường) giữ ở `nghi_ngo`; chỉ lên `nguy_hiem` khi có bằng chứng cụ thể.
 - SQLite dùng chung giữa các gunicorn worker để lưu persistent cache và lịch sử theo phiên gồm prompt đã nhập + verdict Thám tử (retention mặc định 30 ngày).
 
 ## Deploy target
@@ -45,7 +46,7 @@ set -a && . ../.env && set +a && python run.py
 
 Chạy test:
 ```bash
-cd backend && . .venv/bin/activate && pytest      # 205 test, dùng mock (không tốn lượt AI)
+cd backend && . .venv/bin/activate && pytest      # 210 test, dùng mock (không tốn lượt AI)
 ```
 
 Chạy riêng bộ hồi quy 20 tin với Gemini thật (có tốn API):

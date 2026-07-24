@@ -2,7 +2,11 @@ import pytest
 
 from app.services.links import analyze_links
 from app.services.parser import parse_detective
-from app.services.rule_engine import evaluate_rules, is_otp_delivery_notification
+from app.services.rule_engine import (
+    evaluate_rules,
+    is_low_context_ambiguity,
+    is_otp_delivery_notification,
+)
 
 
 def codes(text):
@@ -28,9 +32,38 @@ def test_negation_is_clause_local_and_cannot_hide_later_credential_request():
     assert signals[0].excerpt == "gửi mã OTP"
 
 
-def test_safe_negations_do_not_trigger_hard_rules():
+def test_safe_negations_and_completed_payments_do_not_trigger_hard_rules():
     assert "credential_request" not in codes("Ngân hàng không bao giờ yêu cầu gửi mã OTP.")
     assert "money_request" not in codes("Bác không cần chuyển tiền trước.")
+    assert "money_request" not in codes("Tiền lương tháng này đã được chuyển vào tài khoản của bác.")
+    assert "money_request" not in codes("Quý khách đã thanh toán khoản vay thành công.")
+    assert "money_request" not in codes("Tôi vừa chuyển tiền cho bác rồi.")
+
+
+def test_bare_money_request_is_warning_but_concrete_payment_is_danger():
+    bare = codes("Chuyển tiền cho tôi")["money_request"]
+    assert bare.severity == "warning"
+    assert "chưa rõ bối cảnh" in bare.label
+    for text in (
+        "Chuyển 2 triệu đồng phí hồ sơ.",
+        "Chuyển tiền cọc vào tài khoản 0123456789.",
+        "Chuyển tiền vào tài khoản an toàn để phục vụ điều tra.",
+    ):
+        assert codes(text)["money_request"].severity == "danger"
+
+
+def test_low_context_ambiguity_is_narrow_and_fails_closed():
+    bare = "Chuyển tiền cho tôi"
+    assert is_low_context_ambiguity(bare, evaluate_rules(bare)) is True
+    reward = "Điểm thưởng của bác sắp hết hạn hôm nay. Xem chi tiết tại rewards.example.com."
+    assert is_low_context_ambiguity(reward, evaluate_rules(reward)) is True
+    credential = reward + " Hãy gửi mã OTP để nhận thưởng."
+    assert is_low_context_ambiguity(credential, evaluate_rules(credential)) is False
+    login = "Điểm thưởng sắp hết hạn. Đăng nhập để nhận tại rewards.example.com."
+    assert is_low_context_ambiguity(login, evaluate_rules(login)) is False
+    spoofed = "Điểm thưởng sắp hết hạn. Xem tại vietcombank.com.vn.evil.example."
+    spoofed_signals = evaluate_rules(spoofed, analyze_links(spoofed, resolve_shorteners=False))
+    assert is_low_context_ambiguity(spoofed, spoofed_signals) is False
 
 
 def test_plain_otp_delivery_is_safe_context_not_a_request_or_urgency_signal():
@@ -72,7 +105,7 @@ def test_rule_excerpt_is_always_real_source_slice():
         assert signal.excerpt in text
 
 
-def test_danger_rule_can_only_raise_not_lower_model_verdict():
+def test_concrete_danger_rule_can_only_raise_not_lower_model_verdict():
     raw_safe = {"risk_level": "an_toan", "reason": "Ổn", "red_flags": [], "actions": []}
     result = parse_detective(raw_safe, "Hãy gửi mã OTP ngay")
     assert result.risk_level == "nguy_hiem"

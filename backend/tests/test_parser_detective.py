@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from app.prompts import STAGE1_REFUSAL
 from app.services.parser import (
+    AMBIGUOUS_REASON,
     CONSERVATIVE_REASON,
     DEFAULT_ACTIONS,
     has_explicit_high_risk_signal,
@@ -85,13 +86,42 @@ def test_conservative_guard_still_overrides_legacy_unrelated_money_request():
     assert len(result.actions) == 3
 
 
+def test_bare_money_request_caps_over_sensitive_model_at_suspicious():
+    raw = {"risk_level": "nguy_hiem", "reason": "Quá bảo thủ.", "red_flags": [], "actions": []}
+    result = parse_detective(raw, "Chuyển tiền cho tôi")
+    assert result.risk_level == "nghi_ngo"
+    assert result.reason == AMBIGUOUS_REASON
+    assert result.red_flags[0].label == "Yêu cầu chuyển tiền chưa rõ bối cảnh"
+
+
+def test_reward_expiry_with_plain_link_caps_over_sensitive_model_at_suspicious():
+    text = "Điểm thưởng của bác sắp hết hạn hôm nay. Xem chi tiết tại rewards.example.com."
+    raw = {
+        "risk_level": "nguy_hiem",
+        "reason": "Quá bảo thủ.",
+        "red_flags": [{"label": "Thời hạn", "excerpt": "sắp hết hạn", "explanation": "Có áp lực."}],
+        "actions": [],
+    }
+    result = parse_detective(raw, text)
+    assert result.risk_level == "nghi_ngo"
+    assert result.reason == AMBIGUOUS_REASON
+
+
+def test_ambiguity_cap_does_not_lower_concrete_money_or_credential_request():
+    raw = {"risk_level": "nguy_hiem", "reason": "Có bằng chứng.", "red_flags": [], "actions": []}
+    assert parse_detective(raw, "Chuyển 2 triệu đồng vào tài khoản 0123456789.").risk_level == "nguy_hiem"
+    reward_otp = "Điểm thưởng sắp hết hạn. Xem tại rewards.example.com và gửi mã OTP để nhận."
+    assert parse_detective(raw, reward_otp).risk_level == "nguy_hiem"
+
+
 def test_high_risk_guard_handles_unicode_combining_marks():
     text = "Cung c" + "a\u0302\u0301" + "p m" + "a\u0323\u0302" + "t kh" + "a\u0302\u0309" + "u ngay"
     assert has_explicit_high_risk_signal(text) is True
 
 
-def test_high_risk_guard_does_not_mark_plain_conversation():
+def test_high_risk_guard_does_not_mark_plain_conversation_or_bare_money_request():
     assert has_explicit_high_risk_signal("Chiều nay cả nhà ăn cơm lúc 6 giờ nhé") is False
+    assert has_explicit_high_risk_signal("Chuyển tiền cho tôi") is False
 
 
 def test_high_risk_guard_does_not_mark_security_advice_as_a_request():

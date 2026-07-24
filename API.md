@@ -68,6 +68,8 @@ Quy tắc contract:
 
 - Function name từ Gemini chỉ là advisory. Verdict sau parser + rule engine mới quyết định chain.
 - Rule `danger` có thể nâng verdict thành `nguy_hiem`; rule `warning` chỉ nâng nhãn lạc quan lên `nghi_ngo`.
+  Yêu cầu tiền không có số tiền/tài khoản/lý do/đe doạ cụ thể chỉ là `warning`. Hai mẫu ambiguity
+  hẹp (yêu cầu tiền trần; điểm thưởng hết hạn + link thường) được cap ở `nghi_ngo` nếu không có danger signal.
 - Ngoại lệ hạ verdict duy nhất là full-match hẹp cho thông báo chỉ *cấp* OTP (`Mã OTP ... là
   123456, có hiệu lực ...`): mẫu này là `an_toan`. Thêm link, yêu cầu thao tác, tiền, đe doạ
   hoặc nội dung khác sẽ không khớp ngoại lệ và guardrail bảo thủ vẫn áp dụng.

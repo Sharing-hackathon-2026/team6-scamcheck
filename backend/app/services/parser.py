@@ -10,7 +10,12 @@ from dataclasses import asdict, dataclass
 from typing import Any, Iterable
 
 from ..prompts import STAGE1_REFUSAL
-from .rule_engine import RuleSignal, evaluate_rules, is_otp_delivery_notification
+from .rule_engine import (
+    RuleSignal,
+    evaluate_rules,
+    is_low_context_ambiguity,
+    is_otp_delivery_notification,
+)
 
 RISK_LEVELS = {"an_toan", "nghi_ngo", "nguy_hiem"}
 _LEGACY_NOT_RELATED = "khong_lien_quan"
@@ -26,6 +31,10 @@ DEFAULT_ACTIONS = [
 ]
 CONSERVATIVE_REASON = (
     "Tin nhắn có yêu cầu hoặc dấu hiệu rủi ro cao; không nên làm theo trước khi kiểm tra qua kênh chính thức."
+)
+AMBIGUOUS_REASON = (
+    "Tin nhắn có dấu hiệu đáng ngờ nhưng chưa nêu đủ thông tin cụ thể để kết luận nguy hiểm; "
+    "bác nên xác minh trước khi làm theo."
 )
 OTP_NOTICE_REASON = (
     "Đây là thông báo cấp mã OTP và thời hạn sử dụng; tin không yêu cầu gửi mã, "
@@ -184,6 +193,7 @@ def parse_detective(
     signals = list(rule_signals) if rule_signals is not None else evaluate_rules(source_text)
     danger = any(signal.severity == "danger" for signal in signals)
     warning = any(signal.severity == "warning" for signal in signals)
+    low_context = is_low_context_ambiguity(source_text, signals)
 
     # Ngoại lệ hẹp, deterministic: thông báo ngân hàng chỉ *cấp* OTP không phải
     # lời xin người nhận giao OTP. Full-match ở rule engine ngăn hạ verdict nếu
@@ -208,10 +218,17 @@ def parse_detective(
         and (raw_reason == STAGE1_REFUSAL or bool(_OUTSIDE_SCOPE_HINT_RE.search(raw_reason)))
     )
     forced_by_rules = False
+    ambiguity_capped = False
     if danger and risk_level != "nguy_hiem":
         risk_level = "nguy_hiem"
         outside_scope = False
         forced_by_rules = True
+    elif low_context and risk_level == "nguy_hiem":
+        # Hai mẫu mơ hồ được nhận diện hẹp không đủ bằng chứng để giữ nhãn đỏ,
+        # kể cả khi model phản ứng quá bảo thủ. Chỉ áp dụng khi không có danger signal.
+        risk_level = "nghi_ngo"
+        outside_scope = False
+        ambiguity_capped = True
     elif warning and risk_level == "an_toan":
         risk_level = "nghi_ngo"
         outside_scope = False
@@ -221,7 +238,9 @@ def parse_detective(
         return DetectiveResult("an_toan", STAGE1_REFUSAL, [], [])
 
     reason = raw_reason
-    if forced_by_rules:
+    if ambiguity_capped:
+        reason = AMBIGUOUS_REASON
+    elif forced_by_rules:
         reason = CONSERVATIVE_REASON if danger else (
             "Tin nhắn có tín hiệu kỹ thuật cần xác minh thêm; không nên mở đường dẫn hoặc làm theo vội."
         )

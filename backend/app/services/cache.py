@@ -9,7 +9,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Callable
 
-STAGE4_PIPELINE_VERSION = "stage4-v1-prompt5-three-verdicts"
+STAGE4_PIPELINE_VERSION = "stage4-v1-prompt6-evidence-threshold"
 
 
 @dataclass

@@ -56,13 +56,16 @@ def test_prompt_treats_user_message_as_untrusted_data():
     assert "tự gán nhãn an toàn" in lowered
 
 
-def test_prompt_has_absolute_conservative_rule_for_every_required_risk():
+def test_prompt_uses_evidence_threshold_without_marking_vague_requests_dangerous():
     lowered = STAGE1_SYSTEM_PROMPT.lower()
-    assert "tuyệt đối không" in lowered
+    assert "phân loại theo bằng chứng" in lowered
     assert '"an_toan"' in lowered
-    for risk in ("tiền", "otp", "mật khẩu", "thông tin nhạy cảm", "link", "đe dọa"):
+    for risk in ("tiền", "otp", "mật khẩu", "dữ liệu nhạy cảm", "link", "đe dọa"):
         assert risk in lowered
-    assert "phải là \"nguy_hiem\"" in lowered
+    assert '"chuyển tiền cho tôi"' in lowered
+    assert "phải là \"nghi_ngo\"" in lowered
+    assert "điểm thưởng sắp hết hạn" in lowered
+    assert "bằng chứng cụ thể" in lowered
 
 
 def test_fixed_schema_has_exact_public_contract():

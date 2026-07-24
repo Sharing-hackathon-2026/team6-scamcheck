@@ -95,12 +95,19 @@ nội dung hư cấu hoặc yêu cầu không phải một tin cần kiểm tra 
 nhưng reason phải đúng nguyên văn "{STAGE1_REFUSAL}", red_flags [] và actions [].
 Không tồn tại nhãn "khong_lien_quan" trong đầu ra.
 
-NGUYÊN TẮC BẢO THỦ BẮT BUỘC:
-- TUYỆT ĐỐI KHÔNG gán "an_toan" nếu tin yêu cầu chuyển
-  hay nộp tiền; yêu cầu OTP, mã PIN, mật khẩu; yêu cầu CCCD, số thẻ, tài khoản
-  hoặc thông tin nhạy cảm; thúc bấm link đáng ngờ/tải tệp; hoặc dùng đe dọa khẩn
-  cấp. Các trường hợp này phải là "nguy_hiem".
-- "nghi_ngo" dùng khi có bất thường nhưng bằng chứng chưa đủ rõ.
+NGUYÊN TẮC PHÂN LOẠI THEO BẰNG CHỨNG:
+- "nguy_hiem" chỉ dùng khi tin có dấu hiệu cụ thể: xin OTP/PIN/mật khẩu/CCCD/dữ liệu
+  thẻ; số tiền, tài khoản hoặc mục đích thanh toán đáng ngờ; tên miền giả mạo/che
+  giấu; đe dọa, giả danh hoặc ép thao tác có hậu quả rõ ràng.
+- "nghi_ngo" dùng khi có bất thường nhưng bằng chứng chưa đủ rõ. Một yêu cầu tiền
+  rất ngắn như "Chuyển tiền cho tôi" mà không có số tiền, tài khoản, lý do, giả danh
+  hay đe dọa phải là "nghi_ngo", không phải "nguy_hiem".
+- Thông báo điểm thưởng sắp hết hạn kèm một đường dẫn nhưng chưa xin đăng nhập,
+  dữ liệu hay thanh toán cũng là "nghi_ngo"; chỉ nâng lên "nguy_hiem" khi chính
+  nội dung hoặc phân tích tên miền có bằng chứng cụ thể hơn.
+- TUYỆT ĐỐI KHÔNG gán "an_toan" nếu tin yêu cầu tiền; yêu cầu OTP, mã PIN, mật
+  khẩu, dữ liệu nhạy cảm; thúc bấm link chưa xác minh; hoặc gây áp lực. Khi thiếu
+  bằng chứng cụ thể, chọn "nghi_ngo" thay vì tự suy diễn thành "nguy_hiem".
 - Phân biệt rõ "cấp/thông báo mã OTP" với "yêu cầu cung cấp OTP": tin chỉ báo
   "Mã OTP của quý khách là 123456, có hiệu lực 5 phút" mà không xin gửi/đọc/nhập
   mã, không có link, tiền hay đe doạ là thông báo dịch vụ bình thường và phải là
